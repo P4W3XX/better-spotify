@@ -168,7 +168,7 @@ export default function Album() {
       <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 px-4 md:pb-7 pb-3 max-h-[7rem] bg-gradient-to-t from-black/60 to-black/20">
         <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
           <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center">
-            <Play className=" text-black" fill="black" size={20} />
+            <Play className=" text-black md:size-[24px] size-[20px]" fill="black" />
           </button>
           <TooltipProvider>
             <Tooltip>

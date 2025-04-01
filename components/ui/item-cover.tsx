@@ -1,9 +1,18 @@
+"use client";
 import Image from "next/image";
 import { Play } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function ItemCover() {
+  const router = useRouter();
+  const handleClick = () => {
+    router.push("/album/4x4");
+  };
   return (
-    <div className=" flex flex-col w-max items-start space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl p-3">
+    <div
+      onClick={() => handleClick()}
+      className=" flex flex-col w-max items-start space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl p-3"
+    >
       <div className=" relative size-[10rem]">
         <Image
           src={"/cover.jpg"}

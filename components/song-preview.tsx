@@ -1,8 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { CirclePlus, Ellipsis } from "lucide-react";
 
+/*
 const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
   if (!isPlaying) return null;
   return (
@@ -50,6 +50,7 @@ const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
     </div>
   );
 };
+*/
 
 export const SongPreview = ({ index }: { index: number }) => {
   return (
