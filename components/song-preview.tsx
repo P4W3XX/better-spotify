@@ -55,7 +55,7 @@ const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
 export const SongPreview = ({ index }: { index: number }) => {
   return (
     <div className="w-full flex hover:bg-white/5 transition-colors cursor-pointer group items-center rounded-xl md:py-3 py-2 px-2 md:px-0">
-      <div className="w-full hidden max-w-[65px] text-center text-lg font-medium">
+      <div className="w-full hidden md:block max-w-[65px] text-center text-lg font-medium">
         {index + 1}
       </div>
       <div className=" w-full flex flex-col">
