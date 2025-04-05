@@ -9,7 +9,7 @@ import {
 
 export default function Home() {
   return (
-    <div className=" p-10">
+    <div className=" p-10 w-full h-full">
       <ItemCover />
       <Carousel className=" w-[40rem] m-10">
         <CarouselContent>

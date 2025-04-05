@@ -345,11 +345,7 @@ export default function Album() {
     console.log("AlbumCoverShowState", AlbumCoverShowState);
   }, [AlbumCoverShowState]);
   return (
-    <motion.main
-      exit={{ x: 100 }}
-      initial={{ x: 100 }}
-      animate={{ x: 0 }}
-      transition={{ duration: 0.2, ease: "easeInOut" }}
+    <main
       style={{ backgroundColor: "#3c2428" }}
       className={` relative w-full h-svh flex flex-col ${
         AlbumCoverShowState ? "overflow-hidden" : " overflow-auto"
@@ -484,7 +480,7 @@ export default function Album() {
           </div>
           {scrollY < 300 && <Separator className=" bg-white/10" />}
         </div>
-        <div className=" flex flex-col space-y-3 pb-[9rem] md:px-7 px-2">
+        <div className=" flex flex-col space-y-3 pb-[9rem] md:pb-[6rem] md:px-7 px-2">
           <SongPreview index={0} />
           <SongPreview index={1} />
           <SongPreview index={1} />
@@ -501,6 +497,6 @@ export default function Album() {
           <SongPreview index={1} />
         </div>
       </div>
-    </motion.main>
+    </main>
   );
 }
