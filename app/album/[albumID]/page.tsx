@@ -152,7 +152,7 @@ const AlbumCoverShow = ({
         transition: { duration: 0.2 },
         pointerEvents: see ? "all" : "none",
       }}
-      className="w-full h-svh flex items-center justify-center z-50 bg-black/60 absolute"
+      className="w-full h-svh flex items-center justify-center z-[52] bg-black/60 absolute"
     >
       <motion.div
         initial={{
@@ -480,7 +480,7 @@ export default function Album() {
           </div>
           {scrollY < 300 && <Separator className=" bg-white/10" />}
         </div>
-        <div className=" flex flex-col space-y-3 pb-[9rem] md:pb-[6rem] md:px-7 px-2">
+        <div className=" flex flex-col space-y-3 pb-[9rem] md:pb-[7rem] md:px-7 px-2">
           <SongPreview index={0} />
           <SongPreview index={1} />
           <SongPreview index={1} />
