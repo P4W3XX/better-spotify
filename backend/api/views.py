@@ -31,8 +31,8 @@ class AlbumListView(generics.ListCreateAPIView):
         filters.SearchFilter,
         filters.OrderingFilter
     ]
-    search_fields = ['title', 'artist__name']
-    ordering_fields = ['title', 'artist__name']
+    search_fields = ['title', 'artist__name', 'release_date']
+    ordering_fields = ['title', 'artist__name', 'release_date']
     
 
 class AlbumDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -49,8 +49,8 @@ class SongListView(generics.ListCreateAPIView):
         filters.SearchFilter,
         filters.OrderingFilter
     ]
-    search_fields = ['title', 'album__title', 'album__artist__name']
-    ordering_fields = ['title', 'album__title', 'album__artist__name']
+    search_fields = ['title', 'album__title', 'album__artist__name', 'album__release_date']
+    ordering_fields = ['title', 'album__title', 'album__artist__name', 'album__release_date']
 
 class SongDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Song.objects.all()
