@@ -29,15 +29,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await axios.get(
-        "http://127.0.0.1:8000/api/albums/",
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          }
-        }
-      );
+      const response = await axios.get("http://127.0.0.1:8000/api/albums/");
       console.log(response.data);
     };
     fetchData();
