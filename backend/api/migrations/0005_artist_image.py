@@ -34,19 +34,19 @@ class Migration(migrations.Migration):
     operations = [
  
 
-        migrations.AddField(
+        # migrations.AddField(
  
 
-            model_name='artist',
+        #     model_name='artist',
  
 
-            name='image',
+        #     name='image',
  
 
-            field=models.ImageField(blank=True, null=True, upload_to='artists/'),
+        #     field=models.ImageField(blank=True, null=True, upload_to='artists/'),
  
 
-        ),
+        # ),
  
 
     ]
