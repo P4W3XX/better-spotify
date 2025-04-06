@@ -1,5 +1,7 @@
 "use client";
 import ItemCover from "@/components/ui/item-cover";
+import { useEffect } from "react";
+import axios from "axios";
 
 export default function Home() {
   const Items = [
@@ -24,6 +26,22 @@ export default function Home() {
       id: 3,
     },
   ];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await axios.get(
+        "http://127.0.0.1:8000/api/albums/",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          }
+        }
+      );
+      console.log(response.data);
+    };
+    fetchData();
+  }, []);
   return (
     <div className=" p-10 w-auto">
       <h1 className=" text-3xl font-semibold mb-5">Recently Played</h1>
