@@ -17,7 +17,7 @@ export default function Home() {
       artist: "Travis Scott",
       cover: "/cover.jpg",
       type: "song",
-      id: 2,
+      id: 3,
     },
     {
       title: "Travis Scott",
