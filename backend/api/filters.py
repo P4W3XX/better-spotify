@@ -16,4 +16,6 @@ class AlbumFilter(django_filters.FilterSet):
         fields = {
             'title': ['iexact', 'icontains'],
             'artist__name': ['iexact', 'icontains'],
+            'release_date': ['exact', 'year__exact', 'year__gt', 'year__lt'],
+            'album_type': ['exact', 'iexact'],
         }
