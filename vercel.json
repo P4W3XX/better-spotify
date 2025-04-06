@@ -1,24 +1,31 @@
 {
-    "builds": [
-        {
-            "src": "backend/betterspotify/wsgi.py",
-            "use": "@vercel/python",
-            "config": {
-                "maxLambdaSize": "15mb",
-                "runtime": "python3.13.2",
-                "buildCommand": "bash setup.sh"
-            }
-        }
-    ],
-    "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "backend/betterspotify/wsgi.py"
-        },
-        {
-            "src": "/static/(.*)",
-            "dest": "backend/static/$1"
-        }
-    ]
-    
+  "builds": [
+    {
+      "src": "backend/betterspotify/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb",
+        "runtime": "python3.11",
+        "buildCommand": "bash setup.sh"
+      }
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/betterspotify/wsgi.py"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "backend/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
 }
