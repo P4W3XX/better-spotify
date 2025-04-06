@@ -6,7 +6,7 @@ from drf_spectacular.utils import extend_schema_field
 class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = Song
-        fields = ['id', 'album', 'artist', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays']
+        fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays']
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
@@ -15,14 +15,13 @@ class SongSerializer(serializers.ModelSerializer):
         if nested:
             self.fields.pop('lyrics')
             self.fields.pop('album')
-            self.fields.pop('artist')
 
 class AlbumSerializer(serializers.ModelSerializer):
     # songs = SongSerializer(many=True, required=False, nested=True)
     songs = serializers.SerializerMethodField()
     class Meta:
         model = Album
-        fields = ['id', 'title', 'artist', 'image', 'release_date', 'songs']
+        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'songs']
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
@@ -66,16 +65,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 class ArtistSerializer(serializers.ModelSerializer):
     # albums = AlbumSerializer(many=True, read_only=True)
     albums = serializers.SerializerMethodField()
-    singles = serializers.SerializerMethodField()
 
     class Meta:
         model = Artist
-        fields = ['id', 'name', 'image', 'albums', 'singles']
+        fields = ['id', 'name', 'image', 'albums']
 
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
         return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
-    
-    @extend_schema_field(serializers.ListField)
-    def get_singles(self, obj):
-        return SongSerializer(obj.singles, many=True, nested=True, context=self.context).data
