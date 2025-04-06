@@ -23,7 +23,7 @@ class ArtistDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ArtistSerializer
 
 class AlbumListView(generics.ListCreateAPIView):
-    queryset = Album.objects.all()
+    queryset = Album.objects.prefetch_related('artist', 'songs')
     serializer_class = AlbumSerializer
     filterset_class = AlbumFilter
     filter_backends = [
@@ -36,7 +36,7 @@ class AlbumListView(generics.ListCreateAPIView):
     
 
 class AlbumDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Album.objects.all()
+    queryset = Album.objects.prefetch_related('artist', 'songs')
     serializer_class = AlbumSerializer
 
 
@@ -47,8 +47,3 @@ class SongListView(generics.ListCreateAPIView):
 class SongDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Song.objects.all()
     serializer_class = SongSerializer
-
-
-# class AlbumCreateView(generics.CreateAPIView):
-#     queryset = Album.objects.all()
-#     serializer_class = AlbumCreateSerializer
