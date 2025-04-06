@@ -23,7 +23,7 @@ export default function Home() {
       title: "Travis Scott",
       cover: "/travis.jpg",
       type: "profile",
-      id: 3,
+      id: 4,
     },
   ];
 
