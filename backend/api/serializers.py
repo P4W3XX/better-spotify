@@ -33,10 +33,13 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
-        return SongSerializer(obj.songs, many=True, nested=True, context=self.context).data
+        return SongSerializer(obj.songs, many=True, nested=True, context=self.context, required=False).data
 
     def create(self, validated_data):
-        songs_data = validated_data.pop('songs')
+        try:
+            songs_data = validated_data.pop('songs')
+        except KeyError:
+            songs_data = []
         album = Album.objects.create(**validated_data)
         for song_data in songs_data:
             Song.objects.create(album=album, **song_data)
