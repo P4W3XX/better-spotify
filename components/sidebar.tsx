@@ -8,7 +8,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   return (
-    <main className=" fixed md:relative z-50 bottom-0 md:p-3 md:flex-col md:max-w-[18rem] md:border-r md:h-svh flex items-center justify-between px-10 w-full h-[4rem] bg-gradient-to-t from-black from-30% to-black">
+    <main className=" fixed md:relative z-50 bottom-0 md:p-3 md:flex-col md:max-w-[5.5rem] md:min-w-[5.5rem] lg:min-w-[18rem] lg:max-w-[18rem] md:border-r md:h-svh flex items-center justify-between px-10 w-full h-[4rem] bg-gradient-to-t from-black from-30% to-black">
       <div className=" w-full flex md:flex-col gap-y-3 justify-between">
         <button
           onClick={() => {
@@ -25,7 +25,9 @@ export default function Sidebar() {
               pathname === "/" ? "stroke-white" : "stroke-neutral-500"
             }`}
           />
-          <p className={` text-[10px] md:text-xl font-medium md:font-semibold`}>
+          <p
+            className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
+          >
             Home
           </p>
         </button>
@@ -44,7 +46,9 @@ export default function Sidebar() {
               pathname === "/search" ? "stroke-white" : "stroke-neutral-500"
             }`}
           />
-          <p className={` text-[10px] md:text-xl font-medium md:font-semibold`}>
+          <p
+            className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
+          >
             Search
           </p>
         </button>
@@ -63,7 +67,9 @@ export default function Sidebar() {
               pathname === "/library" ? "stroke-white" : "stroke-neutral-500"
             }`}
           />
-          <p className={` text-[10px] md:text-xl font-medium md:font-semibold`}>
+          <p
+            className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
+          >
             Your library
           </p>
         </button>
@@ -78,7 +84,9 @@ export default function Sidebar() {
           <div className=" size-[2.2rem] bg-zinc-800 text-sm rounded-full flex items-center justify-center font-semibold">
             <p>PS</p>
           </div>
-          <p className={` text-[10px] md:text-xl font-medium md:font-semibold`}>
+          <p
+            className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
+          >
             Profile
           </p>
         </button>

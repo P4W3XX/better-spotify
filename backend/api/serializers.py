@@ -1,9 +1,9 @@
 from rest_framework import serializers
 from .models import Artist, Album, Song
+from drf_spectacular.utils import extend_schema_field
 
 
 class SongSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Song
         fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays']
@@ -17,7 +17,8 @@ class SongSerializer(serializers.ModelSerializer):
             self.fields.pop('album')
 
 class AlbumSerializer(serializers.ModelSerializer):
-    songs = SongSerializer(many=True, nested=True, required=False)
+    # songs = SongSerializer(many=True, required=False, nested=True)
+    songs = serializers.SerializerMethodField()
     class Meta:
         model = Album
         fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'songs']
@@ -30,6 +31,9 @@ class AlbumSerializer(serializers.ModelSerializer):
             self.fields.pop('artist')
             self.fields.pop('songs')
 
+    @extend_schema_field(serializers.ListField)
+    def get_songs(self, obj):
+        return SongSerializer(obj.songs, many=True, nested=True, context=self.context).data
 
     def create(self, validated_data):
         songs_data = validated_data.pop('songs')
@@ -66,5 +70,6 @@ class ArtistSerializer(serializers.ModelSerializer):
         model = Artist
         fields = ['id', 'name', 'image', 'albums']
 
+    @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
         return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
