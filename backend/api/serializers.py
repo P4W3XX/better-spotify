@@ -12,10 +12,10 @@ class SongSerializer(serializers.ModelSerializer):
         nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
 
-        # if nested:
+        if nested:
+            self.fields.pop('lyrics')
         #     self.fields.pop('album')
         #     self.fields.pop('artist')
-        #     self.fields.pop('lyrics')
 
 
 class AlbumSerializer(serializers.ModelSerializer):
