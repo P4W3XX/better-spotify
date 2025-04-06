@@ -1,9 +1,8 @@
-from django.shortcuts import render
-from .serializers import ArtistSerializer, AlbumSerializer
-from .models import Artist, Album
-from .filters import ArtistFilter, AlbumFilter
 from rest_framework import generics, filters
 from django_filters.rest_framework import DjangoFilterBackend
+from .models import Artist, Album, Song
+from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer
+from .filters import ArtistFilter, AlbumFilter, SongFilter
 
 # Create your views here.
 
@@ -24,7 +23,7 @@ class ArtistDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ArtistSerializer
 
 class AlbumListView(generics.ListCreateAPIView):
-    queryset = Album.objects.all()
+    queryset = Album.objects.prefetch_related('artist', 'songs')
     serializer_class = AlbumSerializer
     filterset_class = AlbumFilter
     filter_backends = [
@@ -37,5 +36,22 @@ class AlbumListView(generics.ListCreateAPIView):
     
 
 class AlbumDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Album.objects.all()
+    queryset = Album.objects.prefetch_related('artist', 'songs')
     serializer_class = AlbumSerializer
+
+
+class SongListView(generics.ListCreateAPIView):
+    queryset = Song.objects.all()
+    serializer_class = SongSerializer
+    filterset_class = SongFilter
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter
+    ]
+    search_fields = ['title', 'album__title', 'album__artist__name']
+    ordering_fields = ['title', 'album__title', 'album__artist__name']
+
+class SongDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Song.objects.all()
+    serializer_class = SongSerializer

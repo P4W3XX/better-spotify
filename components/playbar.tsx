@@ -3,18 +3,29 @@
 import {
   ArrowBigLeft,
   ArrowBigRight,
+  Maximize,
   Play,
   Repeat,
   Shuffle,
+  Volume2,
 } from "lucide-react";
 import Image from "next/image";
 import { useMediaQuery } from "usehooks-ts";
 import { CirclePlus } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { useEffect, useState } from "react";
 
 export default function PlayBar() {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [isMounted, setIsMounted] = useState(false);
 
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
   if (isMobile) {
     return (
       <main className=" fixed z-50 bottom-[4rem] w-full right-0 left-0 mx-auto h-[6rem] pb-[.5rem] items-end flex bg-gradient-to-t from-black ">
@@ -35,15 +46,9 @@ export default function PlayBar() {
               </p>
             </div>
           </div>
-          <div className=" flex items-center justify-end w-full gap-x-2 h-full">
+          <div className=" flex items-center justify-end w-full gap-x-2 p-2 h-full">
             <button>
-              <ArrowBigLeft className="" fill="white" size={28} />
-            </button>
-            <button>
-              <Play className="" fill="white" size={34} />
-            </button>
-            <button>
-              <ArrowBigRight className="" fill="white" size={28} />
+              <Play fill="white" size={30} />
             </button>
           </div>
         </div>
@@ -71,7 +76,7 @@ export default function PlayBar() {
             <CirclePlus className=" text-white md:size-[28px] size-[24px] opacity-50" />
           </button>
         </div>
-        <div className=" flex flex-col items-center h-full justify-between w-full py-2 max-w-[30%]">
+        <div className=" flex flex-col items-center h-full justify-between w-full py-2 flex-1 max-w-[40%] lg:max-w-[35%]">
           <div className=" flex gap-x-5">
             <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
               <Shuffle className=" text-white md:size-[20px] opacity-60 size-[24px]" />
@@ -110,7 +115,21 @@ export default function PlayBar() {
             <p className=" text-xs text-white/50 font-medium">3:45</p>
           </div>
         </div>
-        <div>dwddw</div>
+        <div className=" flex-1 max-w-[12%] min-w-[10rem] flex items-center justify-end gap-x-5 pr-2">
+          <div className=" flex gap-x-2 w-full">
+            <Volume2 className=" text-white md:size-[24px] stroke-2 opacity-50" />
+            <Slider
+              defaultValue={[50]}
+              step={1}
+              min={0}
+              max={100}
+              isThumb={true}
+            />
+          </div>
+          <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+            <Maximize className=" text-white md:size-[20px] size-[20px] opacity-50" />
+          </button>
+        </div>
       </main>
     );
   }

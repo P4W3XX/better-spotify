@@ -1,52 +1,54 @@
 "use client";
 import ItemCover from "@/components/ui/item-cover";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-
 import { useEffect } from "react";
+import axios from "axios";
 
 export default function Home() {
-  const fetchData = async () => {
-    try {
-      // Using the Next.js API route as a proxy instead of directly calling the backend
-      fetch("http://127.0.0.1:8000/api/albums", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
-        }); 
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
+  const Items = [
+    {
+      title: "4x4",
+      artist: "Travis Scott",
+      cover: "/cover.jpg",
+      type: "album",
+      id: 1,
+    },
+    {
+      title: "4x4",
+      artist: "Travis Scott",
+      cover: "/cover.jpg",
+      type: "song",
+      id: 2,
+    },
+    {
+      title: "Travis Scott",
+      cover: "/travis.jpg",
+      type: "profile",
+      id: 4,
+    },
+  ];
+
   useEffect(() => {
+    const fetchData = async () => {
+      const response = await axios.get("http://127.0.0.1:8000/api/albums/");
+      console.log(response.data);
+    };
     fetchData();
   }, []);
   return (
-    <div className=" p-10 w-full h-full">
-      <ItemCover />
-      <Carousel className=" w-[40rem] m-10">
-        <CarouselContent>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
-              <div className="p-1">
-                <ItemCover />
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious />
-        <CarouselNext />
-      </Carousel>
+    <div className=" p-10 w-auto">
+      <h1 className=" text-3xl font-semibold mb-5">Recently Played</h1>
+      <div className=" grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10">
+        {Items.map((item) => (
+          <ItemCover
+            key={item.id}
+            title={item.title}
+            artist={item.artist}
+            cover={item.cover}
+            type={item.type}
+            id={item.id}
+          />
+        ))}
+      </div>
     </div>
   );
 }

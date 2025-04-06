@@ -18,7 +18,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { motion } from "framer-motion";
 
 import {
   DropdownMenu,
@@ -46,6 +45,8 @@ import { SongPreview } from "@/components/song-preview";
 import { useState, useEffect, useRef } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { VisuallyHidden } from "radix-ui";
+import { useRouter } from "next/navigation";
+import { useAlbumCoverStore } from "@/store/album-cover";
 
 const TopBar = ({
   handleRef,
@@ -104,81 +105,6 @@ const TopBar = ({
         <Play className=" text-black md:size-[20px] size-[16px]" fill="black" />
       </button>
     </div>
-  );
-};
-
-const AlbumCoverShow = ({
-  see,
-  setSee,
-}: {
-  see: boolean;
-  setSee: React.Dispatch<React.SetStateAction<boolean>>;
-}) => {
-  const imageRef = useRef<HTMLImageElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!see) return; // Don't add event listener if album cover is hidden
-
-    // To prevent immediate closing, use mousedown instead of click
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setSee(false);
-      }
-    };
-
-    // Add event listener with a delay to avoid catching the same click
-    const timeoutId = setTimeout(() => {
-      document.addEventListener("mousedown", handleClickOutside);
-    }, 100);
-
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [see, setSee]);
-
-  return (
-    <motion.div
-      initial={{
-        opacity: 0,
-        pointerEvents: "none",
-      }}
-      animate={{
-        opacity: see ? 1 : 0,
-        transition: { duration: 0.2 },
-        pointerEvents: see ? "all" : "none",
-      }}
-      className="w-full h-svh flex items-center justify-center z-[52] bg-black/60 absolute"
-    >
-      <motion.div
-        initial={{
-          y: 100,
-        }}
-        animate={{
-          y: see ? 0 : 100,
-          transition: { duration: 0.2 },
-        }}
-        exit={{
-          y: 100,
-          transition: { duration: 0.2 },
-        }}
-        ref={containerRef}
-        className="md:size-[40rem] w-[85%] flex items-center justify-center"
-      >
-        <Image
-          ref={imageRef}
-          src={"/cover.jpg"}
-          alt="Cover"
-          width={1000}
-          height={1000}
-          className="rounded-lg cursor-pointer w-full h-full shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-        />
-      </motion.div>
-    </motion.div>
   );
 };
 
@@ -334,29 +260,27 @@ const MoreInfo = () => {
 export default function Album() {
   const handleRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
-  const [AlbumCoverShowState, setAlbumCoverShowState] = useState(false);
   const mobile = useMediaQuery("(max-width: 768px)");
+  const router = useRouter();
+  const setAlbumCover = useAlbumCoverStore((state) => state.setAlbumCover);
+  const albumCover = useAlbumCoverStore((state) => state.albumCover);
 
   useEffect(() => {
     console.log("Mobile", mobile);
   }, []);
 
-  useEffect(() => {
-    console.log("AlbumCoverShowState", AlbumCoverShowState);
-  }, [AlbumCoverShowState]);
   return (
     <main
       style={{ backgroundColor: "#3c2428" }}
       className={` relative w-full h-svh flex flex-col ${
-        AlbumCoverShowState ? "overflow-hidden" : " overflow-auto"
+        albumCover ? "overflow-hidden" : " overflow-auto"
       }`}
       ref={handleRef}
     >
-      <AlbumCoverShow
-        see={AlbumCoverShowState}
-        setSee={setAlbumCoverShowState}
-      />
-      <button className=" absolute top-4 left-4 block md:hidden">
+      <button
+        onClick={() => router.back()}
+        className=" absolute top-4 left-4 z-50 block md:hidden"
+      >
         <ArrowLeft className="size-[2rem]" />
       </button>
       <TopBar handleRef={handleRef} setScrollY2={setScrollY} />
@@ -366,7 +290,7 @@ export default function Album() {
           src={"/cover.jpg"}
           alt="Cover"
           width={500}
-          onClick={() => setAlbumCoverShowState(true)}
+          onClick={() => setAlbumCover("/cover.jpg")}
           height={500}
           className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-[15rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
         />
