@@ -1,3 +1,6 @@
+import datetime
+from mutagen.mp3 import MP3
+from django.db.models import Sum
 from rest_framework import serializers
 from .models import Artist, Album, Song
 from drf_spectacular.utils import extend_schema_field
@@ -7,6 +10,9 @@ class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = Song
         fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays']
+        extra_kwargs = {
+            'duration': {'read_only': True},
+        }
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
@@ -16,12 +22,21 @@ class SongSerializer(serializers.ModelSerializer):
             self.fields.pop('lyrics')
             self.fields.pop('album')
 
+    def create(self, validated_data):
+        song = Song.objects.create(duration="0:00", **validated_data)
+        audio = MP3(song.file.path)
+        song_duration = datetime.timedelta(seconds=int(audio.info.length))
+        song.duration = song_duration
+        song.save()
+
+        return song
+
 class AlbumSerializer(serializers.ModelSerializer):
-    # songs = SongSerializer(many=True, required=False, nested=True)
     songs = serializers.SerializerMethodField()
+    album_duration = serializers.SerializerMethodField()
     class Meta:
         model = Album
-        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'songs']
+        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'songs', 'theme']
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
@@ -34,13 +49,28 @@ class AlbumSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
         return SongSerializer(obj.songs, many=True, nested=True, context=self.context, required=False).data
+    
+    def get_album_duration(self, obj):
+        total_time = datetime.timedelta(0)
+        for song in obj.songs.all():
+            total_time += song.duration
+
+        total_seconds = total_time.total_seconds()
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+
+        return f"{int(hours)}h {int(minutes)}m {int(seconds)}s"
 
     def create(self, validated_data):
         try:
             songs_data = validated_data.pop('songs')
         except KeyError:
             songs_data = []
+            
         album = Album.objects.create(**validated_data)
+        
+
         for song_data in songs_data:
             Song.objects.create(album=album, **song_data)
         return album
