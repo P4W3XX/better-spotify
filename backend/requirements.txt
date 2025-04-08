@@ -28,5 +28,5 @@ sqlparse
 tzdata
 uritemplate
 whitenoise
-pytohn-dotenv
+python-dotenv
 mutagen

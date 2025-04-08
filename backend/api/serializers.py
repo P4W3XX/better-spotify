@@ -67,7 +67,7 @@ class AlbumSerializer(serializers.ModelSerializer):
             songs_data = validated_data.pop('songs')
         except KeyError:
             songs_data = []
-        
+            
         album = Album.objects.create(**validated_data)
         
 

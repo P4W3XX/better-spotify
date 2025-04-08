@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   devIndicators: false,
+  images: {
+    domains: ["127.0.0.1", "localhost"],
+    // Add your production domain here too when deploying
+  },
   async rewrites() {
     return [
       {
