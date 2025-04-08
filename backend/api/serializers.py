@@ -1,4 +1,5 @@
 import datetime
+from mutagen.mp3 import MP3
 from django.db.models import Sum
 from rest_framework import serializers
 from .models import Artist, Album, Song
@@ -9,6 +10,9 @@ class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = Song
         fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays']
+        extra_kwargs = {
+            'duration': {'read_only': True},
+        }
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
@@ -18,13 +22,21 @@ class SongSerializer(serializers.ModelSerializer):
             self.fields.pop('lyrics')
             self.fields.pop('album')
 
+    def create(self, validated_data):
+        song = Song.objects.create(duration="0:00", **validated_data)
+        audio = MP3(song.file.path)
+        song_duration = datetime.timedelta(seconds=int(audio.info.length))
+        song.duration = song_duration
+        song.save()
+
+        return song
+
 class AlbumSerializer(serializers.ModelSerializer):
-    # songs = SongSerializer(many=True, required=False, nested=True)
     songs = serializers.SerializerMethodField()
     album_duration = serializers.SerializerMethodField()
     class Meta:
         model = Album
-        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration',  'songs']
+        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'songs', 'theme']
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
@@ -42,13 +54,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         total_time = datetime.timedelta(0)
         for song in obj.songs.all():
             total_time += song.duration
-            print(type(song.duration))
-
-        # formated_time = str(total_time).split(':')
-        # if formated_time[0] != '0':
-        #     return f"{formated_time[0]}:{formated_time[1]}:{formated_time[2]}"
-        # else:
-        #     return "00:00"
 
         total_seconds = total_time.total_seconds()
         hours = total_seconds // 3600
@@ -56,9 +61,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         seconds = total_seconds % 60
 
         return f"{int(hours)}h {int(minutes)}m {int(seconds)}s"
-
-        # return formated_time
-        # return sum(song.duration for song in obj.songs.all())
 
     def create(self, validated_data):
         try:
