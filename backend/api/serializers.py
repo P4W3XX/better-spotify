@@ -23,7 +23,9 @@ class SongSerializer(serializers.ModelSerializer):
 
 
     def create(self, validated_data):
+        featured_artists = validated_data.pop('featured_artists', [])
         song = Song.objects.create(duration="0:00", **validated_data)
+        song.featured_artists.set(featured_artists)
         audio = MP3(song.file.path)
         song_duration = datetime.timedelta(seconds=int(audio.info.length))
         song.duration = song_duration
