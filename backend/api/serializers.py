@@ -12,6 +12,7 @@ class SongSerializer(serializers.ModelSerializer):
         fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays', 'featured_artists']
         extra_kwargs = {
             'duration': {'read_only': True},
+            'album': {'read_only': True},
         }
 
     def __init__(self, *args, **kwargs):
@@ -19,7 +20,7 @@ class SongSerializer(serializers.ModelSerializer):
         super().__init__(*args, **kwargs)
         if nested:
             self.fields.pop('lyrics')
-            self.fields.pop('album')
+            # self.fields.pop('album')
 
 
     def create(self, validated_data):
@@ -27,7 +28,8 @@ class SongSerializer(serializers.ModelSerializer):
         song = Song.objects.create(duration="0:00", **validated_data)
         song.featured_artists.set(featured_artists)
         audio = MP3(song.file.path)
-        song_duration = datetime.timedelta(seconds=int(audio.info.length))
+        print(audio.info.length)
+        song_duration = datetime.timedelta(seconds=audio.info.length)
         song.duration = song_duration
         song.save()
 
@@ -36,9 +38,11 @@ class SongSerializer(serializers.ModelSerializer):
 class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
     album_duration = serializers.SerializerMethodField()
+    total_plays = serializers.SerializerMethodField()
+
     class Meta:
         model = Album
-        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'songs', 'theme']
+        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'songs', 'theme', 'total_plays']
 
 
     def __init__(self, *args, **kwargs):
@@ -63,7 +67,11 @@ class AlbumSerializer(serializers.ModelSerializer):
         minutes = (total_seconds % 3600) // 60
         seconds = total_seconds % 60
 
-        return f"{int(hours)}h {int(minutes)}m {int(seconds)}s"
+        return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
+    
+    @extend_schema_field(serializers.IntegerField)
+    def get_total_plays(self, obj):
+        return [sum(song.plays for song in obj.songs.all())]
 
     def create(self, validated_data):
         try:
