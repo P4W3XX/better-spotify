@@ -9,7 +9,7 @@ from drf_spectacular.utils import extend_schema_field
 class SongSerializer(serializers.ModelSerializer):
     class Meta:
         model = Song
-        fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays']
+        fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays', 'featured_artists']
         extra_kwargs = {
             'duration': {'read_only': True},
         }
@@ -17,10 +17,10 @@ class SongSerializer(serializers.ModelSerializer):
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
-
         if nested:
             self.fields.pop('lyrics')
             self.fields.pop('album')
+
 
     def create(self, validated_data):
         song = Song.objects.create(duration="0:00", **validated_data)
@@ -38,10 +38,10 @@ class AlbumSerializer(serializers.ModelSerializer):
         model = Album
         fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'songs', 'theme']
 
+
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
-
         if nested:
             self.fields.pop('artist')
             self.fields.pop('songs')
@@ -50,6 +50,7 @@ class AlbumSerializer(serializers.ModelSerializer):
     def get_songs(self, obj):
         return SongSerializer(obj.songs, many=True, nested=True, context=self.context, required=False).data
     
+    @extend_schema_field(serializers.DurationField)
     def get_album_duration(self, obj):
         total_time = datetime.timedelta(0)
         for song in obj.songs.all():
@@ -70,7 +71,6 @@ class AlbumSerializer(serializers.ModelSerializer):
             
         album = Album.objects.create(**validated_data)
         
-
         for song_data in songs_data:
             Song.objects.create(album=album, **song_data)
         return album
@@ -96,7 +96,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         return instance
 
 class ArtistSerializer(serializers.ModelSerializer):
-    # albums = AlbumSerializer(many=True, read_only=True)
     albums = serializers.SerializerMethodField()
 
     class Meta:
@@ -106,3 +105,15 @@ class ArtistSerializer(serializers.ModelSerializer):
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
         return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
+    
+    def to_representation(self, instance):
+        album_type = self.context['request'].query_params.get('album_type', None)
+        if album_type:
+            albums = instance.albums.filter(album_type=album_type)
+        else:
+            albums = instance.albums.all()
+
+        representation = super().to_representation(instance)
+        representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
+        
+        return representation

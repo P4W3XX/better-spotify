@@ -22,14 +22,13 @@ class Album(models.Model):
     
 class Song(models.Model):
     title = models.CharField(max_length=255)
+    album = models.ForeignKey(Album, related_name='songs', on_delete=models.CASCADE)
     duration = models.DurationField()
     file = models.FileField(upload_to='songs/')
     lyrics = models.TextField(blank=True, null=True)
     track_number = models.PositiveIntegerField()
     plays = models.PositiveIntegerField(default=0)
+    featured_artists = models.ManyToManyField(Artist, related_name='featured_songs', blank=True)
 
-    # if album set foreign key to album else if single set foreign key to artist
-    album = models.ForeignKey(Album, related_name='songs', on_delete=models.CASCADE)
-    
     def __str__(self):
         return self.title
