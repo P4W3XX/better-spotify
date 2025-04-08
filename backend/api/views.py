@@ -3,8 +3,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Artist, Album, Song
 from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer
 from .filters import ArtistFilter, AlbumFilter, SongFilter
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 # Create your views here.
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter('album_type', type=str, description='Filters by album type (album, single, ep) in specific artist'),
+    ]
+)
 
 class ArtistListView(generics.ListCreateAPIView):
     queryset = Artist.objects.prefetch_related('albums')
