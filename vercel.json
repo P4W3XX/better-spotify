@@ -6,7 +6,8 @@
       "config": {
         "maxLambdaSize": "15mb",
         "runtime": "python3.11",
-        "buildCommand": "bash setup.sh"
+        "buildCommand": "bash setup.sh",
+        "ignoreCommand": "if [ \"$VERCEL_GIT_BRANCH\" = \"api\" ]; then exit 0; else exit 1; fi"
       }
     },
     {
