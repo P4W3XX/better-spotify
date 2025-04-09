@@ -46,7 +46,7 @@ export default function Home() {
   return (
     <div className="p-4 sm:p-6 md:p-8 lg:p-10 w-full min-h-screen">
       <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 md:mb-5">Recently Played</h1>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
+      <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
         {Items.map((item) => (
           <ItemCover
             key={item.id}

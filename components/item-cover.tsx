@@ -44,7 +44,7 @@ export default function ItemCover({
   return (
     <div
       onClick={() => handleClick()}
-      className="flex flex-col w-full h-full items-center space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl p-2"
+      className="flex flex-col w-full h-full items-center space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl p-3"
     >
       <div className="relative w-full aspect-square">
         {cover ? (
@@ -59,7 +59,7 @@ export default function ItemCover({
         ) : (
           <Skeleton className="w-full h-full rounded-lg" />
         )}
-        <div className="bg-white rounded-full shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black size-[3rem] absolute translate-y-4 group-hover:translate-y-0 bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+        <div className="bg-white rounded-full shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/50 size-[3rem] absolute translate-y-4 group-hover:translate-y-0 bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
           <Play className="text-black" fill="black" size={20} />
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function ItemCover({
                 e.stopPropagation();
                 router.push(`/profile/${artistID}`);
               }}
-              className="text-white/50 text-xs sm:text-sm truncate w-full cursor-pointer group-hover:text-white transition-colors font-medium hover:underline"
+              className="text-white/50 text-xs sm:text-sm truncate w-min cursor-pointer group-hover:text-white transition-colors font-medium hover:underline"
             >
               {artistName}
             </p>

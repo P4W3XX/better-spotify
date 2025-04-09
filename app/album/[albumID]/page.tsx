@@ -6,6 +6,7 @@ import {
   Clock,
   Ellipsis,
   ListMusic,
+  Music,
   Play,
   Plus,
   Share,
@@ -52,12 +53,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const TopBar = ({
   handleRef,
+  title,
+  artist,
+  cover,
+  theme,
   setScrollY2,
 }: {
+  title: string;
+  artist: string;
+  cover: string;
+  theme: string;
   handleRef: React.RefObject<HTMLDivElement | null>;
   setScrollY2: React.Dispatch<React.SetStateAction<number>>;
 }) => {
   const [scrollY, setScrollY] = useState(0);
+  const mobile = useMediaQuery("(max-width: 768px)");
+  const [isMounted, setIsMounted] = useState(false);
+
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -79,26 +95,37 @@ const TopBar = ({
     };
   }, [handleRef]);
 
+  if (!isMounted) return null;
+
+
+
   return (
     <div
       style={{
         opacity: scrollY > 0 ? Math.min((scrollY * 0.3) / 100, 1) : 0,
+        backgroundColor: theme,
       }}
-      className={` w-full md:h-[6rem] h-[4.5rem] border-b md:p-3 p-2 flex justify-between items-center  bg-[#3c2428] z-20 top-0 fixed ${scrollY > 350 ? "pointer-events-auto" : "pointer-events-none"
+      className={` w-full md:h-[6rem] h-[4.5rem] border-b md:p-3 p-2 flex justify-between items-center z-20 top-0 fixed ${scrollY > 350 ? "pointer-events-auto" : "pointer-events-none"
         }`}
     >
       <div className=" flex items-center space-x-4">
-        <Image
-          src={"/cover.jpg"}
-          alt="Cover"
-          width={500}
-          height={500}
-          className="rounded-lg cursor-pointer md:size-[4.5rem] size-[3.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-        />
-        <div>
-          <h1 className=" md:text-2xl text-2xl font-semibold">4X4</h1>
+        {!mobile && (
+          cover ? (
+            <Image
+              src={cover}
+              alt="Cover"
+              width={500}
+              height={500}
+              className="rounded-lg cursor-pointer md:size-[4.5rem] size-[3.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+            />
+          ) : (
+            <Skeleton className="size-[4.5rem] aspect-square" />
+          ))}
+
+        <div className={`${mobile && 'pl-[3.5rem]'}`}>
+          <h1 className=" md:text-2xl text-2xl font-semibold">{title}</h1>
           <p className=" text-white/50 md:text-sm text-xs font-medium">
-            Travis Scott
+            {artist}
           </p>
         </div>
       </div>
@@ -264,7 +291,19 @@ interface AlbumInfo {
   cover: string;
   type: string;
   releaseDate: string;
+  theme: string;
+  albumDuration: string;
   songs: [];
+}
+
+interface SongInfo {
+  title: string;
+  artist: string;
+  cover: string;
+  duration: string;
+  plays: number;
+  featured_artists: string[];
+  isCover: boolean;
 }
 
 interface ArtistInfo {
@@ -286,6 +325,8 @@ export default function Album() {
     cover: "",
     type: "",
     releaseDate: "",
+    albumDuration: "",
+    theme: "",
     songs: [],
   });
 
@@ -306,6 +347,8 @@ export default function Album() {
           artist: resp.data.artist,
           cover: resp.data.image,
           type: resp.data.album_type,
+          theme: resp.data.theme,
+          albumDuration: resp.data.album_duration,
           releaseDate: resp.data.release_date,
           songs: resp.data.songs,
         });
@@ -322,7 +365,6 @@ export default function Album() {
         console.error("Error fetching album info:", error);
       }
     };
-
     fetchAlbumInfo();
   }, []);
 
@@ -332,19 +374,19 @@ export default function Album() {
 
   return (
     <main
-      style={{ backgroundColor: "#3c2428" }}
+      style={{ backgroundColor: albumInfo.theme }}
       className={` relative w-full h-svh flex flex-col ${albumCover ? "overflow-hidden" : " overflow-auto"
         }`}
       ref={handleRef}
     >
       <button
         onClick={() => router.back()}
-        className=" absolute top-4 left-4 z-50 block md:hidden"
+        className=" fixed top-5 left-5 z-50 block md:hidden"
       >
         <ArrowLeft className="size-[2rem]" />
       </button>
-      <TopBar handleRef={handleRef} setScrollY2={setScrollY} />
-      <div className=" md:p-7 p-4 pt-8 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
+      <TopBar handleRef={handleRef} setScrollY2={setScrollY} title={albumInfo.title} artist={artistInfo.name} cover={albumInfo.cover} theme={albumInfo.theme} />
+      <div className=" md:p-7 p-4 pt-16 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
         <div className=" w-full h-full left-0 bg-gradient-to-t from-black/20 top-0 absolute" />
         {albumInfo.cover ? (
           <Image
@@ -353,7 +395,7 @@ export default function Album() {
             width={500}
             onClick={() => setAlbumCover(albumInfo.cover)}
             height={500}
-            className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-[15rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+            className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-auto max-w-[15rem] w-[98%]  shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
           />
         ) : (
           <Skeleton className="size-[15rem] aspect-square z-10" />
@@ -389,8 +431,8 @@ export default function Album() {
               )}
               {artistInfo.name.length > 0 ? (
                 <p
-                  onClick={() => router.push(`/profile/${artistInfo.name}`)}
-                  className=" cursor-pointer hover:underline transition-colors font-medium"
+                  onClick={() => router.push(`/profile/${albumInfo.artist}`)}
+                  className=" cursor-pointer truncate hover:underline transition-colors font-medium"
                 >
                   {artistInfo.name}
                 </p>
@@ -399,43 +441,59 @@ export default function Album() {
               )}
             </div>
             <div className=" flex md:space-x-2 items-center space-x-1 text-xs md:text-sm">
-              <p className=" text-[#3c2428] md:block hidden brightness-[5] font-semibold">
+              <p style={{
+                color: albumInfo.theme
+              }} className=" md:block hidden brightness-[5] font-semibold">
                 •
               </p>
               {albumInfo.releaseDate ? (
-                <p className=" text-[#3c2428] brightness-[5] font-semibold">
+                <p style={{
+                  color: albumInfo.theme
+                }} className="brightness-[5] font-semibold">
                   {albumInfo.releaseDate.split("-")[0] || ""}
                 </p>
               ) : (
                 <Skeleton className=" w-[40px] h-[20px]" />
               )}
-              <p className=" text-[#3c2428] md:block hidden brightness-[5] font-semibold">
+              <p style={{
+                color: albumInfo.theme
+              }} className=" md:block hidden brightness-[5] font-semibold">
                 •
               </p>
-              {albumInfo.songs ? (
-                <p className=" text-[#3c2428] brightness-[5] font-semibold">
-                  {albumInfo.songs.length} songs
+              {albumInfo.songs.length > 0 ? (
+                <p style={{
+                  color: albumInfo.theme
+                }} className=" brightness-[5] truncate font-semibold">
+                  {albumInfo.songs.length} {albumInfo.songs.length > 1 ? "songs" : "song"}
                 </p>
               ) : (
                 <Skeleton className=" w-[40px] h-[20px]" />
               )}
-              <p className=" text-[#3c2428] md:block hidden brightness-[5] font-semibold">
+              <p style={{
+                color: albumInfo.theme
+              }} className=" md:block hidden brightness-[5] font-semibold">
                 •
               </p>
-              <p className=" text-[#3c2428] md:block hidden brightness-[5] font-semibold">
-                3:45
+              <p style={{
+                color: albumInfo.theme
+              }} className=" md:block hidden brightness-[5] truncate font-semibold">
+                {albumInfo.albumDuration || ""}
               </p>
-              <p className=" text-[#3c2428] md:block hidden brightness-[5] font-semibold">
+              <p style={{
+                color: albumInfo.theme
+              }} className=" md:block hidden brightness-[5] font-semibold">
                 •
               </p>
-              <p className=" text-[#3c2428] md:block hidden brightness-[5] font-semibold">
+              <p style={{
+                color: albumInfo.theme
+              }} className=" md:block hidden truncate brightness-[5] font-semibold">
                 123 320 932
               </p>
             </div>
           </div>
         </div>
       </div>
-      <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 pb-3 max-h-[7rem] bg-gradient-to-t from-black/60 to-black/20">
+      <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/20">
         <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
           <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center">
             <Play
@@ -454,7 +512,7 @@ export default function Album() {
                 sideOffset={10}
                 className="font-medium bg-black/50 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
               >
-                4X4: Shuffle
+                {albumInfo.title}: Shuffle
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -478,18 +536,18 @@ export default function Album() {
           <MoreInfo />
         </div>
       </div>
-      <div className=" w-full h-fit space-y-3 flex flex-col bg-black/60">
+      <div className=" w-full h-full space-y-3 flex flex-col bg-black/60">
         <div
           className={`w-full hidden  md:flex flex-col space-y-2 items-center sticky md:px-7 px-4 top-[6rem] z-10`}
           style={{
-            backgroundColor: scrollY > 300 ? "#3c2428" : "transparent",
+            backgroundColor: scrollY > 300 ? albumInfo.theme : "transparent",
             transition: "background-color 0.3s ease",
           }}
         >
           <div className=" flex w-full text-white/50 py-2 items-center font-medium">
             <div className=" w-full max-w-[65px] text-center">#</div>
             <div className=" w-full">Title</div>
-            <div className=" w-full max-w-[400px] mr-[20px] text-center">
+            <div className=" w-full max-w-[400px] hidden lg:block mr-[20px] text-center">
               Plays
             </div>
             <div className=" w-full max-w-[150px] items-center flex justify-center">
@@ -498,21 +556,26 @@ export default function Album() {
           </div>
           {scrollY < 300 && <Separator className=" bg-white/10" />}
         </div>
-        <div className=" flex flex-col space-y-3 pb-[9rem] md:pb-[7rem] md:px-7 px-2">
-          <SongPreview index={0} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
-          <SongPreview index={1} />
+        <div className=" flex flex-col w-full h-full space-y-3 pb-[9rem] md:pb-[7rem] md:px-7 px-2">
+          {albumInfo.songs.length > 0 ? (
+            albumInfo.songs.map((song: SongInfo, index: number) => (
+              <SongPreview
+                key={index}
+                index={index}
+                title={song.title}
+                artist={artistInfo.name}
+                feats={song.featured_artists}
+                isCover={false}
+                plays={song.plays}
+                duration={song.duration}
+              />
+            ))
+          ) : (
+            <div className=" flex items-center justify-center w-full h-full gap-x-3">
+              <p className=" text-white/50 font-medium md:text-3xl text-2xl">No songs available</p>
+              <Music className=" opacity-50 md:size-[50px] size-[35px]" size={50} />
+            </div>
+          )}
         </div>
       </div>
     </main>
