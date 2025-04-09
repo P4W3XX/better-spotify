@@ -12,7 +12,6 @@ class SongSerializer(serializers.ModelSerializer):
         fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays', 'featured_artists']
         extra_kwargs = {
             'duration': {'read_only': True},
-            'album': {'read_only': True},
         }
 
     def __init__(self, *args, **kwargs):
@@ -25,10 +24,15 @@ class SongSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         featured_artists = validated_data.pop('featured_artists', [])
+
+        artist_to_remove = next(artist for artist in featured_artists if validated_data['album'].artist.id == artist.id)
+        featured_artists.remove(artist_to_remove)
+        
         song = Song.objects.create(duration="0:00", **validated_data)
         song.featured_artists.set(featured_artists)
+        
         audio = MP3(song.file.path)
-        print(audio.info.length)
+        
         song_duration = datetime.timedelta(seconds=audio.info.length)
         song.duration = song_duration
         song.save()
@@ -42,7 +46,7 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'songs', 'theme', 'total_plays']
+        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'theme', 'total_plays', 'songs']
 
 
     def __init__(self, *args, **kwargs):
@@ -52,10 +56,12 @@ class AlbumSerializer(serializers.ModelSerializer):
             self.fields.pop('artist')
             self.fields.pop('songs')
 
+
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
         return SongSerializer(obj.songs, many=True, nested=True, context=self.context, required=False).data
     
+
     @extend_schema_field(serializers.DurationField)
     def get_album_duration(self, obj):
         total_time = datetime.timedelta(0)
@@ -69,9 +75,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
         return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
     
+
     @extend_schema_field(serializers.IntegerField)
     def get_total_plays(self, obj):
-        return [sum(song.plays for song in obj.songs.all())]
+        return sum(song.plays for song in obj.songs.all())
+
 
     def create(self, validated_data):
         try:
@@ -84,6 +92,7 @@ class AlbumSerializer(serializers.ModelSerializer):
         for song_data in songs_data:
             Song.objects.create(album=album, **song_data)
         return album
+    
     
     def update(self, instance, validated_data):
         songs_data = validated_data.pop('songs', None)
@@ -119,9 +128,9 @@ class ArtistSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         album_type = self.context['request'].query_params.get('album_type', None)
         if album_type:
-            albums = instance.albums.filter(album_type=album_type)
+            albums = instance.albums.filter(album_type=album_type).order_by('release_date')
         else:
-            albums = instance.albums.all()
+            albums = instance.albums.all().order_by('release_date')
 
         representation = super().to_representation(instance)
         representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
