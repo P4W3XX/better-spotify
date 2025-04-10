@@ -1,8 +1,74 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Getting Started
 
-First, run the development server:
+```bash
+git clone https://github.com/PAWEXX102/better-spotify.git
+cd better-spotify
+```
+
+## Create and activate a virtual environment
+
+```bash
+cd backend
+python -m venv env
+source env/bin/activate  # Linux/macOS
+env\Scripts\activate     # Windows
+```
+
+## Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## Configure the database
+
+Make a copy of the `.env.example` file and rename it to `.env`
+
+Fill in the required variables:
+
+```bash
+SECRET_KEY=your-actual-django-secret-key
+DEBUG=False
+
+DB_USER=your-db-username
+DB_PASSWORD=your-db-password
+DB_HOST=your-db-host
+DB_PORT=your-db-port
+DB_NAME=your-db-name
+```
+
+`SECRET KEY`: To generate a secure SECRET_KEY for your Django project, run the following inside your activated virtual environment:
+
+```bash
+django-admin shell
+```
+
+Then, in the interactive shell, enter:
+```bash
+from django.core.management.utils import get_random_secret_key  
+get_random_secret_key()
+```
+This will output a new random secret key you can copy and paste into your .env file
+
+Now, get your Supabase credentials and update `.env` file
+
+## Run migrations
+
+```bash
+python manage.py migrate
+```
+
+## Start development server
+
+```bash
+python manage.py runserver
+```
+
+The backend app will be avaible at: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+Now, start the frontend development server:
 
 ```bash
 npm run dev
