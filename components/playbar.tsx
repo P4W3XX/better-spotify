@@ -217,61 +217,13 @@ export default function PlayBar() {
   if (!isMounted) {
     return null;
   }
+
+  if (pathname === "/login" || pathname === "/register") {
+    return null;
+  }
+
   if (isMobile) {
     return (
-      pathname !== "/register" && pathname !== "/login" &&  (
-      <main className=" fixed z-50 bottom-[4rem] w-full right-0 left-0 mx-auto h-[6rem] pb-[.5rem] items-end flex bg-gradient-to-t from-black ">
-        {currentSongDetails.url && (
-          <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
-        )}
-        <div style={{ backgroundColor: currentSongDetails.theme || "black" }} className=" w-[95%] left-0 right-0 items-center justify-between px-[6px] flex mx-auto h-[4rem] rounded-2xl">
-          <div className=" flex items-center justify-start w-full h-full gap-x-2">
-            {currentSongDetails.cover ? (
-              <Image
-                className=" rounded-lg h-[75%] size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-                src={currentSongDetails.cover || "/cover.jpg"}
-                alt="cover"
-                width={100}
-                height={100}
-                priority
-              />
-            ) : (
-              <Image
-                className=" rounded-xl h-[80%] size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-                src="/cover.jpg"
-                alt="cover"
-                width={100}
-                height={100}
-                priority
-              />
-            )}
-            <div className=" w-full overflow-hidden">
-              <div className="overflow-hidden w-full">
-                <div className={`font-semibold text-md ${currentSongDetails.title?.length > 12 ? "whitespace-nowrap animate-marquee" : ""
-                  }`}>
-                  {currentSongDetails.title || "4x4"}
-                </div>
-              </div>
-              <style jsx>{`
-                @keyframes marquee {
-                  0% { transform: translateX(150%); }
-                  10% { transform: translateX(0%); }
-                  90% { transform: translateX(0%); }
-                  100% { transform: translateX(-150%); }
-                }
-                .animate-marquee {
-                  animation: marquee 10s linear infinite;
-                  animation-delay: 1s;
-                  display: inline-block;
-                  width: max-content;
-                }
-                `}</style>
-              <style jsx>{`
-            @keyframes marquee {
-          0% { transform: translateX(100%); }
-          15% { transform: translateX(0%); }
-          85% { transform: translateX(0%); }
-          100% { transform: translateX(-100%); }
       <>
         <div
           className=" w-full h-full pointer-events-none absolute top-0 z-[9999]" />
@@ -406,13 +358,6 @@ export default function PlayBar() {
               />
             </button>
           </div>
-        </div>
-      </main>
-      )
-    );
-  } else {
-    return (
-      pathname !== "/register" && pathname !== "/login" &&  (
           <div className=" w-full flex gap-x-1">
             <Volume className=" text-white opacity-50" />
             <Slider
@@ -525,7 +470,8 @@ export default function PlayBar() {
               </div>
             </div>
             <div className=" flex items-center justify-end w-[20%] gap-x-2 p-2 h-full">
-              <button onClick={() => {
+              <button onClick={(e) => {
+                e.stopPropagation();
                 handlePlay();
               }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
                 {action === "Play" ?
@@ -543,7 +489,6 @@ export default function PlayBar() {
     );
   } else {
     return (
-      pathname !=="/register" && pathname !== "/login" &&(
       <main className=" w-full fixed bottom-0 p-2 justify-between z-[51] border-t items-center flex h-[6rem] bg-black">
         {currentSongDetails.url && (
           <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
@@ -759,7 +704,6 @@ export default function PlayBar() {
           </button>
         </div>
       </main>
-      )
     );
   }
 }
