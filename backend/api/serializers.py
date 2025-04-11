@@ -7,9 +7,10 @@ from drf_spectacular.utils import extend_schema_field
 
 
 class SongSerializer(serializers.ModelSerializer):
+    artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
     class Meta:
         model = Song
-        fields = ['id', 'album', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays', 'featured_artists']
+        fields = ['id', 'album', 'artist', 'title', 'duration', 'file', 'lyrics', 'track_number', 'plays', 'featured_artists']
         extra_kwargs = {
             'duration': {'read_only': True},
         }
