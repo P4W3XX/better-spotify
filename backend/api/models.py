@@ -29,6 +29,7 @@ class Song(models.Model):
     track_number = models.PositiveIntegerField()
     plays = models.PositiveIntegerField(default=0)
     featured_artists = models.ManyToManyField(Artist, related_name='featured_songs', blank=True)
+    is_indecent = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
