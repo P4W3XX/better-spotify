@@ -22,6 +22,7 @@ import { Slider } from "@/components/ui/slider";
 import { useEffect, useState, useRef } from "react";
 import { useCurrentSongStore } from "@/store/current-song";
 import axios from "axios";
+import { usePathname } from "next/navigation";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -35,6 +36,7 @@ export default function PlayBar() {
   const setIsLooped = useCurrentSongStore((state) => state.setIsLooped);
   const [artistName, setArtistName] = useState<string | null>(null);
   const [feats, setFeats] = useState<string[]>([]);
+  const pathname = usePathname();
 
   const [currentSongDetails, setCurrentSongDetails] = useState({
     title: "",
@@ -203,6 +205,7 @@ export default function PlayBar() {
   }
   if (isMobile) {
     return (
+      pathname !== "/register" && pathname !== "/login" &&  (
       <main className=" fixed z-50 bottom-[4rem] w-full right-0 left-0 mx-auto h-[6rem] pb-[.5rem] items-end flex bg-gradient-to-t from-black ">
         {currentSongDetails.url && (
           <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
@@ -288,9 +291,11 @@ export default function PlayBar() {
           </div>
         </div>
       </main>
+      )
     );
   } else {
     return (
+      pathname !== "/register" && pathname !== "/login" &&  (
       <main className=" w-full fixed bottom-0 p-2 justify-between z-[51] border-t items-center flex h-[6rem] bg-black">
         {currentSongDetails.url && (
           <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
@@ -506,6 +511,7 @@ export default function PlayBar() {
           </button>
         </div>
       </main>
+      )
     );
   }
 }
