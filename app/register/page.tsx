@@ -1,14 +1,11 @@
 "use client";
 import React from "react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import Image from "next/image";
 import { LuSmartphone } from "react-icons/lu";
 import { FcGoogle } from "react-icons/fc";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
   return (
     <main
       style={{
@@ -55,7 +52,7 @@ export default function LoginPage() {
           className="relative md:text-lg flex flex-row items-center justify-center font-semibold text-white rounded-4xl cursor-pointer  px-8 py-3 border border-1 border-gray-600 hover:brightness-75 w-[24rem] md:w-[26rem]"
         >
           <FcGoogle className="absolute left-5 md:left-10 items-center w-6 h-6" />
-          <span >//Continue with Google</span>
+          <span >Continue with Google</span>
         </Link>
       </div>  
     </main>
