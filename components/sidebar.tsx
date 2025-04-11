@@ -3,11 +3,13 @@
 import { House, Library, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
+import path from "path";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   return (
+    (pathname !== "/login" && pathname !== "/register") && (
     <main className=" fixed md:relative z-50 bottom-0 md:p-3 md:flex-col md:max-w-[5.5rem] md:min-w-[5.5rem] lg:min-w-[18rem] lg:max-w-[18rem] md:border-r md:h-svh flex items-center justify-between px-10 w-full h-[4rem] bg-gradient-to-t from-black from-30% to-black">
       <div className=" w-full flex md:flex-col gap-y-3 justify-between">
         <button
@@ -92,5 +94,6 @@ export default function Sidebar() {
         </button>
       </div>
     </main>
+    )
   );
 }
