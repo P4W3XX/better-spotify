@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { LuSmartphone } from "react-icons/lu";
 import { FcGoogle } from "react-icons/fc";
@@ -41,7 +42,7 @@ export default function LoginPage() {
         <Link
           href="/login"
           type="submit"
-          className="relative md:text-lg flex flex-row relative justify-center items-center font-semibold text-white rounded-4xl cursor-pointer  px-8 py-3 border border-1 border-gray-600 hover:brightness-75 w-[24rem] md:w-[26rem]"
+          className="relative md:text-lg flex flex-row relative justify-center items-center font-semibold text-white rounded-4xl cursor-pointer  px-8 py-3  border-1 border-gray-600 hover:brightness-75 w-[24rem] md:w-[26rem]"
         >
           <LuSmartphone className="absolute left-5 md:left-10 items-center w-6 h-6" />
           <span>Continue with phone number</span>
@@ -49,7 +50,7 @@ export default function LoginPage() {
         <Link
         href="/login"
           type="submit"
-          className="relative md:text-lg flex flex-row items-center justify-center font-semibold text-white rounded-4xl cursor-pointer  px-8 py-3 border border-1 border-gray-600 hover:brightness-75 w-[24rem] md:w-[26rem]"
+          className="relative md:text-lg flex flex-row items-center justify-center font-semibold text-white rounded-4xl cursor-pointer  px-8 py-3 border-1 border-gray-600 hover:brightness-75 w-[24rem] md:w-[26rem]"
         >
           <FcGoogle className="absolute left-5 md:left-10 items-center w-6 h-6" />
           <span >Continue with Google</span>
