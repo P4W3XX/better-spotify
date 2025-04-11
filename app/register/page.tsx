@@ -7,7 +7,6 @@ import { FcGoogle } from "react-icons/fc";
 import Link from "next/link";
 
 export default function LoginPage() {
-  const router = useRouter();
   return (
     <main
       style={{

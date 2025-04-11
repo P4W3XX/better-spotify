@@ -4,6 +4,7 @@ import {
   ArrowBigLeft,
   ArrowBigRight,
   Maximize,
+  MicVocal,
   Pause,
   Play,
   Repeat,
@@ -22,6 +23,7 @@ import { Slider } from "@/components/ui/slider";
 import { useEffect, useState, useRef } from "react";
 import { useCurrentSongStore } from "@/store/current-song";
 import axios from "axios";
+import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -55,6 +57,7 @@ export default function PlayBar() {
   const [currentTime, setCurrentTime] = useState("0:00");
   const [volumeState, setVolumeState] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -63,6 +66,17 @@ export default function PlayBar() {
       const handleLoadedMetadata = () => {
         setAction("Play");
         audio.currentTime = 0
+        axios.get(`http://127.0.0.1:8000/api/songs/${currentSongID}/`).then((response) => {
+          const updatedPlays = response.data.plays + 1;
+          axios.patch(`http://127.0.0.1:8000/api/songs/${currentSongID}/`, {
+            plays: updatedPlays
+          }).then(() => {
+            console.log("Updated play count:", updatedPlays);
+          });
+        }
+        ).catch((error) => {
+          console.error("Error updating song play count:", error);
+        });
       };
 
       const handleEnded = () => {
@@ -258,35 +272,138 @@ export default function PlayBar() {
           15% { transform: translateX(0%); }
           85% { transform: translateX(0%); }
           100% { transform: translateX(-100%); }
+      <>
+        <div
+          className=" w-full h-full pointer-events-none absolute top-0 z-[9999]" />
+        <motion.main
+          animate={{
+            y: isFullScreen ? 0 : "100%",
+            transition: {
+              ease: "easeInOut",
             }
-            .animate-marquee {
-          animation: marquee 10s linear infinite;
-      
+          }}
+          drag='y'
+          dragDirectionLock
+          dragSnapToOrigin
+          dragMomentum={false}
+          dragConstraints={{
+            top: 0,
+            bottom: 0,
+          }}
+          onDragEnd={(_, info) => {
+            if (info.offset.y < -100) {
+              setIsFullScreen(true);
+            } else if (info.offset.y > 100) {
+              setIsFullScreen(false);
             }
-          `}</style>
-              <p className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline">
-                {artistName || "Travis Scott"}
+          }}
+          dragElastic={{
+            top: 0,
+            bottom: 1,
+          }}
+          style={{
+            backgroundColor: currentSongDetails.theme || "#474747",
+          }} className=" absolute w-full z-[9999] flex-col p-10 flex items-center justify-center h-svh">
+          <div className=" h-1 bg-white/20 w-1/3 rounded-full absolute top-2" />
+          <Image
+            className=" rounded-lg size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+            src={currentSongDetails.cover || "/cover.jpg"}
+            alt="cover"
+            width={600}
+            height={600}
+            priority
+          />
+          <div className=" w-full flex items-center justify-center mt-10">
+            <div className="overflow-hidden w-full">
+              <motion.div initial={{
+                x: 0,
+              }}
+                animate={{
+                  x: currentSongDetails.title?.length > 15 ? ["100%", 0, 0, '-100%'] : 0,
+                  transition: {
+                    times: [0, 0.3, 0.7, 1],
+                    duration: 6,
+                    repeat: currentSongDetails.title?.length > 15 ? Infinity : 0,
+                    ease: "linear",
+                  }
+                }}
+                className={`font-semibold w-full text-xl`}>
+                {currentSongDetails.title || ""}
+              </motion.div>
+              <motion.p initial={{
+                x: 0,
+              }} animate={{
+                x: currentSongDetails.title?.length > 50 ? ["100%", 0, 0, '-100%'] : 0,
+                transition: {
+                  times: [0, 0.3, 0.7, 1],
+                  duration: 6,
+                  repeat: currentSongDetails.title?.length > 50 ? Infinity : 0,
+                  ease: "linear",
+                }
+              }} className={` text-white/50  text-sm w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline`}>
+                {artistName || ""}
                 {feats && feats.length > 0 && (
-                  <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                  <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-sm">
                     {","}
                     {feats.join(", ")}
                   </span>
                 )}
-              </p>
+              </motion.p>
+            </div>
+            <button style={{
+              backgroundColor: currentSongDetails.theme || "#474747",
+              boxShadow: `-10px 0 10px 10px ${currentSongDetails.theme || "rgba(0,0,0,0.5)"}`,
+            }} className=" h-max pl-2 z-10">
+              <CirclePlus className=" text-white md:size-[28px] size-[32px]" />
+            </button>
+          </div>
+          <div className=" w-full mt-5">
+            <Slider
+              className=" w-full "
+              isThumb={true}
+              step={1}
+              defaultValue={[50]}
+              min={0}
+              onValueChange={(value) => {
+                if (audioRef.current) {
+                  audioRef.current.currentTime = value[0];
+                }
+                setCurrentTime(formatSecondsToTime(value[0]));
+              }}
+              max={formatTimeToSeconds(currentSongDetails.duration) || 100}
+              value={[formatTimeToSeconds(currentTime)]}
+            />
+            <div className=" w-full flex items-center justify-between mt-2">
+              <p className=" text-xs text-white/50 font-medium">{
+                formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"
+              }</p>
+              <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
             </div>
           </div>
-          <div className=" flex items-center justify-end w-[20%] gap-x-2 p-2 h-full">
+          <div className=" flex items-center justify-center w-full gap-x-5 my-14">
+            <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+              <ArrowBigLeft
+                fill="white"
+                className=" text-white md:size-[28px] opacity-40 size-[60px]"
+              />
+            </button>
             <button onClick={() => {
               handlePlay();
             }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
               {action === "Play" ?
-                <Pause fill="white" size={30} className=" text-white" /> :
+                <Pause fill="white" className=" text-white md:size-[36px] size-[70px]" /> :
                 <Play
                   fill="white"
-                  size={30}
-                  className=" text-white"
+                  className=" text-white md:size-[36px] size-[70px]"
                 />
               }
+            </button>
+            <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+
+              <ArrowBigRight
+                fill="white"
+                className=" text-white md:size-[40px] opacity-40 size-[60px]"
+              />
             </button>
           </div>
         </div>
@@ -296,6 +413,137 @@ export default function PlayBar() {
   } else {
     return (
       pathname !== "/register" && pathname !== "/login" &&  (
+          <div className=" w-full flex gap-x-1">
+            <Volume className=" text-white opacity-50" />
+            <Slider
+              defaultValue={[50]}
+              step={1}
+              min={0}
+              max={100}
+              value={[volumeState]}
+              onValueChange={(value) => {
+                if (audioRef.current) {
+                  audioRef.current.volume = value[0] / 100;
+                  setVolumeState(value[0]);
+                }
+              }
+              }
+              isThumb={false}
+            />
+            <Volume2 className=" text-white opacity-50 ml-2" />
+          </div>
+          <div className=" w-full flex items-center absolute bottom-7 justify-between px-20">
+            <button>
+              <MicVocal size={25} className=" text-white opacity-40" />
+            </button>
+            <button>
+              <Shuffle size={25} className=" text-white opacity-40" />
+            </button>
+            <button onClick={() => {
+              if (isLooped === "false") {
+                setIsLooped("all");
+              } else if (isLooped === "all") {
+                setIsLooped("one");
+              } else if (isLooped === "one") {
+                setIsLooped("false");
+              }
+            }}>
+              {isLooped === "false" ?
+                <Repeat size={25} className={` text-white opacity-40`} /> :
+                (isLooped === "all" ?
+                  <Repeat size={25} className={` text-white`} /> :
+                  <Repeat1 size={25} className={` text-white`} />)
+              }
+            </button>
+          </div>
+        </motion.main >
+        <main className=" fixed z-50 bottom-[4rem] w-full right-0 left-0 mx-auto h-[6rem] pb-[.5rem] items-end flex bg-gradient-to-t from-black ">
+          {currentSongDetails.url && (
+            <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
+          )}
+          <div onClick={() => {
+            setIsFullScreen(!isFullScreen);
+          }} style={{ backgroundColor: currentSongDetails.theme || "#474747" }} className=" w-[95%] left-0 right-0 items-center justify-between px-[6px] flex mx-auto h-[4rem] rounded-2xl">
+            <div className=" flex items-center justify-start w-full h-full gap-x-2">
+              {currentSongDetails.cover ? (
+                <Image
+                  className=" rounded-lg h-[75%] size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+                  src={currentSongDetails.cover || "/cover.jpg"}
+                  alt="cover"
+                  width={100}
+                  height={100}
+                  priority
+                />
+              ) : (
+                <Image
+                  className=" rounded-xl h-[80%] size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+                  src="/albumPlaceholder.svg"
+                  alt="cover"
+                  width={100}
+                  height={100}
+                  priority
+                />
+              )}
+              <div className=" w-full overflow-hidden">
+                <div className="overflow-hidden w-full">
+                  <motion.div initial={{
+                    x: 0,
+                  }}
+                    animate={{
+                      x: currentSongDetails.title?.length > 50 ? ["100%", 0, 0, '-100%'] : 0,
+                      transition: {
+                        times: [0, 0.3, 0.7, 1],
+                        duration: 6,
+                        repeat: currentSongDetails.title?.length > 50 ? Infinity : 0,
+                        ease: "linear",
+                      }
+                    }}
+                    className={`font-semibold w-full text-md`}>
+                    {currentSongDetails.title || ""}
+                  </motion.div>
+                </div>
+
+                <motion.p initial={{
+                  x: 0,
+                }} animate={{
+                  x: currentSongDetails.title?.length > 50 ? ["100%", 0, 0, '-100%'] : 0,
+                  transition: {
+                    times: [0, 0.3, 0.7, 1],
+                    duration: 6,
+                    repeat: currentSongDetails.title?.length > 50 ? Infinity : 0,
+                    ease: "linear",
+                  }
+                }} className={` text-white/50  text-xs w-full cursor-pointer group-hover:text-white transition-colors font-medium hover:underline`}>
+                  {artistName || ""}
+                  {feats && feats.length > 0 && (
+                    <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                      {","}
+                      {feats.join(", ")}
+                    </span>
+                  )}
+                </motion.p>
+              </div>
+            </div>
+            <div className=" flex items-center justify-end w-[20%] gap-x-2 p-2 h-full">
+              <button onClick={() => {
+                handlePlay();
+              }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                {action === "Play" ?
+                  <Pause fill="white" size={30} className=" text-white" /> :
+                  <Play
+                    size={30}
+                    className={` ${currentSongDetails.url ? " opacity-100 cursor-pointer" : " opacity-50 cursor-default"} text-white fill-white`}
+                  />
+                }
+              </button>
+            </div>
+          </div>
+        </main>
+      </>
+    );
+  } else {
+    return (
+      pathname !=="/register" && pathname !== "/login" &&(
       <main className=" w-full fixed bottom-0 p-2 justify-between z-[51] border-t items-center flex h-[6rem] bg-black">
         {currentSongDetails.url && (
           <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
