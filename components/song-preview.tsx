@@ -1,15 +1,16 @@
 "use client";
 
-import { CirclePlus, Ellipsis, Play } from "lucide-react";
+import { CirclePlus, Ellipsis, Pause, Play } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useCurrentSongStore } from "@/store/current-song";
+import { motion } from "framer-motion";
 
-/*
 const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
   if (!isPlaying) return null;
   return (
-    <div className=" flex space-x-1 items-center justify-center">
+    <div className=" flex space-x-1 group-hover:hidden items-center justify-center">
       <motion.div
         initial={{ scaleY: 0.4 }}
         animate={{
@@ -53,12 +54,15 @@ const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
     </div>
   );
 };
-*/
 
-export const SongPreview = ({ index, title, artist, feats, plays, duration, isCover }: { index: number, title: string, artist: string, feats: string[], plays: number, duration: string, isCover: boolean }) => {
+export const SongPreview = ({ index, title, artist, feats, plays, duration, isCover, id }: { index: number, title: string, artist: string, feats: string[], plays: number, duration: string, isCover: boolean, id: string }) => {
 
   const [songCover, setSongCover] = useState<string | null>(null);
   const [featsState, setFeatsState] = useState<Array<string> | null>(null);
+  const setCurrentSongID = useCurrentSongStore((state) => state.setCurrentSongID);
+  const currentSongID = useCurrentSongStore((state) => state.currentSongID);
+  const setAction = useCurrentSongStore((state) => state.setAction);
+  const action = useCurrentSongStore((state) => state.action);
 
   useEffect(() => {
     if (isCover) {
@@ -86,16 +90,42 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
     fetchFeats();
   }, [feats]);
   return (
-    <div className="w-full flex hover:bg-white/5 transition-colors cursor-pointer group items-center rounded-xl md:py-3 py-2 px-2 md:px-0">
+    <div onClick={() => {
+      setCurrentSongID(id.toString());
+    }} className="w-full flex hover:bg-white/5 transition-colors cursor-pointer group items-center rounded-xl md:py-3 py-2 px-2 md:px-0">
       <div className={`w-full hidden md:block ${isCover ? 'max-w-[40px]' : 'max-w-[65px]'} text-center text-lg font-medium`}>
-        <span className=" group-hover:hidden">
+        {currentSongID === id.toString() && (
+          <PlayAnimation isPlaying={action === "Play"} />
+        )}
+        <span className={` group-hover:hidden ${currentSongID === id.toString() ? 'hidden' : 'block'}`}>
           {index + 1}
         </span>
-        <button className=" hover:scale-105 w-full hidden group-hover:flex active:scale-95 transition-all cursor-pointer rounded-full items-center justify-center">
-          <Play
-            className=" text-white md:size-[24px] size-[20px]"
-            fill="white"
-          />
+        <button onClick={() => {
+          setCurrentSongID(id.toString());
+          if (currentSongID === id.toString()) {
+            if (action === "Play") {
+              setAction("Pause");
+            } else {
+              setAction("Play");
+            }
+          } else {
+            setAction("Play");
+          }
+        }} className={` hover:scale-105 w-full group-hover:flex active:scale-95 transition-all ${currentSongID === id.toString() && action === "Pause" ? 'flex' : 'hidden'} cursor-pointer rounded-full items-center justify-center`}>
+          {currentSongID === id.toString() ? (
+            action === "Play" ? (
+              <Pause className=" text-white md:size-[24px] size-[20px]"
+                fill="white" />
+            ) : (
+              <Play className=" text-white md:size-[24px] size-[20px]"
+                fill="white" />
+            )
+          ) : (
+            <Play
+              className=" text-white md:size-[24px] size-[20px]"
+              fill="white"
+            />
+          )}
         </button>
       </div>
       {songCover && (

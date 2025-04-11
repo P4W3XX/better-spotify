@@ -7,6 +7,7 @@ import {
   Ellipsis,
   ListMusic,
   Music,
+  Pause,
   Play,
   Plus,
   Share,
@@ -50,6 +51,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAlbumCoverStore } from "@/store/album-cover";
 import axios from "axios";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCurrentSongStore } from "@/store/current-song";
 
 const TopBar = ({
   handleRef,
@@ -293,7 +295,7 @@ interface AlbumInfo {
   releaseDate: string;
   theme: string;
   albumDuration: string;
-  songs: [];
+  songs: SongInfo[];
 }
 
 interface SongInfo {
@@ -304,6 +306,7 @@ interface SongInfo {
   plays: number;
   featured_artists: string[];
   isCover: boolean;
+  id: string;
 }
 
 interface ArtistInfo {
@@ -319,6 +322,11 @@ export default function Album() {
   const router = useRouter();
   const setAlbumCover = useAlbumCoverStore((state) => state.setAlbumCover);
   const albumCover = useAlbumCoverStore((state) => state.albumCover);
+  const setCurrentSongID = useCurrentSongStore(
+    (state) => state.setCurrentSongID);
+  const currentSongID = useCurrentSongStore((state) => state.currentSongID);
+  const action = useCurrentSongStore((state) => state.action);
+  const setAction = useCurrentSongStore((state) => state.setAction);
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo>({
     title: "",
     artist: "",
@@ -386,7 +394,7 @@ export default function Album() {
         <ArrowLeft className="size-[2rem]" />
       </button>
       <TopBar handleRef={handleRef} setScrollY2={setScrollY} title={albumInfo.title} artist={artistInfo.name} cover={albumInfo.cover} theme={albumInfo.theme} />
-      <div className=" md:p-7 p-4 pt-16 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
+      <div className=" md:p-7 px-4 pt-16 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
         <div className=" w-full h-full left-0 bg-gradient-to-t from-black/20 top-0 absolute" />
         {albumInfo.cover ? (
           <Image
@@ -495,11 +503,30 @@ export default function Album() {
       </div>
       <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/20">
         <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
-          <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center">
-            <Play
-              className=" text-black md:size-[24px] size-[20px]"
-              fill="black"
-            />
+          <button onClick={() => {
+            if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
+              if (currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID)) {
+                if (action === "Play") {
+                  setAction("Pause");
+                } else {
+                  setAction("Play");
+                }
+              }
+              else {
+                setCurrentSongID(albumInfo.songs[0].id.toString());
+                setAction("Play");
+              }
+            }
+          }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center">
+            {currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID) ? (
+              action === "Play" ? (
+                <Pause className="text-black md:size-[24px] size-[20px]" fill="black" />
+              ) : (
+                <Play className="text-black md:size-[24px] size-[20px]" fill="black" />
+              )
+            ) : (
+              <Play className="text-black md:size-[24px] size-[20px]" fill="black" />
+            )}
           </button>
           <TooltipProvider>
             <Tooltip>
@@ -566,6 +593,7 @@ export default function Album() {
                 artist={artistInfo.name}
                 feats={song.featured_artists}
                 isCover={false}
+                id={song.id}
                 plays={song.plays}
                 duration={song.duration}
               />
