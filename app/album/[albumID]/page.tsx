@@ -295,6 +295,7 @@ interface AlbumInfo {
   releaseDate: string;
   theme: string;
   albumDuration: string;
+  totalPlays: number;
   songs: SongInfo[];
 }
 
@@ -335,6 +336,7 @@ export default function Album() {
     releaseDate: "",
     albumDuration: "",
     theme: "",
+    totalPlays: 0,
     songs: [],
   });
 
@@ -342,6 +344,29 @@ export default function Album() {
     name: "",
     cover: "",
   });
+
+  const formatTimeToSeconds = (timeString: string): number => {
+    if (!timeString) return 0;
+
+    const parts = timeString.split(':').map(part => parseInt(part, 10));
+
+    if (parts.length === 3) {
+      const [hours, minutes, seconds] = parts;
+      return (hours * 3600) + (minutes * 60) + seconds;
+    } else if (parts.length === 2) {
+      const [minutes, seconds] = parts;
+      return (minutes * 60) + seconds;
+    }
+
+    return 0;
+  };
+
+  const formatSecondsToTime = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours > 0 ? `${hours}:` : ''}${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
 
   useEffect(() => {
     const fetchAlbumInfo = async () => {
@@ -358,6 +383,7 @@ export default function Album() {
           theme: resp.data.theme,
           albumDuration: resp.data.album_duration,
           releaseDate: resp.data.release_date,
+          totalPlays: resp.data.total_plays,
           songs: resp.data.songs,
         });
 
@@ -482,11 +508,15 @@ export default function Album() {
               }} className=" md:block hidden brightness-[5] font-semibold">
                 •
               </p>
-              <p style={{
-                color: albumInfo.theme
-              }} className=" md:block hidden brightness-[5] truncate font-semibold">
-                {albumInfo.albumDuration || ""}
-              </p>
+              {albumInfo.albumDuration ? (
+                <p style={{
+                  color: albumInfo.theme
+                }} className=" md:block hidden brightness-[5] truncate font-semibold">
+                  {formatSecondsToTime(formatTimeToSeconds(albumInfo.albumDuration))}
+                </p>
+              ) : (
+                <Skeleton className=" w-[40px] h-[20px]" />
+              )}
               <p style={{
                 color: albumInfo.theme
               }} className=" md:block hidden brightness-[5] font-semibold">
@@ -495,7 +525,7 @@ export default function Album() {
               <p style={{
                 color: albumInfo.theme
               }} className=" md:block hidden truncate brightness-[5] font-semibold">
-                123 320 932
+                {albumInfo.totalPlays.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")}
               </p>
             </div>
           </div>

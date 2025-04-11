@@ -33,6 +33,8 @@ export default function PlayBar() {
   const action = useCurrentSongStore((state) => state.action);
   const isLooped = useCurrentSongStore((state) => state.isLooped);
   const setIsLooped = useCurrentSongStore((state) => state.setIsLooped);
+  const [artistName, setArtistName] = useState<string | null>(null);
+  const [feats, setFeats] = useState<string[]>([]);
 
   const [currentSongDetails, setCurrentSongDetails] = useState({
     title: "",
@@ -41,6 +43,7 @@ export default function PlayBar() {
     albumID: "",
     url: "",
     cover: "",
+    feats: [],
     theme: "",
   });
 
@@ -156,11 +159,37 @@ export default function PlayBar() {
           if (album) {
             axios.get(`http://127.0.0.1:8000/api/albums/${album}`)
               .then((albumResponse) => {
-                setCurrentSongDetails({ title, artist, duration, cover: albumResponse.data.image, albumID: album, theme: albumResponse.data.theme, url: file });
+                setCurrentSongDetails({ title, artist, duration, cover: albumResponse.data.image, albumID: album, theme: albumResponse.data.theme, url: file, feats: albumResponse.data.featured_artists });
               })
               .catch((error) => {
                 console.error("Error fetching album cover:", error);
               });
+            axios.get(`http://127.0.0.1:8000/api/artists/${artist}`)
+              .then((artistResponse) => {
+                setArtistName(artistResponse.data.name);
+              })
+              .catch((error) => {
+                console.error("Error fetching artist name:", error);
+              });
+          }
+
+          if (response.data.featured_artists) {
+            console.log("Featured artists:", response.data.featured_artists);
+            const fetchFeaturedArtists = async () => {
+              const featuredArtists = await Promise.all(
+                response.data.featured_artists.map((artistID: string) =>
+                  axios.get(`http://127.0.0.1:8000/api/artists/${artistID}`)
+                    .then((res) => res.data.name)
+                    .catch((error) => {
+                      console.error("Error fetching featured artist:", error);
+                      return null; // Handle error case
+                    })
+                )
+              );
+              console.log("Featured artists:", featuredArtists);
+              setFeats(featuredArtists);
+            };
+            fetchFeaturedArtists();
           }
         })
         .catch((error) => {
@@ -232,8 +261,14 @@ export default function PlayBar() {
       
             }
           `}</style>
-              <p className=" text-white/50 text-[10px] w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline">
-                {currentSongDetails.artist || "Travis Scott"}
+              <p className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline">
+                {artistName || "Travis Scott"}
+                {feats && feats.length > 0 && (
+                  <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                    {","}
+                    {feats.join(", ")}
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -283,7 +318,13 @@ export default function PlayBar() {
           <div>
             <h1 className=" font-semibold text-lg">{currentSongDetails.title || "Murzyn"}</h1>
             <p className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline">
-              {currentSongDetails.artist || "Travis Scott"}
+              {artistName || "Travis Scott"}
+              {feats && feats.length > 0 && (
+                <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                  {","}
+                  {feats.join(", ")}
+                </span>
+              )}
             </p>
           </div>
           <TooltipProvider>
