@@ -166,7 +166,12 @@ class ArtistSerializer(serializers.ModelSerializer):
         return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
     
     def to_representation(self, instance):
-        album_type = self.context['request'].query_params.get('album_type', None)
+        # album_type = self.context['request'].query_params.get('album_type', None)
+        
+        album_type = None
+        if 'request' in self.context and hasattr(self.context['request'], 'query_params'):
+            album_type = self.context['request'].query_params.get('album_type', None)
+
         if album_type:
             albums = instance.albums.filter(album_type=album_type).order_by('release_date')
         else:
