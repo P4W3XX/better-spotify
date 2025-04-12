@@ -1,9 +1,11 @@
-from rest_framework import generics, filters, viewsets
+from rest_framework import filters, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db.models.functions import Greatest
 from .models import Artist, Album, Song
 from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer
 from .filters import ArtistFilter, AlbumFilter, SongFilter
@@ -16,7 +18,6 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
         OpenApiParameter('album_type', type=str, description='Filters by album type (album, single, ep) in specific artist'),
     ]
 )
-
 class ArtistViewSet(viewsets.ModelViewSet):
     queryset = Artist.objects.prefetch_related('albums')
     serializer_class = ArtistSerializer
@@ -57,6 +58,11 @@ class SmallResultsSetPagination(PageNumberPagination):
     page_size = 5
     page_query_param = 'page'
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter('q', type=str, description='Search query'),
+    ]
+)
 class SearchView(APIView):
     def get(self, request, *args, **kwargs):
         query = request.query_params.get('q', '').strip()
@@ -65,34 +71,75 @@ class SearchView(APIView):
 
         paginator = SmallResultsSetPagination()
 
-        songs = Song.objects.filter(
+        # songs = Song.objects.filter(
+        #     Q(title__icontains=query) |
+        #     Q(album__title__icontains=query) |
+        #     Q(album__artist__name__icontains=query)
+        # )
+        songs = Song.objects.annotate(
+            similarity=Greatest(
+                TrigramSimilarity('title', query),
+                TrigramSimilarity('title', query.lower()),
+                TrigramSimilarity('album__title', query),
+                TrigramSimilarity('album__title', query.lower()),
+                TrigramSimilarity('album__artist__name', query),
+                TrigramSimilarity('album__artist__name', query.lower())
+            )
+        ).filter(
             Q(title__icontains=query) |
             Q(album__title__icontains=query) |
-            Q(album__artist__name__icontains=query)
-        )
+            Q(album__artist__name__icontains=query) | Q(similarity__gt=0.2)
+        ).order_by('-similarity')
 
-        albums = Album.objects.filter(title__icontains=query)
-        artists = Artist.objects.filter(name__icontains=query)
+        # albums = Album.objects.filter(
+        #     Q(title__icontains=query) |
+        #     Q(artist__name__icontains=query)
+        # )
+        albums = Album.objects.annotate(
+            similarity=Greatest(
+                TrigramSimilarity('title', query),
+                TrigramSimilarity('title', query.lower()),
+                TrigramSimilarity('artist__name', query),
+                TrigramSimilarity('artist__name', query.lower())
+            )
+        ).filter(
+            Q(title__icontains=query) |
+            Q(artist__name__icontains=query) | Q(similarity__gt=0.2)
+        ).order_by('-similarity')
+
+
+        # artists = Artist.objects.filter(name__icontains=query)
+        artists = Artist.objects.annotate(
+            similarity=Greatest(
+                TrigramSimilarity('name', query),
+                TrigramSimilarity('name', query.lower())
+            )
+        ).filter(
+            Q(name__icontains=query) | Q(similarity__gt=0.2)
+        ).order_by('-similarity')
 
         combined_results = list(songs) + list(albums) + list(artists)
-        combined_results = sorted(combined_results, key=lambda x: self.get_relevance(x, query), reverse=True)
+        combined_results = sorted(combined_results, key=lambda x: self.get_relevance(x, query), reverse=False)
+        combined_results.reverse()
 
         paginated_results = paginator.paginate_queryset(combined_results, request)
 
         results = []
         for obj in paginated_results:
             if isinstance(obj, Song):
-                result_data = SongSerializer(obj).data
+                result_data = SongSerializer(obj, context={'request': request}).data
                 result_data['type'] = 'song'
                 results.append(result_data)
             elif isinstance(obj, Album):
-                result_data = AlbumSerializer(obj).data
+                result_data = AlbumSerializer(obj, context={'request': request}).data
                 result_data['type'] = 'album'
                 results.append(result_data)
+                result_data.pop('songs', None)
             elif isinstance(obj, Artist):
-                result_data = ArtistSerializer(obj).data
+                result_data = ArtistSerializer(obj, context={'request': request}).data
                 result_data['type'] = 'artist'
                 results.append(result_data)
+                result_data.pop('albums', None)
 
         return paginator.get_paginated_response(results)
 
