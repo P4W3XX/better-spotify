@@ -1,9 +1,11 @@
-import datetime
-from mutagen.mp3 import MP3
 from django.db.models import Sum
 from rest_framework import serializers
 from .models import Artist, Album, Song
 from drf_spectacular.utils import extend_schema_field
+from mutagen.mp3 import MP3
+import datetime
+import os
+import math
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -13,7 +15,7 @@ class SongSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'album', 'artist', 'title', 'duration', 
             'file', 'lyrics', 'track_number', 'plays', 
-            'featured_artists', 'is_indecent'
+            'is_indecent', 'featured_artists'
         ]
         extra_kwargs = {
             'duration': {'read_only': True},
@@ -30,19 +32,48 @@ class SongSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         featured_artists = validated_data.pop('featured_artists', [])
 
-        artist_to_remove = next(artist for artist in featured_artists if validated_data['album'].artist.id == artist.id)
-        featured_artists.remove(artist_to_remove)
-        
+        try:
+            artist_to_remove = next(artist for artist in featured_artists if validated_data['album'].artist.id == artist.id)
+            featured_artists.remove(artist_to_remove)
+        except StopIteration:
+            pass
+
         song = Song.objects.create(duration="0:00", **validated_data)
         song.featured_artists.set(featured_artists)
         
         audio = MP3(song.file.path)
         
-        song_duration = datetime.timedelta(seconds=audio.info.length)
+        song_duration = datetime.timedelta(seconds=round(audio.info.length))
         song.duration = song_duration
         song.save()
 
         return song
+    
+    def update(self, instance, validated_data):
+        featured_artists = validated_data.pop('featured_artists', None)
+        file = validated_data.get('file', None)
+        instance.file = file if file else instance.file
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if featured_artists is not None:
+            artist_to_remove = next((artist for artist in featured_artists if instance.album.artist.id == artist.id), None)
+
+            if artist_to_remove:
+                featured_artists.remove(artist_to_remove)
+            instance.featured_artists.set(featured_artists)
+
+        if file:
+            instance.save(update_fields=['file'])
+
+            if os.path.exists(instance.file.path):
+                audio = MP3(instance.file.path)
+                song_duration = datetime.timedelta(seconds=round(audio.info.length))
+                instance.duration = song_duration
+
+        instance.save()
+        return instance
 
 class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
@@ -51,7 +82,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'theme', 'total_plays', 'songs']
+        fields = [
+            'id', 'title', 'album_type', 'artist', 'image', 
+            'release_date', 'album_duration', 'theme', 
+            'total_plays', 'songs'
+        ]
 
 
     def __init__(self, *args, **kwargs):
@@ -131,7 +166,12 @@ class ArtistSerializer(serializers.ModelSerializer):
         return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
     
     def to_representation(self, instance):
-        album_type = self.context['request'].query_params.get('album_type', None)
+        # album_type = self.context['request'].query_params.get('album_type', None)
+        
+        album_type = None
+        if 'request' in self.context and hasattr(self.context['request'], 'query_params'):
+            album_type = self.context['request'].query_params.get('album_type', None)
+
         if album_type:
             albums = instance.albums.filter(album_type=album_type).order_by('release_date')
         else:
