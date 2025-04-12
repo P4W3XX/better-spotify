@@ -15,7 +15,7 @@ class SongSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'album', 'artist', 'title', 'duration', 
             'file', 'lyrics', 'track_number', 'plays', 
-            'featured_artists', 'is_indecent'
+            'is_indecent', 'featured_artists'
         ]
         extra_kwargs = {
             'duration': {'read_only': True},
@@ -82,7 +82,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Album
-        fields = ['id', 'title', 'album_type', 'artist', 'image', 'release_date', 'album_duration', 'theme', 'total_plays', 'songs']
+        fields = [
+            'id', 'title', 'album_type', 'artist', 'image', 
+            'release_date', 'album_duration', 'theme', 
+            'total_plays', 'songs'
+        ]
 
 
     def __init__(self, *args, **kwargs):

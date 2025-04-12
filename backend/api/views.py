@@ -1,4 +1,4 @@
-from rest_framework import generics, filters
+from rest_framework import generics, filters, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Artist, Album, Song
 from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer
@@ -13,7 +13,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
     ]
 )
 
-class ArtistListView(generics.ListCreateAPIView):
+class ArtistViewSet(viewsets.ModelViewSet):
     queryset = Artist.objects.prefetch_related('albums')
     serializer_class = ArtistSerializer
     filterset_class = ArtistFilter
@@ -25,11 +25,7 @@ class ArtistListView(generics.ListCreateAPIView):
     search_fields = ['name', 'albums__title']
     ordering_fields = ['name', 'albums__title']
 
-class ArtistDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Artist.objects.prefetch_related('albums')
-    serializer_class = ArtistSerializer
-
-class AlbumListView(generics.ListCreateAPIView):
+class AlbumViewSet(viewsets.ModelViewSet):
     queryset = Album.objects.prefetch_related('artist', 'songs')
     serializer_class = AlbumSerializer
     filterset_class = AlbumFilter
@@ -41,13 +37,7 @@ class AlbumListView(generics.ListCreateAPIView):
     search_fields = ['title', 'artist__name', 'release_date']
     ordering_fields = ['title', 'artist__name', 'release_date']
     
-
-class AlbumDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Album.objects.prefetch_related('artist', 'songs')
-    serializer_class = AlbumSerializer
-
-
-class SongListView(generics.ListCreateAPIView):
+class SongViewSet(viewsets.ModelViewSet):
     queryset = Song.objects.all()
     serializer_class = SongSerializer
     filterset_class = SongFilter
@@ -58,7 +48,3 @@ class SongListView(generics.ListCreateAPIView):
     ]
     search_fields = ['title', 'album__title', 'album__artist__name', 'album__release_date']
     ordering_fields = ['title', 'album__title', 'album__artist__name', 'album__release_date']
-
-class SongDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Song.objects.all()
-    serializer_class = SongSerializer
