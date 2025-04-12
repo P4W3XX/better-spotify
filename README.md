@@ -54,6 +54,31 @@ This will output a new random secret key you can copy and paste into your .env f
 
 Now, get your Supabase credentials and update `.env` file
 
+`DB_USER`	Your database username
+
+`DB_PASSWORD`	Your database password
+
+`DB_HOST`	Hostname of your database (no https://, just the domain)
+
+`DB_PORT`	The port used for PostgreSQL connections
+
+`DB_NAME`	The name of your Supabase database
+
+# Enable Trigram Extension for Fuzzy Search
+To support fuzzy search (e.g., typo-tolerant queries using TrigramSimilarity), you need to enable the PostgreSQL pg_trgm extension in your Supabase database.
+
+1. Go to your Supabase dashboard.
+
+2. Select your project.
+
+3. Navigate to the SQL Editor tab.
+
+4. Run the following SQL command:
+
+```bash
+CREATE EXTENSION pg_trgm;
+```
+
 ## Run migrations
 
 ```bash
