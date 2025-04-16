@@ -1,10 +1,6 @@
 import type { NextConfig } from "next";
-import {
-  PHASE_DEVELOPMENT_SERVER,
-  PHASE_PRODUCTION_BUILD,
-} from "next/constants";
 
-module.exports = async (phase: string): Promise<NextConfig> => {
+module.exports = async (): Promise<NextConfig> => {
   // Your current or future configuration
 
   const nextConfig: NextConfig = {
@@ -30,7 +26,7 @@ module.exports = async (phase: string): Promise<NextConfig> => {
     },
   };
 
-  if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
+  if (process.env.NODE_ENV === "production") {
     const withSerwist = (await import("@serwist/next")).default({
       swSrc: "public/service-worker/app-worker.ts",
       swDest: "public/sw.js",
