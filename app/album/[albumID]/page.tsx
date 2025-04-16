@@ -444,7 +444,7 @@ export default function Album() {
             <Skeleton className=" w-1/2 h-[20px]" />
           )}
           {albumInfo.title ? (
-            <h1 className=" md:text-8xl text-4xl font-semibold">
+            <h1 className=" md:text-8xl text-4xl truncate w-full font-semibold">
               {albumInfo.title || ""}
             </h1>
           ) : (

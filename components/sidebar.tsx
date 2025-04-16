@@ -10,7 +10,7 @@ export default function Sidebar() {
 
   if (pathname === "/login" || pathname === '/register') return null;
   return (
-    <main className=" fixed md:relative z-50 bottom-0 md:p-3 md:flex-col md:max-w-[5.5rem] md:min-w-[5.5rem] lg:min-w-[18rem] lg:max-w-[18rem] md:border-r md:h-svh flex items-center justify-between px-10 w-full h-[4rem] bg-gradient-to-t from-black from-30% to-black">
+    <main className=" fixed md:relative z-50 bottom-0 md:p-3 md:flex-col md:max-w-[5rem] md:min-w-[5rem] lg:min-w-[18rem] lg:max-w-[18rem] md:border-r md:h-svh flex items-center justify-between px-10 w-full h-[4rem] bg-gradient-to-t from-black from-30% to-black">
       <div className=" w-full flex md:flex-col gap-y-3 justify-between">
         <button
           onClick={() => {
@@ -74,9 +74,9 @@ export default function Sidebar() {
             router.push("/profile");
           }}
           className={` ${pathname === "/profile" ? "text-white" : " text-neutral-500"
-            } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/10 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-3 md:justify-start`}
+            } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/10 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-2.5 md:justify-start`}
         >
-          <div className=" size-[2.2rem] bg-zinc-800 text-sm rounded-full flex items-center justify-center font-semibold">
+          <div className=" size-[2.2rem] min-w-[2.2rem] bg-zinc-800 text-sm rounded-full flex items-center justify-center font-semibold">
             <p>PS</p>
           </div>
           <p

@@ -2,9 +2,22 @@
 const nextConfig = {
   devIndicators: false,
   images: {
-    domains: ["127.0.0.1", "localhost"],
-    // Add your production domain here too when deploying
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
+      {
+        protocol: "https",
+        hostname: "better-spotify-vert.vercel.app",
+      },
+    ],
   },
+
   async rewrites() {
     return [
       {
