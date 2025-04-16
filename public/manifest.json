@@ -1,0 +1,27 @@
+{
+  "theme_color": "#8936FF",
+  "background_color": "#2EC6FE",
+  "icons": [
+    {
+      "purpose": "maskable",
+      "sizes": "512x512",
+      "src": "icon512_maskable.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "512x512",
+      "src": "icon512_rounded.png",
+      "type": "image/png"
+    }
+  ],
+  "orientation": "any",
+  "display": "standalone",
+  "dir": "auto",
+  "lang": "en",
+  "name": "Music",
+  "short_name": "Music",
+  "start_url": "https://better-spotify-vert.vercel.app/",
+  "scope": "https://better-spotify-vert.vercel.app/",
+  "id": "https://better-spotify-vert.vercel.app/"
+}

@@ -1,31 +1,43 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  devIndicators: false,
-  images: {
-    remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
-      },
-      {
-        protocol: "https",
-        hostname: "better-spotify-vert.vercel.app",
-      },
-    ],
-  },
+import type { NextConfig } from "next";
+import {
+  PHASE_DEVELOPMENT_SERVER,
+  PHASE_PRODUCTION_BUILD,
+} from "next/constants";
 
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://127.0.0.1:8000/api/:path*",
-      },
-    ];
-  },
+module.exports = async (phase: string): Promise<NextConfig> => {
+  // Your current or future configuration
+
+  const nextConfig: NextConfig = {
+    devIndicators: false,
+    images: {
+      remotePatterns: [
+        {
+          protocol: "http" as const,
+          hostname: "127.0.0.1",
+          pathname: "**",
+        },
+        {
+          protocol: "http" as const,
+          hostname: "localhost",
+          pathname: "**",
+        },
+        {
+          protocol: "https" as const,
+          hostname: "better-spotify-vert.vercel.app",
+          pathname: "**",
+        },
+      ],
+    },
+  };
+
+  if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
+    const withSerwist = (await import("@serwist/next")).default({
+      swSrc: "public/service-worker/app-worker.ts",
+      swDest: "public/sw.js",
+      reloadOnOnline: true,
+    });
+    return withSerwist(nextConfig);
+  }
+
+  return nextConfig;
 };
-
-module.exports = nextConfig;
