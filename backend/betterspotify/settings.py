@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'api.apps.ApiConfig',
+    'accounts.apps.AccountsConfig',
 
     'django_extensions',
     'rest_framework',
@@ -161,3 +162,5 @@ SPECTACULAR_SETTINGS = {
     #     'deepLinking': True,
     # }
 }
+
+AUTH_USER_MODEL = 'api.CustomUser'

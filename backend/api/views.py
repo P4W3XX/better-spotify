@@ -1,4 +1,4 @@
-from rest_framework import filters, viewsets
+from rest_framework import filters, viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q
@@ -6,7 +6,7 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
-from .models import Artist, Album, Song
+from .models import CustomUser, Album, Song
 from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer
 from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -19,7 +19,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
     ]
 )
 class ArtistViewSet(viewsets.ModelViewSet):
-    queryset = Artist.objects.prefetch_related('albums')
+    queryset = CustomUser.objects.prefetch_related('albums')
     serializer_class = ArtistSerializer
     filterset_class = ArtistFilter
     filter_backends = [
@@ -27,8 +27,9 @@ class ArtistViewSet(viewsets.ModelViewSet):
         filters.SearchFilter,
         filters.OrderingFilter
     ]
-    search_fields = ['name', 'albums__title']
-    ordering_fields = ['name', 'albums__title']
+    search_fields = ['username', 'albums__title']
+    ordering_fields = ['username', 'albums__title']
+    http_method_names = ['get', 'patch', 'head', 'options']
 
 class AlbumViewSet(viewsets.ModelViewSet):
     queryset = Album.objects.prefetch_related('artist', 'songs')
@@ -39,8 +40,8 @@ class AlbumViewSet(viewsets.ModelViewSet):
         filters.SearchFilter,
         filters.OrderingFilter
     ]
-    search_fields = ['title', 'artist__name', 'release_date']
-    ordering_fields = ['title', 'artist__name', 'release_date']
+    search_fields = ['title', 'artist__username', 'release_date']
+    ordering_fields = ['title', 'artist__username', 'release_date']
     
 class SongViewSet(viewsets.ModelViewSet):
     queryset = Song.objects.all()
@@ -51,8 +52,8 @@ class SongViewSet(viewsets.ModelViewSet):
         filters.SearchFilter,
         filters.OrderingFilter
     ]
-    search_fields = ['title', 'album__title', 'album__artist__name', 'album__release_date']
-    ordering_fields = ['title', 'album__title', 'album__artist__name', 'album__release_date']
+    search_fields = ['title', 'album__title', 'album__artist__username', 'album__release_date']
+    ordering_fields = ['title', 'album__title', 'album__artist__username', 'album__release_date']
 
 class SmallResultsSetPagination(PageNumberPagination):
     page_size = 5
@@ -82,8 +83,8 @@ class SearchView(APIView):
                 TrigramSimilarity('title', query.lower()),
                 TrigramSimilarity('album__title', query),
                 TrigramSimilarity('album__title', query.lower()),
-                TrigramSimilarity('album__artist__name', query),
-                TrigramSimilarity('album__artist__name', query.lower())
+                TrigramSimilarity('album__artist__username', query),
+                TrigramSimilarity('album__artist__username', query.lower())
             )
         ).filter(
             Q(title__icontains=query) |
@@ -99,8 +100,8 @@ class SearchView(APIView):
             similarity=Greatest(
                 TrigramSimilarity('title', query),
                 TrigramSimilarity('title', query.lower()),
-                TrigramSimilarity('artist__name', query),
-                TrigramSimilarity('artist__name', query.lower())
+                TrigramSimilarity('artist__username', query),
+                TrigramSimilarity('artist__username', query.lower())
             )
         ).filter(
             Q(title__icontains=query) |
@@ -109,10 +110,10 @@ class SearchView(APIView):
 
 
         # artists = Artist.objects.filter(name__icontains=query)
-        artists = Artist.objects.annotate(
+        artists = CustomUser.objects.annotate(
             similarity=Greatest(
-                TrigramSimilarity('name', query),
-                TrigramSimilarity('name', query.lower())
+                TrigramSimilarity('username', query),
+                TrigramSimilarity('username', query.lower())
             )
         ).filter(
             Q(name__icontains=query) | Q(similarity__gt=0.2)
@@ -135,7 +136,7 @@ class SearchView(APIView):
                 result_data['type'] = 'album'
                 results.append(result_data)
                 result_data.pop('songs', None)
-            elif isinstance(obj, Artist):
+            elif isinstance(obj, CustomUser):
                 result_data = ArtistSerializer(obj, context={'request': request}).data
                 result_data['type'] = 'artist'
                 results.append(result_data)
@@ -148,6 +149,6 @@ class SearchView(APIView):
             return obj.title.lower().count(query.lower()) + obj.album.title.lower().count(query.lower())
         elif isinstance(obj, Album):
             return obj.title.lower().count(query.lower()) + obj.artist.name.lower().count(query.lower())
-        elif isinstance(obj, Artist):
+        elif isinstance(obj, CustomUser):
             return obj.name.lower().count(query.lower())
         return 0

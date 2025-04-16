@@ -1,6 +1,6 @@
 from django.db.models import Sum
 from rest_framework import serializers
-from .models import Artist, Album, Song
+from .models import CustomUser, Album, Song
 from drf_spectacular.utils import extend_schema_field
 from mutagen.mp3 import MP3
 import datetime
@@ -156,10 +156,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
 class ArtistSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
+    # name = serializers.CharField(source='username', read_only=True)
 
     class Meta:
-        model = Artist
-        fields = ['id', 'name', 'image', 'albums']
+        model = CustomUser
+        fields = ['id', 'username', 'image', 'type', 'albums']
 
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
@@ -179,5 +180,8 @@ class ArtistSerializer(serializers.ModelSerializer):
 
         representation = super().to_representation(instance)
         representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
+
+        if instance.type != 'artist':
+            representation.pop('albums', None)
         
         return representation
