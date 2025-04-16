@@ -56,6 +56,7 @@ export const AlbumCoverShow = () => {
           }}
           animate={{
             y: albumCover ? 0 : 100,
+            scale: albumCover ? 1 : 0.8,
             transition: { duration: 0.2 },
           }}
           exit={{

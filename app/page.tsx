@@ -8,6 +8,7 @@ interface Item {
   title: string;
   artist: string;
   cover: string;
+  songs: { id: number }[];
   type: string;
 }
 
@@ -17,6 +18,7 @@ interface mappedItems {
   artist: string;
   image: string;
   type: string;
+  songs: { id: number }[];
 }
 
 export default function Home() {
@@ -27,14 +29,15 @@ export default function Home() {
       try {
         const res = await axios.get("http://127.0.0.1:8000/api/albums/");
         console.log(res.data);
-        // Map all items instead of just first one
         const mappedItems = res.data.map((item: mappedItems) => ({
           id: item.id,
           title: item.title,
           artist: item.artist,
           cover: item.image,
+          songs: item.songs,
           type: item.type,
         }));
+        console.log(mappedItems);
         setItems(mappedItems);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -54,6 +57,7 @@ export default function Home() {
             artistID={item.artist}
             cover={item.cover}
             type={item.type}
+            songs={item.songs}
             id={item.id}
           />
         ))}

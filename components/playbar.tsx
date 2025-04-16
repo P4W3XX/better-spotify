@@ -23,10 +23,11 @@ import { Slider } from "@/components/ui/slider";
 import { useEffect, useState, useRef } from "react";
 import { useCurrentSongStore } from "@/store/current-song";
 import axios from "axios";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ScrollArea } from "./ui/scroll-area";
 
 export default function PlayBar() {
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -36,7 +37,11 @@ export default function PlayBar() {
   const action = useCurrentSongStore((state) => state.action);
   const isLooped = useCurrentSongStore((state) => state.isLooped);
   const setIsLooped = useCurrentSongStore((state) => state.setIsLooped);
+  const isShuffled = useCurrentSongStore((state) => state.isShuffle);
+  const setIsShuffled = useCurrentSongStore((state) => state.setIsShuffle);
   const [artistName, setArtistName] = useState<string | null>(null);
+  const setIsLyric = useCurrentSongStore((state) => state.setIsLyric);
+  const isLyric = useCurrentSongStore((state) => state.isLyric);
   const [feats, setFeats] = useState<string[]>([]);
   const pathname = usePathname();
 
@@ -49,6 +54,7 @@ export default function PlayBar() {
     cover: "",
     feats: [],
     theme: "",
+    lyric: "",
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -57,7 +63,27 @@ export default function PlayBar() {
   const [currentTime, setCurrentTime] = useState("0:00");
   const [volumeState, setVolumeState] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
+
+
+  const noLyricTexts = [
+    "We don't have lyrics for this song yet.",
+    "Sorry, no lyrics available for this song.",
+    "You can sing along, but we don't have the lyrics.",
+    "Lyrics are on vacation for this song.",
+    "This song is a mystery, no lyrics found.",
+    "No lyrics available, just vibes.",
+    "The lyrics are playing hide and seek.",
+  ]
+
+
+
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isLyricText, setIsLyricText] = useState<string>("");
+
+  useEffect(() => {
+    setIsLyricText(noLyricTexts[Math.floor(Math.random() * noLyricTexts.length)]);
+  }, [currentSongID]);
+
 
   useEffect(() => {
     if (audioRef.current) {
@@ -169,13 +195,13 @@ export default function PlayBar() {
       axios
         .get(`http://127.0.0.1:8000/api/songs/${currentSongID}`)
         .then((response) => {
-          const { title, artist, duration, album, file } = response.data;
+          const { title, artist, duration, album, file, lyrics } = response.data;
           console.log("Fetched song details:", response.data);
 
           if (album) {
             axios.get(`http://127.0.0.1:8000/api/albums/${album}`)
               .then((albumResponse) => {
-                setCurrentSongDetails({ title, artist, duration, cover: albumResponse.data.image, albumID: album, theme: albumResponse.data.theme, url: file, feats: albumResponse.data.featured_artists });
+                setCurrentSongDetails({ title, artist, duration, cover: albumResponse.data.image, albumID: album, theme: albumResponse.data.theme, url: file, feats: albumResponse.data.featured_artists, lyric: lyrics });
               })
               .catch((error) => {
                 console.error("Error fetching album cover:", error);
@@ -225,13 +251,17 @@ export default function PlayBar() {
   if (isMobile) {
     return (
       <>
-        <div
-          className=" w-full h-full pointer-events-none absolute top-0 z-[9999]" />
         <motion.main
+          initial={{
+            y: "100%",
+            display: "none",
+          }}
           animate={{
             y: isFullScreen ? 0 : "100%",
+            display: isFullScreen ? "flex" : "none",
             transition: {
               ease: "easeInOut",
+              duration: 0.2,
             }
           }}
           drag='y'
@@ -247,6 +277,7 @@ export default function PlayBar() {
               setIsFullScreen(true);
             } else if (info.offset.y > 100) {
               setIsFullScreen(false);
+              setIsLyric(false);
             }
           }}
           dragElastic={{
@@ -255,64 +286,165 @@ export default function PlayBar() {
           }}
           style={{
             backgroundColor: currentSongDetails.theme || "#474747",
-          }} className=" absolute w-full z-[9999] flex-col p-10 flex items-center justify-center h-svh">
+          }} className=" absolute w-full z-[9999] flex-col p-10 flex items-center justify-center h-full">
           <div className=" h-1 bg-white/20 w-1/3 rounded-full absolute top-2" />
-          <Image
-            className=" rounded-lg size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
-            src={currentSongDetails.cover || "/cover.jpg"}
-            alt="cover"
-            width={600}
-            height={600}
-            priority
-          />
-          <div className=" w-full flex items-center justify-center mt-10">
-            <div className="overflow-hidden w-full">
-              <motion.div initial={{
-                x: 0,
-              }}
-                animate={{
-                  x: currentSongDetails.title?.length > 15 ? ["100%", 0, 0, '-100%'] : 0,
-                  transition: {
-                    times: [0, 0.3, 0.7, 1],
-                    duration: 6,
-                    repeat: currentSongDetails.title?.length > 15 ? Infinity : 0,
-                    ease: "linear",
-                  }
-                }}
-                className={`font-semibold w-full text-xl`}>
-                {currentSongDetails.title || ""}
-              </motion.div>
-              <motion.p initial={{
-                x: 0,
-              }} animate={{
-                x: currentSongDetails.title?.length > 50 ? ["100%", 0, 0, '-100%'] : 0,
-                transition: {
-                  times: [0, 0.3, 0.7, 1],
-                  duration: 6,
-                  repeat: currentSongDetails.title?.length > 50 ? Infinity : 0,
-                  ease: "linear",
-                }
-              }} className={` text-white/50  text-sm w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline`}>
-                {artistName || ""}
-                {feats && feats.length > 0 && (
-                  <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-sm">
-                    {","}
-                    {feats.join(", ")}
-                  </span>
+          <AnimatePresence mode="wait">
+            <motion.div>
+              <motion.div className=" w-full absolute flex items-center top-4 left-0 right-0 px-4 gap-x-4">
+                {isLyric && (
+                  <>
+                    <motion.img
+                      key={"SmallCover"}
+                      layoutId="cover"
+                      className="rounded-lg bg-transparent z-20 size-[4rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+                      src={currentSongDetails.cover || "/albumPlaceholder.svg"}
+                      alt="cover"
+                      width={600}
+                      height={600}
+                    />
+                    <motion.div key={"SmallDetails"} layoutId="details" className=" w-full flex items-center justify-center">
+                      <div className="overflow-hidden w-full">
+                        <motion.div initial={{
+                          x: 0,
+                        }}
+                          animate={{
+                            x: currentSongDetails.title?.length > 20 ? ["100%", 0, 0, '-100%'] : 0,
+                            transition: {
+                              times: [0, 0.3, 0.7, 1],
+                              duration: 6,
+                              repeat: currentSongDetails.title?.length > 20 ? Infinity : 0,
+                              ease: "linear",
+                            }
+                          }}
+                          className={`font-semibold w-full text-xl`}>
+                          {currentSongDetails.title || ""}
+                        </motion.div>
+                        <motion.p initial={{
+                          x: 0,
+                        }} animate={{
+                          x: currentSongDetails.title?.length > 50 ? ["100%", 0, 0, '-100%'] : 0,
+                          transition: {
+                            times: [0, 0.3, 0.7, 1],
+                            duration: 6,
+                            repeat: currentSongDetails.title?.length > 50 ? Infinity : 0,
+                            ease: "linear",
+                          }
+                        }} className={` text-white/50  text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline`}>
+                          {artistName || ""}
+                          {feats && feats.length > 0 && (
+                            <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                              {","}
+                              {feats.join(", ")}
+                            </span>
+                          )}
+                        </motion.p>
+                      </div>
+                      <button style={{
+                        backgroundColor: currentSongDetails.theme || "#474747",
+                        boxShadow: `-10px 0 10px 10px ${currentSongDetails.theme || "rgba(0,0,0,0.5)"}`,
+                      }} className=" h-max pl-2 z-10">
+                        <CirclePlus className=" text-white md:size-[20px] size-[24px]" />
+                      </button>
+                    </motion.div>
+                  </>
                 )}
-              </motion.p>
-            </div>
-            <button style={{
-              backgroundColor: currentSongDetails.theme || "#474747",
-              boxShadow: `-10px 0 10px 10px ${currentSongDetails.theme || "rgba(0,0,0,0.5)"}`,
-            }} className=" h-max pl-2 z-10">
-              <CirclePlus className=" text-white md:size-[28px] size-[32px]" />
-            </button>
-          </div>
-          <div className=" w-full mt-5">
+              </motion.div>
+              <motion.img
+                key={"LargeCover"}
+                layoutId={"cover"}
+                animate={{
+                  opacity: isLyric ? 0 : 1,
+                }}
+                className="rounded-lg bg-transparent size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+                src={currentSongDetails.cover || "/albumPlaceholder.svg"}
+                alt="cover"
+                width={600}
+                height={600}
+              />
+              <motion.div animate={{
+                opacity: isLyric ? 0 : 1,
+
+              }} key={"LargeDetails"} layoutId="details" className=" w-full flex items-center justify-center mt-10">
+                <div className="overflow-hidden w-full">
+                  <motion.div initial={{
+                    x: 0,
+                  }}
+                    animate={{
+                      x: currentSongDetails.title?.length > 20 ? ["100%", 0, 0, '-100%'] : 0,
+                      transition: {
+                        times: [0, 0.3, 0.7, 1],
+                        duration: 6,
+                        repeat: currentSongDetails.title?.length > 20 ? Infinity : 0,
+                        ease: "linear",
+                      }
+                    }}
+                    className={`font-semibold w-full text-xl`}>
+                    {currentSongDetails.title || ""}
+                  </motion.div>
+                  <motion.p initial={{
+                    x: 0,
+                  }} animate={{
+                    x: currentSongDetails.title?.length > 50 ? ["100%", 0, 0, '-100%'] : 0,
+                    transition: {
+                      times: [0, 0.3, 0.7, 1],
+                      duration: 6,
+                      repeat: currentSongDetails.title?.length > 50 ? Infinity : 0,
+                      ease: "linear",
+                    }
+                  }} className={` text-white/50  text-sm w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline`}>
+                    {artistName || ""}
+                    {feats && feats.length > 0 && (
+                      <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-sm">
+                        {","}
+                        {feats.join(", ")}
+                      </span>
+                    )}
+                  </motion.p>
+                </div>
+                <button style={{
+                  backgroundColor: currentSongDetails.theme || "#474747",
+                  boxShadow: `-10px 0 10px 10px ${currentSongDetails.theme || "rgba(0,0,0,0.5)"}`,
+                }} className=" h-max pl-2 z-10">
+                  <CirclePlus className=" text-white md:size-[28px] size-[32px]" />
+                </button>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+          <motion.div animate={{
+            opacity: isLyric ? 1 : 0,
+            scale: isLyric ? 1 : 0.8,
+            display: isLyric ? "flex" : "none",
+            transition: {
+              delay: isLyric ? 0.2 : 0,
+            },
+            position: "absolute",
+          }}>
+            {currentSongDetails.lyric.length > 0 ? (
+              <ScrollArea className=" w-full h-svh pt-[6rem] pb-[5rem] px-4 overflow-hidden">
+                <div style={{
+                  backgroundImage: `linear-gradient(to bottom, ${currentSongDetails.theme || "#474747"} 0%, rgba(0, 0, 0, 0) 100%)`,
+                }} className=" w-full h-[50px] absolute left-0 top-[5.9rem]" />
+                <div style={{
+                  backgroundImage: `linear-gradient(to top, ${currentSongDetails.theme || "#474747"} 0%, rgba(0, 0, 0, 0) 100%)`,
+                }} className=" w-full h-[50px] absolute left-0 bottom-[4.9rem]" />
+                <p className=" font-medium py-[1.6rem] text-2xl">{currentSongDetails.lyric}</p>
+              </ScrollArea>
+            ) : (
+              <div>
+                <p className=" text-white/50 text-xl px-4 font-medium">{isLyricText}</p>
+              </div>
+            )}
+          </motion.div>
+          <motion.div animate={{
+            opacity: isLyric ? 0 : 1,
+            y: isLyric ? 400 : 0,
+
+          }} transition={{
+            ease: "easeInOut",
+          }} className=" w-full mt-5">
             <Slider
               className=" w-full "
-              isThumb={true}
+              isThumb={false}
               step={1}
               defaultValue={[50]}
               min={0}
@@ -331,8 +463,17 @@ export default function PlayBar() {
               }</p>
               <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
             </div>
-          </div>
-          <div className=" flex items-center justify-center w-full gap-x-5 my-14">
+          </motion.div>
+          <motion.div
+            animate={{
+              opacity: isLyric ? 0 : 1,
+              y: isLyric ? 400 : 0,
+
+            }}
+            transition={{
+              ease: "easeInOut",
+            }}
+            className=" flex items-center justify-center w-full gap-x-5 my-14">
             <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
               <ArrowBigLeft
                 fill="white"
@@ -357,8 +498,13 @@ export default function PlayBar() {
                 className=" text-white md:size-[40px] opacity-40 size-[60px]"
               />
             </button>
-          </div>
-          <div className=" w-full flex gap-x-1">
+          </motion.div>
+          <motion.div animate={{
+            opacity: isLyric ? 0 : 1,
+            y: isLyric ? 400 : 0,
+          }} transition={{
+            ease: "easeInOut",
+          }} className=" w-full flex gap-x-1">
             <Volume className=" text-white opacity-50" />
             <Slider
               defaultValue={[50]}
@@ -376,13 +522,22 @@ export default function PlayBar() {
               isThumb={false}
             />
             <Volume2 className=" text-white opacity-50 ml-2" />
-          </div>
+          </motion.div>
           <div className=" w-full flex items-center absolute bottom-7 justify-between px-20">
-            <button>
-              <MicVocal size={25} className=" text-white opacity-40" />
+            <button onClick={() => {
+              setIsLyric(!isLyric);
+            }}>
+              {isLyric ?
+                <MicVocal size={25} className=" text-white" /> :
+                <MicVocal size={25} className=" text-white opacity-40" />
+              }
             </button>
-            <button>
-              <Shuffle size={25} className=" text-white opacity-40" />
+            <button onClick={() => {
+              setIsShuffled(!isShuffled);
+            }}>
+              {isShuffled ?
+                <Shuffle size={25} className=" text-white" /> :
+                <Shuffle size={25} className=" text-white opacity-40" />}
             </button>
             <button onClick={() => {
               if (isLooped === "false") {
@@ -413,7 +568,7 @@ export default function PlayBar() {
               {currentSongDetails.cover ? (
                 <Image
                   className=" rounded-lg h-[75%] size-auto shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
-                  src={currentSongDetails.cover || "/cover.jpg"}
+                  src={currentSongDetails.cover || "/albumPlaceholder.svg"}
                   alt="cover"
                   width={100}
                   height={100}
@@ -458,7 +613,7 @@ export default function PlayBar() {
                     repeat: currentSongDetails.title?.length > 50 ? Infinity : 0,
                     ease: "linear",
                   }
-                }} className={` text-white/50  text-xs w-full cursor-pointer group-hover:text-white transition-colors font-medium hover:underline`}>
+                }} className={` text-white/50  text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline`}>
                   {artistName || ""}
                   {feats && feats.length > 0 && (
                     <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
@@ -489,138 +644,51 @@ export default function PlayBar() {
     );
   } else {
     return (
-      <main className=" w-full fixed bottom-0 p-2 justify-between z-[51] border-t items-center flex h-[6rem] bg-black">
-        {currentSongDetails.url && (
-          <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
-        )}
-        <div className=" flex items-center gap-x-2">
-          {currentSongDetails.cover ? (
-            <Image
-              className=" rounded-md size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-              src={currentSongDetails.cover}
-              alt="cover"
-              width={100}
-              height={100}
-              priority
-            />
-          ) : (
-            <Image
-              className=" rounded-xl size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-              src="/cover.jpg"
-              alt="cover"
-              width={100}
-              height={100}
-              priority
-            />
-          )}
-          <div>
-            <h1 className=" font-semibold text-lg">{currentSongDetails.title || "Murzyn"}</h1>
-            <p className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline">
+      <>
+        <motion.main
+          initial={{
+            y: "100%",
+            display: "none",
+          }}
+          animate={{
+            y: isFullScreen ? 0 : "100%",
+            display: isFullScreen ? "flex" : "none",
+            transition: {
+              ease: "easeInOut",
+              duration: 0.2,
+            }
+          }}
+          style={{
+            backgroundColor: currentSongDetails.theme || "#474747",
+          }} className=" absolute w-full h-full left-0 top-0 z-[9999] flex-col p-10 flex items-center justify-center">
+          <Image
+            className=" size-auto aspect-square h-[40%] rounded-xl"
+            src={currentSongDetails.cover || "/albumPlaceholder.svg"}
+            alt="cover"
+            width={1000}
+            height={1000}
+            priority
+          />
+          <div className=" w-full mt-20">
+            <h1 className=" text-5xl font-semibold text-white/50">
+              {currentSongDetails.title || "Murzyn"}
+            </h1>
+            <p className=" text-white/20 text-lg w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline">
               {artistName || "Travis Scott"}
               {feats && feats.length > 0 && (
-                <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                <span className="text-white/20 hover:underline group-hover:text-white transition-colors text-lg">
                   {","}
                   {feats.join(", ")}
                 </span>
               )}
             </p>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button className=" hover:scale-105 ml-5 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                  <CirclePlus className=" text-white md:size-[28px] size-[24px] opacity-50" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent
-                sideOffset={10}
-                className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
-              >
-                Add to library
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-        </div>
-        <div className=" flex flex-col items-center h-full justify-between w-full py-2 flex-1 max-w-[40%] lg:max-w-[35%]">
-          <div className=" flex gap-x-5">
-            <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Shuffle className=" text-white opacity-40 md:size-[20px] size-[24px]" />
-                  </TooltipTrigger>
-                  <TooltipContent
-                    sideOffset={10}
-                    className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
-                  >
-                    Shuffle
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </button>
-            <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-              <ArrowBigLeft
-                fill="white"
-                className=" text-white md:size-[28px] opacity-40 size-[24px]"
-              />
-            </button>
-            <button onClick={() => {
-              handlePlay();
-            }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-              {action === "Play" ?
-                <Pause fill="white" className=" text-white md:size-[36px] size-[24px]" /> :
-                <Play
-                  fill="white"
-                  className=" text-white md:size-[36px] size-[24px]"
-                />
-              }
-            </button>
-            <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-              <ArrowBigRight
-                fill="white"
-                className=" text-white md:size-[28px] opacity-40 size-[24px]"
-              />
-            </button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={() => {
-                    if (isLooped === "false") {
-                      setIsLooped("all");
-                    } else if (isLooped === "all") {
-                      setIsLooped("one");
-                    } else if (isLooped === "one") {
-                      setIsLooped("false");
-                    }
-                  }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                    {isLooped === "false" ?
-                      <Repeat className={` text-white md:size-[20px] opacity-40 size-[24px]`} />
-                      :
-                      (isLooped === "all" ?
-                        <Repeat className={` text-white md:size-[20px] size-[24px]`} /> :
-                        <Repeat1 className={` text-white md:size-[20px] size-[24px]`} />)
-                    }
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent
-                  sideOffset={10}
-                  className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
-                >
-                  {isLooped === "false" ? "Repeat Off" : (isLooped === "all" ? "Repeat All" : "Repeat One")}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-          </div>
-          <div className=" flex w-full gap-x-2 items-center">
-            <p className=" text-xs text-white/50 font-medium">{
-              formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"
-            }</p>
+          <div className=" w-full mt-10">
             <Slider
-              isThumb={true}
-              defaultValue={[50]}
+              className=" w-full "
+              isThumb={false}
               step={1}
+              defaultValue={[50]}
               min={0}
               onValueChange={(value) => {
                 if (audioRef.current) {
@@ -631,79 +699,248 @@ export default function PlayBar() {
               max={formatTimeToSeconds(currentSongDetails.duration) || 100}
               value={[formatTimeToSeconds(currentTime)]}
             />
-            <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
+            <div className=" w-full flex items-center justify-between mt-2">
+              <p className=" text-xs text-white/50 font-medium">{
+                formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"
+              }</p>
+              <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
+            </div>
           </div>
-        </div>
-        <div className=" flex-1 max-w-[12%] min-w-[10rem] flex items-center justify-end gap-x-5 pr-2">
-          <div className=" flex gap-x-2 w-full">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center" onClick={() => {
-                    if (audioRef.current) {
-                      audioRef.current.muted = !audioRef.current.muted;
-                      setIsMuted(audioRef.current.muted);
-                      setVolumeState(audioRef.current.volume * 100);
+        </motion.main>
+        <main className=" w-full fixed bottom-0 p-2 space-x-[5%] justify-between z-[51] border-t border-zinc-800 items-center flex h-[6rem] bg-black">
+          {currentSongDetails.url && (
+            <audio src={currentSongDetails.url} autoPlay ref={audioRef} ></audio>
+          )}
+          <div className=" flex items-center w-[70%] max-w-[25rem] gap-x-2">
+            {currentSongDetails.cover ? (
+              <Image
+                className=" rounded-md size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+                src={currentSongDetails.cover}
+                alt="cover"
+                width={100}
+                height={100}
+                priority
+              />
+            ) : (
+              <Image
+                className=" rounded-xl size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+                src="/albumPlaceholder.svg"
+                alt="cover"
+                width={100}
+                height={100}
+                priority
+              />
+            )}
+            <div className=" flex flex-col w-full overflow-auto">
+              <div className="overflow-hidden w-full">
+                <motion.p
+                  initial={{ x: 0 }}
+                  animate={{
+                    x: currentSongDetails.title?.length > 20 ? ["120%", 0, 0, '-120%'] : 0,
+                    transition: {
+                      times: [0, 0.3, 0.7, 1],
+                      duration: 6,
+                      repeat: currentSongDetails.title?.length > 20 ? Infinity : 0,
+                      ease: "linear"
                     }
-                  }}>
-                    {!isMuted ? (volumeState > 75 ? (
-                      <Volume2 className=" text-white md:size-[24px] stroke-2 opacity-50" />
-                    ) : (
-                      volumeState > 25 ? (
-                        <Volume1 className=" text-white md:size-[24px] stroke-2 opacity-50" />
-                      ) : (
-                        (volumeState > 0 ?
-                          <Volume className=" text-white md:size-[24px] stroke-2 opacity-50" /> :
-                          <VolumeX className=" text-white md:size-[24px] stroke-2 opacity-50" />)
-                      )
-                    )) : (
-                      <VolumeOff className=" text-white md:size-[24px] stroke-2 opacity-50" />
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent
-                  sideOffset={10}
-                  className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
-                >
-                  {isMuted ? "Unmute" : "Mute"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-
-            <Slider
-              defaultValue={[50]}
-              step={1}
-              min={0}
-              max={100}
-              value={[volumeState]}
-              onValueChange={(value) => {
-                if (audioRef.current) {
-                  audioRef.current.volume = value[0] / 100;
-                  setVolumeState(value[0]);
-                }
-              }
-              }
-              isThumb={false}
-            />
+                  }}
+                  className="font-semibold lg:text-lg whitespace-nowrap">
+                  {currentSongDetails.title || ""}
+                </motion.p>
+              </div>
+              <p className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium hover:underline">
+                {artistName || ""}
+                {feats && feats.length > 0 && (
+                  <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                    {","}
+                    {feats.join(", ")}
+                  </span>
+                )}
+              </p>
+            </div>
+            {currentSongDetails.url && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className=" hover:scale-105 lg:ml-5 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                      <CirclePlus className=" text-white md:size-[28px] size-[24px] opacity-50" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    sideOffset={10}
+                    className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
+                  >
+                    Add to library
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
-          <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild><Maximize className=" text-white md:size-[20px] size-[20px] opacity-50" />
-                </TooltipTrigger>
-                <TooltipContent
-                  sideOffset={10}
-                  className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
-                >
-                  Full Screen
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          <div className=" flex flex-col items-center h-full min-w-[20rem] justify-between w-full py-2 flex-1">
+            <div className=" flex gap-x-5">
+              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Shuffle className=" text-white opacity-40 md:size-[20px] size-[24px]" />
+                    </TooltipTrigger>
+                    <TooltipContent
+                      sideOffset={10}
+                      className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
+                    >
+                      Shuffle
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </button>
+              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigLeft
+                  fill="white"
+                  className=" text-white md:size-[28px] opacity-40 size-[24px]"
+                />
+              </button>
+              <button onClick={() => {
+                handlePlay();
+              }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                {action === "Play" ?
+                  <Pause fill="white" className=" text-white md:size-[36px] size-[24px]" /> :
+                  <Play
+                    fill="white"
+                    className=" text-white md:size-[36px] size-[24px]"
+                  />
+                }
+              </button>
+              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigRight
+                  fill="white"
+                  className=" text-white md:size-[28px] opacity-40 size-[24px]"
+                />
+              </button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button onClick={() => {
+                      if (isLooped === "false") {
+                        setIsLooped("all");
+                      } else if (isLooped === "all") {
+                        setIsLooped("one");
+                      } else if (isLooped === "one") {
+                        setIsLooped("false");
+                      }
+                    }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                      {isLooped === "false" ?
+                        <Repeat className={` text-white md:size-[20px] opacity-40 size-[24px]`} />
+                        :
+                        (isLooped === "all" ?
+                          <Repeat className={` text-white md:size-[20px] size-[24px]`} /> :
+                          <Repeat1 className={` text-white md:size-[20px] size-[24px]`} />)
+                      }
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    sideOffset={10}
+                    className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
+                  >
+                    {isLooped === "false" ? "Repeat Off" : (isLooped === "all" ? "Repeat All" : "Repeat One")}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-          </button>
-        </div>
-      </main>
+            </div>
+            <div className=" flex gap-x-2 items-center xl:w-[40rem] w-full">
+              <p className=" text-xs text-white/50 font-medium">{
+                formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"
+              }</p>
+              <Slider
+                isThumb={true}
+                defaultValue={[50]}
+                step={1}
+                min={0}
+                onValueChange={(value) => {
+                  if (audioRef.current) {
+                    audioRef.current.currentTime = value[0];
+                  }
+                  setCurrentTime(formatSecondsToTime(value[0]));
+                }}
+                max={formatTimeToSeconds(currentSongDetails.duration) || 100}
+                value={[formatTimeToSeconds(currentTime)]}
+              />
+              <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
+            </div>
+          </div>
+          <div className=" flex-1 max-w-[12%] min-w-[8rem] w-full flex items-center justify-end gap-x-5 pr-2">
+            <div className=" flex gap-x-2 w-full">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center" onClick={() => {
+                      if (audioRef.current) {
+                        audioRef.current.muted = !audioRef.current.muted;
+                        setIsMuted(audioRef.current.muted);
+                        setVolumeState(audioRef.current.volume * 100);
+                      }
+                    }}>
+                      {!isMuted ? (volumeState > 75 ? (
+                        <Volume2 className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                      ) : (
+                        volumeState > 25 ? (
+                          <Volume1 className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                        ) : (
+                          (volumeState > 0 ?
+                            <Volume className=" text-white md:size-[24px] stroke-2 opacity-50" /> :
+                            <VolumeX className=" text-white md:size-[24px] stroke-2 opacity-50" />)
+                        )
+                      )) : (
+                        <VolumeOff className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    sideOffset={10}
+                    className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
+                  >
+                    {isMuted ? "Unmute" : "Mute"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+
+              <Slider
+                defaultValue={[50]}
+                step={1}
+                min={0}
+                max={100}
+                value={[volumeState]}
+                onValueChange={(value) => {
+                  if (audioRef.current) {
+                    audioRef.current.volume = value[0] / 100;
+                    setVolumeState(value[0]);
+                  }
+                }
+                }
+                isThumb={false}
+              />
+            </div>
+            <button onClick={() => {
+              setIsFullScreen(!isFullScreen);
+            }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild><Maximize className=" text-white md:size-[20px] size-[20px] opacity-50" />
+                  </TooltipTrigger>
+                  <TooltipContent
+                    sideOffset={10}
+                    className="font-medium z-[999] bg-white/20 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
+                  >
+                    Full Screen
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+            </button>
+          </div>
+        </main>
+      </>
     );
   }
 }
