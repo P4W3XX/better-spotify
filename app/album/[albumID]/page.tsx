@@ -427,6 +427,7 @@ export default function Album() {
             src={albumInfo.cover}
             alt="Cover"
             width={500}
+            unoptimized
             onClick={() => setAlbumCover(albumInfo.cover)}
             height={500}
             className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-auto max-w-[15rem] w-[98%]  shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
@@ -455,6 +456,7 @@ export default function Album() {
               {artistInfo.cover ? (
                 <Image
                   src={artistInfo.cover}
+                  unoptimized
                   alt="ArtistCover"
                   width={25}
                   height={25}

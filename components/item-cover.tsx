@@ -112,6 +112,7 @@ export default function ItemCover({
           <Image
             src={cover}
             alt={title}
+            unoptimized
             fill
             sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, (max-width: 1024px) 23vw, 18vw"
             className={`${type === "profile" ? "rounded-full" : "rounded-lg"
