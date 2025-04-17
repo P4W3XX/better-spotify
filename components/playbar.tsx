@@ -878,7 +878,7 @@ export default function PlayBar() {
                             repeat: Infinity,
                           }
                         } : { x: 0 }}
-                        className="text-white/50 text-lg w-max cursor-pointer  transition-colors font-medium whitespace-nowrap">
+                        className="text-white/50 text-xl w-max cursor-pointer  transition-colors font-medium whitespace-nowrap">
                         <span onClick={() => {
                           router.push(`/artist/${currentSongDetails.artist}`);
                         }} className="text-white/50 hover:underline hover:text-white transition-colors">
@@ -927,7 +927,7 @@ export default function PlayBar() {
               </ScrollArea>
             ) : (
               <div className=" w-full h-svh pt-[9rem] pb-[5rem] px-4 overflow-hidden flex items-center justify-center">
-                <p className=" text-white/50 text-xl px-4 font-medium">{isLyricText}</p>
+                <p className=" text-white/50 text-3xl px-4 font-medium">{isLyricText}</p>
               </div>
             )}
           </motion.div>
