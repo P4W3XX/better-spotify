@@ -130,6 +130,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
       </div>
       {songCover && (
         <Image
+          unoptimized
           src={songCover}
           alt={title}
           width={50}

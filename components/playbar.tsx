@@ -808,7 +808,6 @@ export default function PlayBar() {
                             }
                           } : { x: 0 }}
                           className="text-white/50 text-lg w-max cursor-pointer group-hover:text-white transition-colors font-medium whitespace-nowrap">
-                          {artistName || ""}
                           <span onClick={() => {
                           }} className="text-white/50 hover:underline hover:text-white transition-colors text-xs">
                             {artistName || ""}
@@ -927,7 +926,7 @@ export default function PlayBar() {
                 <p className=" font-medium py-[1.6rem] text-2xl">{currentSongDetails.lyric}</p>
               </ScrollArea>
             ) : (
-              <div>
+              <div className=" w-full h-svh pt-[9rem] pb-[5rem] px-4 overflow-hidden flex items-center justify-center">
                 <p className=" text-white/50 text-xl px-4 font-medium">{isLyricText}</p>
               </div>
             )}
@@ -1226,7 +1225,7 @@ export default function PlayBar() {
                 formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"
               }</p>
               <Slider
-              className=" w-full "
+                className=" w-full "
                 isThumb={true}
                 defaultValue={[50]}
                 step={1}

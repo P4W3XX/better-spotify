@@ -68,6 +68,7 @@ export const AlbumCoverShow = () => {
         >
           {albumCover && (
             <Image
+              unoptimized
               ref={imageRef}
               src={albumCover}
               alt="Cover"
