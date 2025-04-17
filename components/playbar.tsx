@@ -654,6 +654,7 @@ export default function PlayBar() {
                   src={currentSongDetails.cover || "/albumPlaceholder.svg"}
                   alt="cover"
                   width={100}
+                  unoptimized
                   height={100}
                   priority
                 />
@@ -1083,6 +1084,7 @@ export default function PlayBar() {
                 className=" rounded-md size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
                 src={currentSongDetails.cover}
                 alt="cover"
+                unoptimized
                 width={100}
                 height={100}
                 priority
