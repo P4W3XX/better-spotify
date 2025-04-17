@@ -584,7 +584,9 @@ export default function PlayBar() {
           }} className=" w-full flex gap-x-1">
             <Volume className=" text-white opacity-50" />
             <Slider
-              defaultValue={[50]}
+              defaultValue={[
+                audioRef.current ? audioRef.current.volume * 100 : 50
+              ]}
               step={1}
               min={0}
               max={100}
@@ -878,7 +880,7 @@ export default function PlayBar() {
                             repeat: Infinity,
                           }
                         } : { x: 0 }}
-                        className="text-white/50 text-xl w-max cursor-pointer  transition-colors font-medium whitespace-nowrap">
+                        className="text-white/50 text-2xl w-max cursor-pointer  transition-colors font-medium whitespace-nowrap">
                         <span onClick={() => {
                           router.push(`/artist/${currentSongDetails.artist}`);
                         }} className="text-white/50 hover:underline hover:text-white transition-colors">
@@ -887,7 +889,7 @@ export default function PlayBar() {
                         {feats && feats.length > 0 && feats.map((feat, index) => (
                           <span key={index} onClick={() => {
                             router.push(`/artist/${currentSongDetails.feats[index]}`);
-                          }} className="text-white/50 hover:underline hover:text-white transition-colors text-lg">
+                          }} className="text-white/50 hover:underline hover:text-white transition-colors text-2xl">
                             {","}
                             {feat}
                           </span>
@@ -1048,7 +1050,9 @@ export default function PlayBar() {
                   )}
                 </button>
                 <Slider
-                  defaultValue={[50]}
+                  defaultValue={[
+                    audioRef.current ? audioRef.current.volume * 100 : 50
+                  ]}
                   step={1}
                   min={0}
                   max={100}
@@ -1278,7 +1282,7 @@ export default function PlayBar() {
                 </Tooltip>
               </TooltipProvider>
               <Slider
-                defaultValue={[50]}
+                defaultValue={[audioRef.current ? audioRef.current.volume * 100 : 50]}
                 step={1}
                 min={0}
                 max={100}
