@@ -4,7 +4,7 @@ import "./globals.css";
 import Sidebar from "@/components/sidebar";
 import PlayBar from "@/components/playbar";
 import { AlbumCoverShow } from "@/components/album-cover";
-import DynamicTitleBar from "@/components/dynaminTitleBar";
+
 
 const poppins = Poppins({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -28,7 +28,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className="dark">
       <body className={`${poppins.className}  w-full flex h-full overflow-hidden`}>
         <AlbumCoverShow />
-        <DynamicTitleBar />
         <Sidebar />
         {children}
         <PlayBar />
