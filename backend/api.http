@@ -1,0 +1,12 @@
+POST http://127.0.0.1:8000/api/login/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "admin@gmail.com",
+    "password": "admin1"
+}
+
+###
+
+GET http://127.0.0.1:8000/api/profile/ HTTP/1.1
+Authorization: Bearer 
