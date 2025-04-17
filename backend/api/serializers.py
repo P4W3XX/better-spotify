@@ -2,10 +2,11 @@ from django.db.models import Sum
 from rest_framework import serializers
 from .models import CustomUser, Album, Song
 from drf_spectacular.utils import extend_schema_field
+from django.templatetags.static import static
 from mutagen.mp3 import MP3
 import datetime
 import os
-from django.templatetags.static import static
+from .utils import get_dominant_color
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
@@ -78,14 +79,18 @@ class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
     album_duration = serializers.SerializerMethodField()
     total_plays = serializers.SerializerMethodField()
+    theme = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
         fields = [
             'id', 'title', 'album_type', 'artist', 'image', 
-            'release_date', 'album_duration', 'theme', 
+            'release_date', 'album_duration', 'theme',
             'total_plays', 'songs'
         ]
+        extra_kwargs = {
+            'theme': {'required': False},
+        }
 
 
     def __init__(self, *args, **kwargs):
@@ -94,6 +99,22 @@ class AlbumSerializer(serializers.ModelSerializer):
         if nested:
             self.fields.pop('artist')
             self.fields.pop('songs')
+
+    def get_theme(self, obj):
+        if obj.image:
+            image_path = obj.image.path
+            if os.path.exists(image_path):
+                dominant_color = get_dominant_color(image_path)
+                return dominant_color
+        return None
+
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+        
+    #     if instance.theme == "#EE2020":
+    #         representation['theme'] = get_dominant_color(instance.image.path)
+
+    #     return representation
 
 
     @extend_schema_field(serializers.ListField)

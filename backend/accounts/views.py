@@ -1,10 +1,11 @@
-from django.shortcuts import render
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .serializers import CustomUserSerializer, UserRegistrationSerializer, UserLoginSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
+from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
 
 # Create your views here.
 class UserRegistrationAPIView(GenericAPIView):
@@ -44,6 +45,7 @@ class UserLoginAPIView(GenericAPIView):
 class UserLogoutAPIView(GenericAPIView):
     permission_classes = (IsAuthenticated,)
 
+    @extend_schema(request=None, responses=None)
     def post(self, request, *args, **kwargs):
         try:
             refresh_token = request.data["refresh"]
@@ -52,3 +54,10 @@ class UserLogoutAPIView(GenericAPIView):
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+class CustomUserProfileAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = CustomUserSerializer
+    
+    def get_object(self):
+        return self.request.user

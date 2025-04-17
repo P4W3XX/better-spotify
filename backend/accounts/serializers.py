@@ -1,11 +1,24 @@
 from rest_framework import serializers
 from api.models import CustomUser
 from django.contrib.auth import authenticate
+from django.templatetags.static import static
 
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email',)
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'type', 'image']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        if instance.image == '' or not instance.image:
+            request = self.context.get('request')
+            if request:
+                representation['image'] = request.build_absolute_uri(static('default.jpg'))
+            else:
+                representation['image'] = static('default.jpg')
+
+        return representation
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
