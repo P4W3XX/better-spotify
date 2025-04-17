@@ -22,7 +22,7 @@ export default function DynamicTitleBar() {
         fetchSongTitle()
     }, [currentSongID])
     return (
-        <div className="titleBar">
+        <div className="titleBar text-white">
             {currentSongTitle ? currentSongTitle : "No song playing"}
         </div>
     )
