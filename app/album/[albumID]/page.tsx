@@ -114,6 +114,7 @@ const TopBar = ({
         {!mobile && (
           cover ? (
             <Image
+              unoptimized
               src={cover}
               alt="Cover"
               width={500}
