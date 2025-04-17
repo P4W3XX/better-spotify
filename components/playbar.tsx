@@ -97,8 +97,8 @@ export default function PlayBar() {
   useEffect(() => {
     if (audioRef.current) {
       const audio = audioRef.current;
-
       const handleLoadedMetadata = () => {
+        document.title = currentSongDetails.title ? `${currentSongDetails.title} - Music` : "Music";
         setAction("Play");
         audio.currentTime = 0
         axios.get(`http://127.0.0.1:8000/api/songs/${currentSongID}/`).then((response) => {
@@ -292,6 +292,7 @@ export default function PlayBar() {
   if (pathname === "/login" || pathname === "/register") {
     return null;
   }
+
 
   if (isMobile) {
     return (
@@ -1219,10 +1220,11 @@ export default function PlayBar() {
 
             </div>
             <div className=" flex gap-x-2 items-center xl:w-[40rem] w-full">
-              <p className=" text-xs text-white/50 font-medium">{
+              <p className=" text-xs text-white/50 max-w-[30px] min-w-[30px] font-medium">{
                 formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"
               }</p>
               <Slider
+              className=" w-full "
                 isThumb={true}
                 defaultValue={[50]}
                 step={1}

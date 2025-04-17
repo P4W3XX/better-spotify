@@ -26,6 +26,7 @@ module.exports = async (): Promise<NextConfig> => {
     },
   };
 
+  console.log("NODE_ENV", process.env.NODE_ENV);
   if (process.env.NODE_ENV === "production") {
     const withSerwist = (await import("@serwist/next")).default({
       swSrc: "public/service-worker/app-worker.ts",
