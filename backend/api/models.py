@@ -34,8 +34,8 @@ class CustomUser(AbstractUser):
 
     image = models.ImageField(upload_to='users/', blank=True, null=True)
     type = models.CharField(max_length=50, choices=[('artist', 'Artist'), ('listener', 'Listener')], default='listener')
-
-    def str__(self):
+    
+    def __str__(self):
         return self.username
     
 class Album(models.Model):

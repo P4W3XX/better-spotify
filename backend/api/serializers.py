@@ -5,8 +5,7 @@ from drf_spectacular.utils import extend_schema_field
 from mutagen.mp3 import MP3
 import datetime
 import os
-import math
-
+from django.templatetags.static import static
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
@@ -183,5 +182,12 @@ class ArtistSerializer(serializers.ModelSerializer):
 
         if instance.type != 'artist':
             representation.pop('albums', None)
+
+        if instance.image == '':
+            request = self.context.get('request')
+            if request:
+                representation['image'] = request.build_absolute_uri(static('default.jpg'))
+            else:
+                representation['image'] = static('default.jpg')
         
         return representation
