@@ -27,9 +27,11 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get("http://127.0.0.1:8000/api/albums/");
-        console.log(res.data);
-        const mappedItems = res.data.map((item: mappedItems) => ({
+        const res = await axios.get("http://127.0.0.1:8000/api/albums/").then((res) => res.data).catch((err) => {
+          console.log(err);
+        })
+        console.log("res", res);
+        const mappedItems = res.map((item: mappedItems) => ({
           id: item.id,
           title: item.title,
           artist: item.artist,
