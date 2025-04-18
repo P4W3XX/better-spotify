@@ -8,6 +8,7 @@ class ArtistFilter(django_filters.FilterSet):
         fields = {
             'username': ['iexact', 'icontains'],
             'albums__title': ['iexact', 'icontains'],
+            'type': ['exact',],
         }
 
 class AlbumFilter(django_filters.FilterSet):

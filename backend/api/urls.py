@@ -10,4 +10,5 @@ router.register(r'songs', views.SongViewSet, basename='song')
 urlpatterns = [
     path('', include(router.urls)),
     path('search/', views.SearchView.as_view(), name='search'),
+    path('playback/control/', views.PlaybackControlAPIView.as_view(), name='playback-control'),
 ]

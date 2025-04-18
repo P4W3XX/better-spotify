@@ -1,13 +1,13 @@
 from django.contrib import admin
-from .models import Album, Song, CustomUser
+from .models import Album, Song, CustomUser, CurrentPlayback
 
 from accounts.forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib.auth.admin import UserAdmin
 
 # Register your models here.
-# admin.site.register(Artist)
 admin.site.register(Album)
 admin.site.register(Song)
+admin.site.register(CurrentPlayback)
 # admin.site.register(CustomUser)
 
 @admin.register(CustomUser)

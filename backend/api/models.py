@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
@@ -62,3 +63,50 @@ class Song(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+class CurrentPlayback(models.Model):
+    user = models.OneToOneField(CustomUser, related_name='current_playback', on_delete=models.CASCADE)
+    song = models.ForeignKey(Song, related_name='current_playback_song', blank=True, null=True, on_delete=models.SET_NULL)
+    
+    started_at = models.DateTimeField(null=True, blank=True)
+    is_paused = models.BooleanField(default=False)
+    paused_at = models.DateTimeField(null=True, blank=True) 
+    progress_seconds = models.PositiveIntegerField(default=0)
+    # started_at + progress
+    
+    def __str__(self):
+        return f"{self.user.username}'s current playback"
+
+    def play(self, song):
+        self.song = song
+        self.started_at = timezone.now()
+        self.progress_seconds = 0
+        self.paused_at = None
+        self.is_paused = False
+        self.save()
+
+    def pause(self):
+        if not self.is_paused:
+            now = timezone.now()
+            if self.started_at:
+                elapsed = (now - self.started_at).total_seconds()
+                self.progress_seconds += int(elapsed)
+            self.paused_at = now
+            self.is_paused = True
+            self.save()
+
+    def resume(self):
+        if self.is_paused:
+            self.started_at = timezone.now()
+            self.is_paused = False
+            self.paused_at = None
+            self.save()
+
+    def reset(self, song=None):
+        self.song = song
+        self.started_at = timezone.now() if song else None
+        self.progress_seconds = 0
+        self.paused_at = None
+        self.is_paused = False
+        self.save()

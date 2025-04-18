@@ -1,6 +1,6 @@
 from django.db.models import Sum
 from rest_framework import serializers
-from .models import CustomUser, Album, Song
+from .models import CustomUser, Album, Song, CurrentPlayback
 from drf_spectacular.utils import extend_schema_field
 from django.templatetags.static import static
 from mutagen.mp3 import MP3
@@ -100,6 +100,7 @@ class AlbumSerializer(serializers.ModelSerializer):
             self.fields.pop('artist')
             self.fields.pop('songs')
 
+    @extend_schema_field(serializers.CharField)
     def get_theme(self, obj):
         if obj.image:
             image_path = obj.image.path
@@ -119,7 +120,7 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
-        return SongSerializer(obj.songs, many=True, nested=True, context=self.context, required=False).data
+        return SongSerializer(obj.songs.order_by('track_number'), many=True, nested=True, context=self.context, required=False).data
     
 
     @extend_schema_field(serializers.DurationField)
@@ -194,9 +195,9 @@ class ArtistSerializer(serializers.ModelSerializer):
             album_type = self.context['request'].query_params.get('album_type', None)
 
         if album_type:
-            albums = instance.albums.filter(album_type=album_type).order_by('release_date')
+            albums = instance.albums.filter(album_type=album_type).order_by('-release_date')
         else:
-            albums = instance.albums.all().order_by('release_date')
+            albums = instance.albums.all().order_by('-release_date')
 
         representation = super().to_representation(instance)
         representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
@@ -212,3 +213,17 @@ class ArtistSerializer(serializers.ModelSerializer):
                 representation['image'] = static('default.jpg')
         
         return representation
+    
+
+class PlaybackActionSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['play', 'pause', 'resume', 'reset'])
+    song_id = serializers.IntegerField(required=False)
+
+class CurrentPlaybackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CurrentPlayback
+        fields = [
+            'song', 'song_id', 
+            'started_at', 'progress_seconds', 'paused_at', 
+            'is_paused'
+        ]

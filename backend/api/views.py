@@ -6,10 +6,14 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
-from .models import CustomUser, Album, Song
-from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer
+
+from .models import CustomUser, Album, Song, CurrentPlayback
+from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer, CurrentPlaybackSerializer, PlaybackActionSerializer
+
 from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
 
 # Create your views here.
 
@@ -21,6 +25,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 class ArtistViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.prefetch_related('albums')
     serializer_class = ArtistSerializer
+    permission_classes = [AllowAny,]
     filterset_class = ArtistFilter
     filter_backends = [
         DjangoFilterBackend,
@@ -29,11 +34,12 @@ class ArtistViewSet(viewsets.ModelViewSet):
     ]
     search_fields = ['username', 'albums__title']
     ordering_fields = ['username', 'albums__title']
-    http_method_names = ['get', 'patch', 'head', 'options']
+    http_method_names = ['get', 'put', 'patch', 'head', 'options']
 
 class AlbumViewSet(viewsets.ModelViewSet):
     queryset = Album.objects.prefetch_related('artist', 'songs')
     serializer_class = AlbumSerializer
+    permission_classes = [AllowAny,]
     filterset_class = AlbumFilter
     filter_backends = [
         DjangoFilterBackend,
@@ -46,6 +52,7 @@ class AlbumViewSet(viewsets.ModelViewSet):
 class SongViewSet(viewsets.ModelViewSet):
     queryset = Song.objects.all()
     serializer_class = SongSerializer
+    permission_classes = [AllowAny,]
     filterset_class = SongFilter
     filter_backends = [
         DjangoFilterBackend,
@@ -65,6 +72,7 @@ class SmallResultsSetPagination(PageNumberPagination):
     ]
 )
 class SearchView(APIView):
+    permission_classes = [AllowAny,]
     @extend_schema(request=None, responses=None)
     def get(self, request, *args, **kwargs):
         query = request.query_params.get('q', '').strip()
@@ -90,7 +98,7 @@ class SearchView(APIView):
         ).filter(
             Q(title__icontains=query) |
             Q(album__title__icontains=query) |
-            Q(album__artist__name__icontains=query) | Q(similarity__gt=0.2)
+            Q(album__artist__username__icontains=query) | Q(similarity__gt=0.2)
         ).order_by('-similarity')
 
         # albums = Album.objects.filter(
@@ -106,7 +114,7 @@ class SearchView(APIView):
             )
         ).filter(
             Q(title__icontains=query) |
-            Q(artist__name__icontains=query) | Q(similarity__gt=0.2)
+            Q(artist__username__icontains=query) | Q(similarity__gt=0.2)
         ).order_by('-similarity')
 
 
@@ -117,7 +125,7 @@ class SearchView(APIView):
                 TrigramSimilarity('username', query.lower())
             )
         ).filter(
-            Q(name__icontains=query) | Q(similarity__gt=0.2)
+            Q(username__icontains=query) | Q(similarity__gt=0.2)
         ).order_by('-similarity')
 
         combined_results = list(songs) + list(albums) + list(artists)
@@ -130,16 +138,16 @@ class SearchView(APIView):
         for obj in paginated_results:
             if isinstance(obj, Song):
                 result_data = SongSerializer(obj, context={'request': request}).data
-                result_data['type'] = 'song'
+                result_data['data_type'] = 'song'
                 results.append(result_data)
             elif isinstance(obj, Album):
                 result_data = AlbumSerializer(obj, context={'request': request}).data
-                result_data['type'] = 'album'
+                result_data['data_type'] = 'album'
                 results.append(result_data)
                 result_data.pop('songs', None)
             elif isinstance(obj, CustomUser):
                 result_data = ArtistSerializer(obj, context={'request': request}).data
-                result_data['type'] = 'artist'
+                result_data['data_type'] = 'artist'
                 results.append(result_data)
                 result_data.pop('albums', None)
 
@@ -149,7 +157,47 @@ class SearchView(APIView):
         if isinstance(obj, Song):
             return obj.title.lower().count(query.lower()) + obj.album.title.lower().count(query.lower())
         elif isinstance(obj, Album):
-            return obj.title.lower().count(query.lower()) + obj.artist.name.lower().count(query.lower())
+            return obj.title.lower().count(query.lower()) + obj.artist.username.lower().count(query.lower())
         elif isinstance(obj, CustomUser):
-            return obj.name.lower().count(query.lower())
+            return obj.username.lower().count(query.lower())
         return 0
+    
+
+class PlaybackControlAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+    serializer_class = PlaybackActionSerializer
+
+    def post(self, request):
+        serializer = PlaybackActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        action = serializer.validated_data['action']
+        song_id = serializer.validated_data.get('song_id')
+
+        current_playback = CurrentPlayback.objects.get(user=request.user)
+
+        if action == 'play':
+            if not song_id:
+                return Response({"error": "song_id is required"}, status=400)
+            song = Song.objects.get(id=song_id)
+            current_playback.play(song)
+            return Response({"status": "Played"})
+        elif action == 'pause':
+            current_playback.pause()
+            return Response({"status": "Paused"})
+        elif action == 'resume':
+            current_playback.resume()
+            return Response({"status": "Playing"})
+        elif action == 'reset':
+            if not song_id:
+                return Response({"error": "song_id is required"}, status=400)
+            song = Song.objects.get(id=song_id)
+            current_playback.reset(song)
+            return Response({"status": "Stopped"})
+
+        
+    def get(self, request):
+        current_playback = CurrentPlayback.objects.get(user=request.user)
+        if current_playback.song:
+            data = CurrentPlaybackSerializer(current_playback).data
+            return Response({"data": data, "status": "Playing"})
+        return Response({"status": "Stopped / Not playing any song"})
