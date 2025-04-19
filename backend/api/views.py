@@ -18,6 +18,8 @@ from .utils import get_top_songs_last_month
 from collections import defaultdict
 # Create your views here.
 
+BASE_URL = 'http://127.0.0.1:8000'
+
 @extend_schema(
     parameters=[
         OpenApiParameter('album_type', type=str, description='Filters by album type (album, single, ep) in specific artist'),
@@ -209,28 +211,30 @@ class TopSongsAPIView(APIView):
 
     def get(self, request):
         top_songs = list(get_top_songs_last_month())
-        print(top_songs)
         result = defaultdict(list)
 
         for entry in top_songs:
-            genre = entry['song__genre']
+            genre = entry['genre_label']
             result[genre].append({
                 'song': entry['song__id'],
                 'play_count': entry['play_count']
             })
 
         grouped_result = dict(result)
-        print(grouped_result)
 
 
-        data = {}
+        data = []
         for genre, value in grouped_result.items():
-            print('value', value)
             songs_data = []
             for song in value:
                 song_obj = SongSerializer(Song.objects.get(id=song['song']), context={'request': request}).data
                 song_obj['play_count'] = song.pop('play_count')
                 songs_data.append(song_obj)
-            data[genre] = songs_data
+            data1 = {}
+            
+            data1['genre'] = genre
+            data1['cover'] = BASE_URL + CustomUser.objects.get(id=songs_data[0]['artist']).image.url if songs_data[0]['artist'] else None
+            data1['songs'] = songs_data
+            data.append(data1)
 
         return Response(data)
