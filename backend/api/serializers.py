@@ -211,6 +211,7 @@ class PlaybackActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['play', 'pause', 'resume', 'reset'])
     song_id = serializers.IntegerField(required=False)
 
+
 class CurrentPlaybackSerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrentPlayback
@@ -219,3 +220,8 @@ class CurrentPlaybackSerializer(serializers.ModelSerializer):
             'started_at', 'progress_seconds', 'paused_at', 
             'is_paused'
         ]
+
+
+class UserPlaybackHistorySerializer(serializers.Serializer):
+    song = SongSerializer(nested=True)
+    played_at = serializers.DateTimeField()

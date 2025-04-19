@@ -7,8 +7,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
 
-from .models import CustomUser, Album, Song, CurrentPlayback
-from .serializers import ArtistSerializer, AlbumSerializer, SongSerializer, CurrentPlaybackSerializer, PlaybackActionSerializer
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback
+from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
+                          CurrentPlaybackSerializer, PlaybackActionSerializer,
+                          UserPlaybackHistorySerializer)
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -206,6 +208,16 @@ class PlaybackControlAPIView(APIView):
         return Response({"status": "Stopped / Not playing any song"})
     
 
+class UserPlaybackHistoryAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def get(self, request):
+        user = request.user
+        playback_history = SongPlayback.objects.filter(user=user).order_by('-played_at')
+        serializer = UserPlaybackHistorySerializer(playback_history, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+
 class TopSongsAPIView(APIView):
     permission_classes = [AllowAny,]
 
@@ -228,6 +240,10 @@ class TopSongsAPIView(APIView):
             songs_data = []
             for song in value:
                 song_obj = SongSerializer(Song.objects.get(id=song['song']), context={'request': request}).data
+                song_obj.pop('lyrics')
+                song_obj.pop('genre')
+
+                song_obj.pop('plays')
                 song_obj['play_count'] = song.pop('play_count')
                 songs_data.append(song_obj)
             data1 = {}
