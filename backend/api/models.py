@@ -60,6 +60,13 @@ class Song(models.Model):
     plays = models.PositiveIntegerField(default=0)
     featured_artists = models.ManyToManyField(CustomUser, related_name='featured_songs', blank=True)
     is_indecent = models.BooleanField(default=False)
+    genre = models.CharField(max_length=50, choices=[
+        ('pop', 'Pop'), ('rock', 'Rock'), 
+        ('hip-hop', 'Hip-Hop'), ('jazz', 'Jazz'),
+        ('blues', 'Blues'), ('country', 'Country'),
+        ('electronic', 'Electronic'), ('reggae', 'Reggae'),
+        ('rap', 'Rap'), ('r&b', 'R&B'),
+        ('classical', 'Classical'), ('other', 'Other')], default='other')
 
     def __str__(self):
         return self.title
@@ -84,6 +91,7 @@ class CurrentPlayback(models.Model):
         self.progress_seconds = 0
         self.paused_at = None
         self.is_paused = False
+        SongPlayback.objects.create(user=self.user, song=song)
         self.save()
 
     def pause(self):
@@ -110,3 +118,12 @@ class CurrentPlayback(models.Model):
         self.paused_at = None
         self.is_paused = False
         self.save()
+
+
+class SongPlayback(models.Model):
+    user = models.ForeignKey(CustomUser, related_name='song_playbacks', on_delete=models.CASCADE)
+    song = models.ForeignKey(Song, related_name='playbacks', on_delete=models.CASCADE)
+    played_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} played {self.song.title}"

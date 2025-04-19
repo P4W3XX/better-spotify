@@ -14,7 +14,8 @@ from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-
+from .utils import get_top_songs_last_month
+from collections import defaultdict
 # Create your views here.
 
 @extend_schema(
@@ -201,3 +202,35 @@ class PlaybackControlAPIView(APIView):
             data = CurrentPlaybackSerializer(current_playback).data
             return Response({"data": data, "status": "Playing"})
         return Response({"status": "Stopped / Not playing any song"})
+    
+
+class TopSongsAPIView(APIView):
+    permission_classes = [AllowAny,]
+
+    def get(self, request):
+        top_songs = list(get_top_songs_last_month())
+        print(top_songs)
+        result = defaultdict(list)
+
+        for entry in top_songs:
+            genre = entry['song__genre']
+            result[genre].append({
+                'song': entry['song__id'],
+                'play_count': entry['play_count']
+            })
+
+        grouped_result = dict(result)
+        print(grouped_result)
+
+
+        data = {}
+        for genre, value in grouped_result.items():
+            print('value', value)
+            songs_data = []
+            for song in value:
+                song_obj = SongSerializer(Song.objects.get(id=song['song']), context={'request': request}).data
+                song_obj['play_count'] = song.pop('play_count')
+                songs_data.append(song_obj)
+            data[genre] = songs_data
+
+        return Response(data)

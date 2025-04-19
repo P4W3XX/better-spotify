@@ -14,7 +14,7 @@ class SongSerializer(serializers.ModelSerializer):
         model = Song
         fields = [
             'id', 'album', 'artist', 'title', 'duration', 
-            'file', 'lyrics', 'track_number', 'plays', 
+            'file', 'lyrics', 'track_number', 'plays', 'genre',
             'is_indecent', 'featured_artists'
         ]
         extra_kwargs = {
@@ -108,15 +108,7 @@ class AlbumSerializer(serializers.ModelSerializer):
                 dominant_color = get_dominant_color(image_path)
                 return dominant_color
         return None
-
-    # def to_representation(self, instance):
-    #     representation = super().to_representation(instance)
-        
-    #     if instance.theme == "#EE2020":
-    #         representation['theme'] = get_dominant_color(instance.image.path)
-
-    #     return representation
-
+    
 
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
