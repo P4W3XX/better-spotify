@@ -211,16 +211,50 @@ class PlaybackControlAPIView(APIView):
 class UserPlaybackHistoryAPIView(APIView):
     permission_classes = [IsAuthenticated,]
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: UserPlaybackHistorySerializer(many=True),
+        }
+    )
     def get(self, request):
         user = request.user
         playback_history = SongPlayback.objects.filter(user=user).order_by('-played_at')
         serializer = UserPlaybackHistorySerializer(playback_history, many=True, context={'request': request})
         return Response(serializer.data)
-    
 
 class TopSongsAPIView(APIView):
     permission_classes = [AllowAny,]
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'genre': {'type': 'string'},
+                        'cover': {'type': 'string', 'format': 'uri'},
+                        'songs': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'object',
+                                'properties': {
+                                    'id': {'type': 'integer'},
+                                    'title': {'type': 'string'},
+                                    'artist': {'type': 'integer'},
+                                    'album': {'type': 'integer'},
+                                    'duration': {'type': 'integer'},
+                                    'play_count': {'type': 'integer'}
+                                },
+                            }
+                        }
+                    },
+                }
+            }
+        }
+    )
     def get(self, request):
         top_songs = list(get_top_songs_last_month())
         result = defaultdict(list)
