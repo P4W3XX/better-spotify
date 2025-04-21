@@ -11,6 +11,6 @@ urlpatterns = [
     path('', include(router.urls)),
     path('search/', views.SearchView.as_view(), name='search'),
     path('playback/control/', views.PlaybackControlAPIView.as_view(), name='playback-control'),
-    path('top-songs/', views.TopSongsAPIView.as_view(), name='top-songs'),
     path('user-history/', views.UserPlaybackHistoryAPIView.as_view(), name='user-history'),
+    path('top-songs/', views.TopSongsAPIView.as_view(), name='top-songs'),
 ]

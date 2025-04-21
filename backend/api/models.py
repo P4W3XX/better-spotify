@@ -45,7 +45,7 @@ class Album(models.Model):
     image = models.ImageField(upload_to='albums/', blank=True, null=True)
     release_date = models.DateField(default="2023-01-01")
     album_type = models.CharField(max_length=50, choices=[('single', 'Single'), ('album', 'Album'), ('ep', 'EP')], default='album')
-    # theme = models.CharField(max_length=50, default='#777777')
+    theme = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return self.title

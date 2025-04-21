@@ -79,7 +79,7 @@ class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
     album_duration = serializers.SerializerMethodField()
     total_plays = serializers.SerializerMethodField()
-    theme = serializers.SerializerMethodField()
+    # theme = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
@@ -100,14 +100,14 @@ class AlbumSerializer(serializers.ModelSerializer):
             self.fields.pop('artist')
             self.fields.pop('songs')
 
-    @extend_schema_field(serializers.CharField)
-    def get_theme(self, obj):
-        if obj.image:
-            image_path = obj.image.path
-            if os.path.exists(image_path):
-                dominant_color = get_dominant_color(image_path)
-                return dominant_color
-        return None
+    # @extend_schema_field(serializers.CharField)
+    # def get_theme(self, obj):
+    #     if obj.image:
+    #         image_path = obj.image.path
+    #         if os.path.exists(image_path):
+    #             dominant_color = get_dominant_color(image_path)
+    #             return dominant_color
+    #     return None
     
 
     @extend_schema_field(serializers.ListField)
@@ -139,11 +139,16 @@ class AlbumSerializer(serializers.ModelSerializer):
             songs_data = validated_data.pop('songs')
         except KeyError:
             songs_data = []
-            
         album = Album.objects.create(**validated_data)
-        
         for song_data in songs_data:
             Song.objects.create(album=album, **song_data)
+
+        if album.theme == "" and album.image:
+            image_path = album.image.path
+            if os.path.exists(image_path):
+                dominant_color = get_dominant_color(image_path)
+                album.theme = dominant_color
+                album.save()
         return album
     
     
@@ -164,6 +169,13 @@ class AlbumSerializer(serializers.ModelSerializer):
                     song.save()
                 else:
                     Song.objects.create(album=instance, **song_data)
+
+        if instance.theme == "" and instance.image:
+            image_path = instance.image.path
+            if os.path.exists(image_path):
+                dominant_color = get_dominant_color(image_path)
+                instance.theme = dominant_color
+                instance.save()
 
         return instance
 
