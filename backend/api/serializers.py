@@ -1,12 +1,12 @@
 from django.db.models import Sum
 from rest_framework import serializers
-from .models import Artist, Album, Song
+from .models import CustomUser, Album, Song, CurrentPlayback
 from drf_spectacular.utils import extend_schema_field
+from django.templatetags.static import static
 from mutagen.mp3 import MP3
 import datetime
 import os
-import math
-
+from .utils import get_dominant_color
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
@@ -14,7 +14,7 @@ class SongSerializer(serializers.ModelSerializer):
         model = Song
         fields = [
             'id', 'album', 'artist', 'title', 'duration', 
-            'file', 'lyrics', 'track_number', 'plays', 
+            'file', 'lyrics', 'track_number', 'plays', 'genre',
             'is_indecent', 'featured_artists'
         ]
         extra_kwargs = {
@@ -79,14 +79,18 @@ class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
     album_duration = serializers.SerializerMethodField()
     total_plays = serializers.SerializerMethodField()
+    theme = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
         fields = [
             'id', 'title', 'album_type', 'artist', 'image', 
-            'release_date', 'album_duration', 'theme', 
+            'release_date', 'album_duration', 'theme',
             'total_plays', 'songs'
         ]
+        extra_kwargs = {
+            'theme': {'required': False},
+        }
 
 
     def __init__(self, *args, **kwargs):
@@ -96,10 +100,19 @@ class AlbumSerializer(serializers.ModelSerializer):
             self.fields.pop('artist')
             self.fields.pop('songs')
 
+    @extend_schema_field(serializers.CharField)
+    def get_theme(self, obj):
+        if obj.image:
+            image_path = obj.image.path
+            if os.path.exists(image_path):
+                dominant_color = get_dominant_color(image_path)
+                return dominant_color
+        return None
+    
 
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
-        return SongSerializer(obj.songs, many=True, nested=True, context=self.context, required=False).data
+        return SongSerializer(obj.songs.order_by('track_number'), many=True, nested=True, context=self.context, required=False).data
     
 
     @extend_schema_field(serializers.DurationField)
@@ -156,10 +169,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
 class ArtistSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
+    # name = serializers.CharField(source='username', read_only=True)
 
     class Meta:
-        model = Artist
-        fields = ['id', 'name', 'image', 'albums']
+        model = CustomUser
+        fields = ['id', 'username', 'image', 'type', 'albums']
 
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
@@ -173,11 +187,41 @@ class ArtistSerializer(serializers.ModelSerializer):
             album_type = self.context['request'].query_params.get('album_type', None)
 
         if album_type:
-            albums = instance.albums.filter(album_type=album_type).order_by('release_date')
+            albums = instance.albums.filter(album_type=album_type).order_by('-release_date')
         else:
-            albums = instance.albums.all().order_by('release_date')
+            albums = instance.albums.all().order_by('-release_date')
 
         representation = super().to_representation(instance)
         representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
+
+        if instance.type != 'artist':
+            representation.pop('albums', None)
+
+        if instance.image == '':
+            request = self.context.get('request')
+            if request:
+                representation['image'] = request.build_absolute_uri(static('default.jpg'))
+            else:
+                representation['image'] = static('default.jpg')
         
         return representation
+    
+
+class PlaybackActionSerializer(serializers.Serializer):
+    action = serializers.ChoiceField(choices=['play', 'pause', 'resume', 'reset'])
+    song_id = serializers.IntegerField(required=False)
+
+
+class CurrentPlaybackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CurrentPlayback
+        fields = [
+            'song', 'song_id', 
+            'started_at', 'progress_seconds', 'paused_at', 
+            'is_paused'
+        ]
+
+
+class UserPlaybackHistorySerializer(serializers.Serializer):
+    song = SongSerializer(nested=True)
+    played_at = serializers.DateTimeField()

@@ -64,7 +64,7 @@ Now, get your Supabase credentials and update `.env` file
 
 `DB_NAME`	The name of your Supabase database
 
-# Enable Trigram Extension for Fuzzy Search
+## Enable Trigram Extension for Fuzzy Search
 To support fuzzy search (e.g., typo-tolerant queries using TrigramSimilarity), you need to enable the PostgreSQL pg_trgm extension in your Supabase database.
 
 1. Go to your Supabase dashboard.
@@ -91,7 +91,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-The backend app will be avaible at: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+The backend app will be available at: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 
 Now, start the frontend development server:
 
