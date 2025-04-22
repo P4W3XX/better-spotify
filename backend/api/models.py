@@ -55,7 +55,7 @@ class Song(models.Model):
     album = models.ForeignKey(Album, related_name='songs', on_delete=models.CASCADE)
     duration = models.DurationField()
     file = models.FileField(upload_to='songs/')
-    lyrics = models.TextField(blank=True, null=True)
+    lyrics = models.JSONField(blank=True, default=dict, null=False)
     track_number = models.PositiveIntegerField()
     plays = models.PositiveIntegerField(default=0)
     featured_artists = models.ManyToManyField(CustomUser, related_name='featured_songs', blank=True)

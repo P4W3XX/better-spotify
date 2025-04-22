@@ -28,9 +28,20 @@ class SongSerializer(serializers.ModelSerializer):
             self.fields.pop('lyrics')
             # self.fields.pop('album')
 
+    def validate_lyrics(self, value):
+        if value in (None, '', []):
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Lyrics must be a valid JSON object.")
+        return value
+
 
     def create(self, validated_data):
         featured_artists = validated_data.pop('featured_artists', [])
+
+        lyrics = validated_data.get('lyrics')
+        if not isinstance(lyrics, dict):
+            validated_data['lyrics'] = {}
 
         try:
             artist_to_remove = next(artist for artist in featured_artists if validated_data['album'].artist.id == artist.id)
@@ -53,6 +64,11 @@ class SongSerializer(serializers.ModelSerializer):
         featured_artists = validated_data.pop('featured_artists', None)
         file = validated_data.get('file', None)
         instance.file = file if file else instance.file
+
+        
+        lyrics = validated_data.get('lyrics')
+        if not isinstance(lyrics, dict):
+            validated_data['lyrics'] = {}
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
