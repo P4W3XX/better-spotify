@@ -77,7 +77,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
       for (const artistId of feats) {
         try {
           const res = await axios.get(`http://127.0.0.1:8000/api/artists/${artistId}/`);
-          featNames.push(res.data.name);
+          featNames.push(res.data.username);
           console.log(res.data.name);
         } catch (err) {
           console.error("Error fetching artist data:", err);

@@ -92,7 +92,7 @@ export default function ItemCover({
       if (!artistID) return;
       try {
         const res = await axios.get(`http://127.0.0.1:8000/api/artists/${artistID}/`);
-        setArtistName(res.data.name);
+        setArtistName(res.data.username);
       } catch (error) {
         console.error("Error fetching artist data:", error);
       }

@@ -392,7 +392,7 @@ export default function Album() {
           .get(`http://127.0.0.1:8000/api/artists/${resp.data.artist || 0}/`)
           .then((res) => {
             setArtistInfo({
-              name: res.data.name,
+              name: res.data.username,
               cover: res.data.image,
             });
           });
@@ -422,7 +422,7 @@ export default function Album() {
       </button>
       <TopBar handleRef={handleRef} setScrollY2={setScrollY} title={albumInfo.title} artist={artistInfo.name} cover={albumInfo.cover} theme={albumInfo.theme} />
       <div className=" md:p-7 px-4 pt-16 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
-        <div className=" w-full h-full left-0 bg-gradient-to-t from-black/20 top-0 absolute" />
+        <div className=" w-full h-full left-0 bg-gradient-to-t from-black/40 to-black/20 top-0 absolute" />
         {albumInfo.cover ? (
           <Image
             src={albumInfo.cover}
@@ -534,7 +534,7 @@ export default function Album() {
           </div>
         </div>
       </div>
-      <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/20">
+      <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/40">
         <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
           <button onClick={() => {
             if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
