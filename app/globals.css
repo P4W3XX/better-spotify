@@ -140,26 +140,11 @@
   }
 }
 
-/* Na końcu pliku */
-
-/* Ukrywanie titlebar dla PWA */
-@media (display-mode: standalone), (display-mode: fullscreen), (display-mode: window-controls-overlay) {
-  .titleBar {
-    display: none !important;
-  }
-  
-  /* Dostosuj obszar zajmowany przez aplikację */
-  body {
-    padding-top: env(titlebar-area-height, 0);
-    height: 100vh;
-    width: 100vw;
-    margin: 0;
-    overflow: hidden;
-  }
-  
-  /* Rozszerz elementy, aby wypełnić obszar paska tytułowego */
-  #__next, main {
-    width: 100vw;
-    height: 100vh;
-  }
+.titleBar {
+  position: fixed;
+  background-color: transparent;
+  left: env(titlebar-area-x, 0);
+  top: env(titlebar-area-y, 0);
+  width: env(titlebar-area-width, 0);
+  height: env(titlebar-area-height, 0);
 }
