@@ -4,8 +4,9 @@ import {
   ArrowBigLeft,
   ArrowBigRight,
   Blend,
-  Maximize,
+  Maximize2,
   MicVocal,
+  Minimize2,
   Pause,
   Play,
   Repeat,
@@ -30,7 +31,6 @@ import { useRouter } from "next/navigation";
 import { SynchronizedLyrics } from "./synchronized-lyrics";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ScrollArea } from "./ui/scroll-area";
 
 export default function PlayBar() {
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -85,7 +85,7 @@ export default function PlayBar() {
     "The lyrics are playing hide and seek.",
   ];
 
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(true);
   const [isLyricText, setIsLyricText] = useState<string>("");
 
   useEffect(() => {
@@ -168,6 +168,32 @@ export default function PlayBar() {
 
     return 0;
   };
+
+  useEffect(() => {
+    if (!isMobile) {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          setIsFullScreen(false);
+          setIsLyric(false);
+        }
+      };
+
+      const handleFullscreenChange = () => {
+        if (!document.fullscreenElement && isFullScreen) {
+          setIsFullScreen(false);
+          setIsLyric(false);
+        }
+      };
+
+      window.addEventListener("keydown", handleKeyDown);
+      document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+      return () => {
+        window.removeEventListener("keydown", handleKeyDown);
+        document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      };
+    }
+  }, [isFullScreen, isMobile]);
 
   const formatSecondsToTime = (seconds: number): string => {
     const hours = Math.floor(seconds / 3600);
@@ -362,11 +388,12 @@ export default function PlayBar() {
               <SynchronizedLyrics
                 lyrics={currentSongDetails.lyric.lyric}
                 currentTime={formatTimeToSeconds(currentTime)}
-                setCurrentTime={(time: number) => { 
+                setCurrentTime={(time: number) => {
+                  console.log("Setting current time:", time);
                   if (audioRef.current) {
                     audioRef.current.currentTime = time;
                   }
-                  setCurrentTime(formatSecondsToTime(time)); 
+                  setCurrentTime(formatSecondsToTime(time));
                 }}
               />
             ) : (
@@ -696,7 +723,7 @@ export default function PlayBar() {
             </motion.div>
 
           </div>
-          <div className=" w-full flex items-center justify-between z-[999] px-5 pb-5">
+          <div className=" w-full backdrop-blur-lg pt-5 flex items-center justify-between z-[999] px-5 pb-5">
             <button
               onClick={() => {
                 setIsLyric(!isLyric);
@@ -902,6 +929,7 @@ export default function PlayBar() {
     return (
       <>
         <motion.main
+          layout
           initial={{
             y: "100%",
             display: "none",
@@ -917,284 +945,169 @@ export default function PlayBar() {
           style={{
             backgroundColor: currentSongDetails.theme || "#474747",
           }}
-          className=" absolute w-full h-full left-0 top-0 z-[9999] flex-col p-10 flex items-center justify-end"
+          className=" absolute w-full h-full left-0 top-0 z-[9999] flex-col flex items-center justify-end"
         >
-          <AnimatePresence mode="wait">
-            <motion.div className=" w-full items-center justify-center flex flex-col">
-              <motion.div className=" w-full absolute flex items-center top-4 left-0 right-0 px-4 gap-x-4">
-                {isLyric && (
-                  <>
-                    <motion.img
-                      key={"SmallCover"}
-                      layoutId="cover"
-                      className="rounded-lg bg-transparent z-20 size-[5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
-                      src={currentSongDetails.cover || "/albumPlaceholder.svg"}
-                      alt="cover"
-                      width={600}
-                      height={600}
+          <div className=" w-full h-full absolute left-0 top-0 bg-gradient-to-t from-black/70 to-70%" />
+          {isLyric && (
+            <div className=" w-max h-fit flex items-center absolute top-0 bottom-0 my-[13rem] gap-x-10 justify-center z-[99]" >
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={"LyricCover"}
+                  layoutId={"cover"}
+                  className="rounded-lg bg-transparent size-auto max-h-[30rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+                  src={currentSongDetails.cover || "/albumPlaceholder.svg"}
+                  alt="cover"
+                  width={600}
+                  height={600}
+                />
+                <motion.div initial={{
+                  opacity: 0,
+                }} animate={{
+                  opacity: 1,
+                }} exit={{
+                  opacity: 0,
+                }} transition={{
+                  delay: 0.2,
+                }} className=" max-w-[40rem] w-full max-h-[30rem] h-full overflow-auto">
+                  {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
+                    <SynchronizedLyrics
+                      lyrics={currentSongDetails.lyric.lyric}
+                      currentTime={formatTimeToSeconds(currentTime)}
+                      setCurrentTime={(time: number) => {
+                        console.log("Setting current time:", time);
+                        if (audioRef.current) {
+                          audioRef.current.currentTime = time;
+                        }
+                        setCurrentTime(formatSecondsToTime(time));
+                      }}
                     />
-                    <motion.div key={"SmallDetails"} layoutId="details" className=" w-full flex items-center justify-center">
-                      <div className="overflow-hidden w-full">
-                        <div ref={titleHandle} className="overflow-hidden w-full">
-                          <motion.div
-                            ref={titleRef}
-                            initial={{ x: 0 }}
-                            animate={
-                              isTitleAnimated
-                                ? {
-                                  x: ["100%", 0, 0, "-100%"],
-                                  transition: {
-                                    times: [0, 0.3, 0.7, 1],
-                                    duration: 6,
-                                    repeat: Infinity,
-                                  },
-                                }
-                                : { x: 0 }
-                            }
-                            className="font-semibold text-3xl w-max whitespace-nowrap"
-                          >
-                            {currentSongDetails.title || ""}
-                          </motion.div>
-                        </div>
-                        <motion.div
-                          ref={artistsRef}
-                          initial={{ x: 0 }}
-                          animate={
-                            isArtistsAnimated
-                              ? {
-                                x: ["100%", 0, 0, "-100%"],
-                                transition: {
-                                  times: [0, 0.3, 0.7, 1],
-                                  duration: 6,
-                                  repeat: Infinity,
-                                },
-                              }
-                              : { x: 0 }
-                          }
-                          className="text-white/50 text-lg w-max cursor-pointer group-hover:text-white transition-colors font-medium whitespace-nowrap"
-                        >
-                          <span
-                            onClick={() => {
-                              router.push(`/artist/${currentSongDetails.artist}`);
-                            }}
-                            className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
-                          >
-                            {artistName || ""}
-                          </span>
-                          {feats && feats.length > 0 && (
-                            <span className="text-white/50 hover:underline hover:text-white transition-colors text-xs">
-                              {","}
-                              {feats.join(", ")}
-                            </span>
-                          )}
-                        </motion.div>
-                      </div>
-                      <button
-                        style={{
-                          backgroundColor: currentSongDetails.theme || "#474747",
-                          boxShadow: `-10px 0 10px 10px ${currentSongDetails.theme || "rgba(0,0,0,0.5)"}`,
-                        }}
-                        className=" h-max pl-2 z-10"
-                      >
-                        <CirclePlus className=" text-white md:size-[30px] size-[24px]" />
-                      </button>
-                    </motion.div>
-                  </>
-                )}
-              </motion.div>
+                  ) : (
+                    <p className=" text-white/50 h-full w-full flex items-center justify-center text-center text-3xl font-medium">{isLyricText}</p>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>)}
+          <motion.div initial={false} animate={{
+            opacity: isLyric && isBlended ? 1 : 0,
+            display: isLyric && isBlended ? "block" : "none",
+          }} className=" w-full h-full pointer-events-none absolute top-0 left-0 z-10 " >
+            <motion.div
+              key={"BlendedCover2"}
+              className=" absolute h-full w-full object-center backdrop-blur-3xl object-cover z-10 left-0 top-0 bg-black/40 to-90%"
+            />
+            <motion.img
+              key={"BlendedImage"}
+              layoutId={"cover"}
+              className=" bg-transparent h-full z-10 w-full object-center object-cover"
+              src={currentSongDetails.cover || "/albumPlaceholder.svg"}
+              alt="cover"
+              width={600}
+              height={600}
+            />
+          </motion.div>
+          {isBlended && !isLyric && (
+            <>
+              <motion.div animate={{
+                opacity: isBlended ? 1 : 0,
+              }} initial={false} key={"BlendedCover"} className=" absolute h-full w-full object-center object-cover z-10 left-0 top-0 bg-black/40" />
               <motion.img
-                key={"LargeCover"}
+                key={"BlendedImage"}
                 layoutId={"cover"}
                 animate={{
                   opacity: isLyric ? 0 : 1,
                   scale: action === "Play" ? 1 : 0.8,
                 }}
-                className="rounded-lg bg-transparent size-auto max-h-[30rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+                className=" bg-transparent absolute h-full z-0 w-full object-center object-cover left-0 top-0 shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
                 src={currentSongDetails.cover || "/albumPlaceholder.svg"}
                 alt="cover"
                 width={600}
                 height={600}
               />
-              <motion.div
-                animate={{
-                  opacity: isLyric ? 0 : 1,
-                }}
-                key={"LargeDetails"}
-                layoutId="details"
-                className=" w-full flex items-center justify-center mt-10"
-              >
-                <div className="overflow-hidden w-full">
-                  <div ref={titleHandle} className="overflow-hidden w-full">
-                    <motion.div
-                      ref={titleRef}
-                      initial={{ x: 0 }}
-                      animate={
-                        isTitleAnimated
-                          ? {
-                            x: ["100%", 0, 0, "-100%"],
-                            transition: {
-                              times: [0, 0.3, 0.7, 1],
-                              duration: 6,
-                              repeat: Infinity,
-                            },
-                          }
-                          : { x: 0 }
-                      }
-                      className="font-semibold text-5xl w-max whitespace-nowrap leading-16"
-                    >
-                      {currentSongDetails.title || ""}
-                    </motion.div>
-                  </div>
-                  <div className=" flex items-center">
-                    {currentSongDetails.explicit && (
-                      <div className=" size-5 min-w-[16px] flex items-center text-xs justify-center rounded-sm bg-white/30 font-medium mr-1">E</div>
-                    )}
-
-                    <div ref={artistsHandle} className="overflow-hidden w-full">
-                      <motion.div
-                        ref={artistsRef}
-                        initial={{ x: 0 }}
-                        animate={
-                          isArtistsAnimated
-                            ? {
-                              x: ["100%", 0, 0, "-100%"],
-                              transition: {
-                                times: [0, 0.3, 0.7, 1],
-                                duration: 6,
-                                repeat: Infinity,
-                              },
-                            }
-                            : { x: 0 }
-                        }
-                        className="text-white/50 text-2xl w-max cursor-pointer  transition-colors font-medium whitespace-nowrap"
-                      >
-                        <span
-                          onClick={() => {
-                            router.push(`/artist/${currentSongDetails.artist}`);
-                          }}
-                          className="text-white/50 hover:underline hover:text-white transition-colors"
-                        >
-                          {artistName || ""}
-                        </span>
-                        {feats &&
-                          feats.length > 0 &&
-                          feats.map((feat, index) => (
-                            <span
-                              key={index}
-                              onClick={() => {
-                                router.push(`/artist/${currentSongDetails.feats[index]}`);
-                              }}
-                              className="text-white/50 hover:underline hover:text-white transition-colors text-2xl"
-                            >
-                              {","}
-                              {feat}
-                            </span>
-                          ))}
-                      </motion.div>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  style={{
-                    backgroundColor: currentSongDetails.theme || "#474747",
-                    boxShadow: `-10px 0 10px 10px ${currentSongDetails.theme || "rgba(0,0,0,0.5)"}`,
+            </>
+          )}
+          <motion.img
+            key={"LargeCover"}
+            layoutId={"cover"}
+            animate={{
+              opacity: isLyric || isBlended ? 0 : 1,
+              scale: action === "Play" ? 1 : 0.8,
+            }}
+            className="rounded-lg bg-transparent size-auto absolute top-0 bottom-0 my-[13rem] left-0 right-0 mx-auto max-h-[30rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
+            src={currentSongDetails.cover || "/albumPlaceholder.svg"}
+            alt="cover"
+            width={600}
+            height={600}
+          />
+          <div className=" z-10 w-full h-max backdrop-blur-lg flex flex-col space-y-8 px-10 pb-10">
+            <div>
+              <h1 className=" text-7xl font-semibold">
+                {currentSongDetails.title || ""}
+              </h1>
+              <div className=" text-lg font-medium flex items-center">
+                {currentSongDetails.explicit && (
+                  <div className=" size-6 min-w-[16px] flex items-center text-sm justify-center rounded-sm bg-white/30 font-medium mr-1">E</div>
+                )}
+                <span
+                  onClick={(e) => {
+                    router.push(`/artist/${currentSongDetails.artist}`);
+                    e.stopPropagation();
                   }}
-                  className=" h-max pl-2 z-10"
+                  className="text-white/50 hover:underline cursor-pointer hover:text-white transition-colors"
                 >
-                  <CirclePlus className=" text-white md:size-[28px] size-[32px]" />
-                </button>
-              </motion.div>
-            </motion.div>
-          </AnimatePresence>
-          <motion.div
-            initial={false}
-            animate={{
-              opacity: isLyric ? 1 : 0,
-              scale: isLyric ? 1 : 0.8,
-              display: isLyric ? "flex" : "none",
-              transition: {
-                delay: isLyric ? 0.2 : 0,
-              },
-              position: "absolute",
-            }}
-          >
-            {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
-              <ScrollArea className=" w-full h-svh pt-[9rem] pb-[5rem] px-4 overflow-hidden">
-                <div
-                  style={{
-                    backgroundImage: `linear-gradient(to bottom, ${currentSongDetails.theme || "#474747"} 0%, rgba(0, 0, 0, 0) 100%)`,
-                  }}
-                  className=" w-full h-[50px] absolute left-0 top-[8.9rem]"
-                />
-                <div
-                  style={{
-                    backgroundImage: `linear-gradient(to top, ${currentSongDetails.theme || "#474747"} 0%, rgba(0, 0, 0, 0) 100%)`,
-                  }}
-                  className=" w-full h-[50px] absolute left-0 bottom-[4.9rem]"
-                />
-                <SynchronizedLyrics
-                  lyrics={currentSongDetails.lyric.lyric}
-                  currentTime={formatTimeToSeconds(currentTime)}
-                  setCurrentTime={(time) => { setCurrentTime(formatSecondsToTime(time)); }}
-                />
-              </ScrollArea>
-            ) : (
-              <div className=" w-full h-svh pt-[9rem] pb-[5rem] px-4 overflow-hidden flex items-center justify-center">
-                <p className=" text-white/50 text-3xl px-4 font-medium">{isLyricText}</p>
+                  {artistName || ""}
+                </span>
+                {feats &&
+                  feats.length > 0 &&
+                  feats.map((feat, index) => (
+                    <span
+                      key={index}
+                      onClick={(e) => {
+                        router.push(`/artist/${currentSongDetails.feats[index]}`);
+                        e.stopPropagation();
+                      }}
+                      className="text-white/50 hover:underline cursor-pointer hover:text-white transition-colors"
+                    >
+                      {","}
+                      {feat}
+                    </span>
+                  ))}
               </div>
-            )}
-          </motion.div>
-          <motion.div
-            animate={{
-              opacity: isLyric ? 0 : 1,
-              y: isLyric ? 400 : 0,
-            }}
-            transition={{
-              ease: "easeInOut",
-            }}
-            className=" w-full mt-5"
-          >
-            <Slider
-              className=" w-full "
-              isThumb={false}
-              step={1}
-              defaultValue={[50]}
-              min={0}
-              onValueChange={(value) => {
-                if (audioRef.current) {
-                  audioRef.current.currentTime = value[0];
-                }
-                setCurrentTime(formatSecondsToTime(value[0]));
-              }}
-              max={formatTimeToSeconds(currentSongDetails.duration) || 100}
-              value={[formatTimeToSeconds(currentTime)]}
-            />
-            <div className=" w-full flex items-center justify-between mt-2">
-              <p className=" text-xs text-white/50 font-medium">
-                {formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"}
-              </p>
-              <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
             </div>
-          </motion.div>
-          <motion.div
-            animate={{
-              y: isLyric ? 20 : 0,
-            }}
-            transition={{
-              ease: "easeInOut",
-            }}
-            className=" flex items-center relative w-full gap-x-5 mt-20 mb-10"
-          >
-            <div className=" flex w-max absolute left-0 gap-x-5 right-0 mx-auto">
-              <button
-                onClick={() => {
-                  setIsShuffled(!isShuffled);
+            <div>
+              <Slider
+                className=" w-full "
+                isThumb={false}
+                step={1}
+                defaultValue={[50]}
+                min={0}
+                onValueChange={(value) => {
+                  if (audioRef.current) {
+                    audioRef.current.currentTime = value[0];
+                  }
+                  setCurrentTime(formatSecondsToTime(value[0]));
                 }}
-              >
-                {isShuffled ? <Shuffle size={45} className=" text-white" /> : <Shuffle size={45} className=" text-white opacity-40" />}
+                max={formatTimeToSeconds(currentSongDetails.duration) || 100}
+                value={[formatTimeToSeconds(currentTime)]}
+              />
+              <div className=" w-full flex items-center justify-between mt-2">
+                <p className=" text-xs text-white/50 font-medium">
+                  {formatSecondsToTime(formatTimeToSeconds(currentTime)) || "0:00"}
+                </p>
+                <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
+              </div>
+            </div>
+            <div className=" flex items-center justify-center w-full gap-x-5">
+              <button onClick={() => {
+                setIsShuffled(!isShuffled);
+              }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                {isShuffled ? (
+                  <Shuffle size={40} className=" text-white opacity-100" />
+                ) : (
+                  <Shuffle size={40} className=" text-white opacity-40" />
+                )}
               </button>
               <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigLeft fill="white" className=" text-white opacity-40 size-[70px]" />
+                <ArrowBigLeft fill="white" size={60} className=" text-white opacity-40" />
               </button>
               <button
                 onClick={() => {
@@ -1203,94 +1116,110 @@ export default function PlayBar() {
                 className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
               >
                 {action === "Play" ? (
-                  <Pause fill="white" className=" text-white size-[80px]" />
+                  <Pause fill="white" size={80} className=" text-white" />
                 ) : (
-                  <Play fill="white" className=" text-white size-[80px]" />
+                  <Play fill="white" size={80} className=" text-white" />
                 )}
               </button>
               <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigRight fill="white" className=" text-white opacity-40 size-[70px]" />
+                <ArrowBigRight fill="white" size={60} className=" text-whiteopacity-40" />
               </button>
-              <button
-                onClick={() => {
-                  if (isLooped === "false") {
-                    setIsLooped("all");
-                  } else if (isLooped === "all") {
-                    setIsLooped("one");
-                  } else if (isLooped === "one") {
-                    setIsLooped("false");
-                  }
-                }}
-              >
+              <button onClick={() => {
+                if (isLooped === "false") {
+                  setIsLooped("all");
+                } else if (isLooped === "all") {
+                  setIsLooped("one");
+                } else if (isLooped === "one") {
+                  setIsLooped("false");
+                }
+              }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
                 {isLooped === "false" ? (
-                  <Repeat size={45} className={` text-white opacity-40`} />
+                  <Repeat size={40} className={` text-white opacity-40`} />
                 ) : isLooped === "all" ? (
-                  <Repeat size={45} className={` text-white`} />
+                  <Repeat size={40} className={` text-white`} />
                 ) : (
-                  <Repeat1 size={45} className={` text-white`} />
+                  <Repeat1 size={40} className={` text-white`} />
                 )}
               </button>
             </div>
-            <div className=" flex w-1/6 absolute right-0 gap-x-5">
+          </div>
+          <div className=" w-full h-max absolute z-[100] space-x-4 top-4 flex items-center justify-center">
+            <button
+              onClick={() => {
+                setIsLyric(!isLyric);
+              }}
+              className={` transition-all shadow-[0_0_10px_0_rgba(0,0,0,0)]  rounded-xl ${isLyric ? "bg-white/10 shadow-black/20" : " bg-transparent shadow-transparent"
+                } p-2`}
+            >
+              {isLyric ? (
+                <MicVocal size={25} className=" text-white" />
+              ) : (
+                <MicVocal size={25} className=" text-white opacity-40" />
+              )}
+            </button>
+            <div className=" flex gap-x-2 max-w-[15rem] w-full">
               <button
-                onClick={() => {
-                  setIsLyric(!isLyric);
-                }}
-              >
-                {isLyric ? <MicVocal size={25} className=" text-white" /> : <MicVocal size={25} className=" text-white opacity-40" />}
-              </button>
-              <div className=" flex gap-x-2 w-full pr-2">
-                <button
-                  className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
-                  onClick={() => {
-                    if (audioRef.current) {
-                      audioRef.current.muted = !audioRef.current.muted;
-                      setIsMuted(audioRef.current.muted);
-                      setVolumeState(audioRef.current.volume * 100);
-                    }
-                  }}
-                >
-                  {!isMuted ? (
-                    volumeState > 75 ? (
-                      <Volume2 className=" text-white md:size-[25px] stroke-2 opacity-50" />
-                    ) : volumeState > 25 ? (
-                      <Volume1 className=" text-white md:size-[25px] stroke-2 opacity-50" />
-                    ) : volumeState > 0 ? (
-                      <Volume className=" text-white md:size-[25px] stroke-2 opacity-50" />
-                    ) : (
-                      <VolumeX className=" text-white md:size-[25px] stroke-2 opacity-50" />
-                    )
-                  ) : (
-                    <VolumeOff className=" text-white md:size-[25px] stroke-2 opacity-50" />
-                  )}
-                </button>
-                <Slider
-                  defaultValue={[audioRef.current ? audioRef.current.volume * 100 : 50]}
-                  step={1}
-                  min={0}
-                  max={100}
-                  className=" w-full"
-                  value={[volumeState]}
-                  onValueChange={(value) => {
-                    if (audioRef.current) {
-                      audioRef.current.volume = value[0] / 100;
-                      setVolumeState(value[0]);
-                    }
-                  }}
-                  isThumb={false}
-                />
-              </div>
-              <button
-                onClick={() => {
-                  setIsFullScreen(!isFullScreen);
-                }}
                 className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
+                onClick={() => {
+                  if (audioRef.current) {
+                    audioRef.current.muted = !audioRef.current.muted;
+                    setIsMuted(audioRef.current.muted);
+                    setVolumeState(audioRef.current.volume * 100);
+                  }
+                }}
               >
-                <Maximize className=" text-white md:size-[25px] size-[20px] opacity-50" />
+                {!isMuted ? (
+                  volumeState > 75 ? (
+                    <Volume2 className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                  ) : volumeState > 25 ? (
+                    <Volume1 className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                  ) : volumeState > 0 ? (
+                    <Volume className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                  ) : (
+                    <VolumeX className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                  )
+                ) : (
+                  <VolumeOff className=" text-white md:size-[24px] stroke-2 opacity-50" />
+                )}
               </button>
+              <Slider
+                className=" w-full"
+                defaultValue={[audioRef.current ? audioRef.current.volume * 100 : 50]}
+                step={1}
+                min={0}
+                max={100}
+                value={[volumeState]}
+                onValueChange={(value) => {
+                  if (audioRef.current) {
+                    audioRef.current.volume = value[0] / 100;
+                    setVolumeState(value[0]);
+                  }
+                }}
+                isThumb={false}
+              />
             </div>
-          </motion.div>
-        </motion.main>
+            <button
+              onClick={() => {
+                setIsBlended(!isBlended);
+              }}
+              className={` transition-all shadow-[0_0_10px_0_rgba(0,0,0,0)]  rounded-xl ${isBlended ? "bg-white/10 shadow-black/20" : " bg-transparent shadow-transparent"
+                } p-2`}
+            >
+              <Blend size={25} className={` text-white transition-opacity ${isBlended ? "opacity-100" : "opacity-40"}`} />
+            </button>
+            <button
+              onClick={() => {
+                setIsFullScreen(!isFullScreen);
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                }
+              }}
+              className={` transition-all shadow-[0_0_10px_0_rgba(0,0,0,0)] text-white/40 hover:text-white  rounded-xl p-2`}
+            >
+              <Minimize2 size={25} className={` transition-opacity `} />
+            </button>
+          </div>
+        </motion.main >
         <main className=" w-full fixed bottom-0 p-2 space-x-[5%] justify-between z-[51] border-t border-zinc-800 items-center flex h-[6rem] bg-black">
           {currentSongDetails.url && <audio src={currentSongDetails.url} autoPlay ref={audioRef}></audio>}
           <div className=" flex items-center w-[70%] max-w-[25rem] relative gap-x-2">
@@ -1532,13 +1461,20 @@ export default function PlayBar() {
             <button
               onClick={() => {
                 setIsFullScreen(!isFullScreen);
+                if (!isMobile) {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                  } else {
+                    document.documentElement.requestFullscreen();
+                  }
+                }
               }}
               className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
             >
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Maximize className=" text-white md:size-[20px] size-[20px] opacity-50" />
+                    <Maximize2 className=" text-white md:size-[20px] size-[20px] opacity-50" />
                   </TooltipTrigger>
                   <TooltipContent
                     sideOffset={10}
