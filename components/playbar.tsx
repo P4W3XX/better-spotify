@@ -85,7 +85,7 @@ export default function PlayBar() {
     "The lyrics are playing hide and seek.",
   ];
 
-  const [isFullScreen, setIsFullScreen] = useState(true);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [isLyricText, setIsLyricText] = useState<string>("");
 
   useEffect(() => {
@@ -400,7 +400,7 @@ export default function PlayBar() {
               <p className=" text-white/50 h-svh w-full flex items-center justify-center text-center text-xl font-medium">{isLyricText}</p>
             )}
           </motion.div>
-          <motion.div className=" w-full absolute flex items-center top-4 left-0 right-0 px-4 gap-x-4">
+          <motion.div className=" w-full absolute flex backdrop-blur-3xl z-[9999] items-center top-0 py-4 left-0 right-0 px-4 gap-x-4">
             {isLyric && (
               <>
                 <motion.img
