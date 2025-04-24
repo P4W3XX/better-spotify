@@ -168,6 +168,12 @@ class SearchView(APIView):
         return 0
     
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter('action', type=str, description='Action to perform (play, pause, resume, reset)'),
+        OpenApiParameter('song_id', type=int, description='ID of the song to play or reset')
+    ]
+)
 class PlaybackControlAPIView(APIView):
     permission_classes = [IsAuthenticated,]
     serializer_class = PlaybackActionSerializer

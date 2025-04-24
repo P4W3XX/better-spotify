@@ -80,10 +80,19 @@ class CurrentPlayback(models.Model):
     is_paused = models.BooleanField(default=False)
     paused_at = models.DateTimeField(null=True, blank=True) 
     progress_seconds = models.PositiveIntegerField(default=0)
+    logged_playback = models.BooleanField(default=False)
+
     # started_at + progress
     
     def __str__(self):
         return f"{self.user.username}'s current playback"
+    
+    def _log_playback_if_needed(self):
+        if self.song and self.progress_seconds >= 3 and not self.logged_playback:
+            SongPlayback.objects.create(user=self.user, song=self.song)
+            self.logged_playback = True
+            self.save(update_fields=['logged_playback'])
+
 
     def play(self, song):
         self.song = song
@@ -91,7 +100,9 @@ class CurrentPlayback(models.Model):
         self.progress_seconds = 0
         self.paused_at = None
         self.is_paused = False
-        SongPlayback.objects.create(user=self.user, song=song)
+        # SongPlayback.objects.create(user=self.user, song=song)
+        self.logged_playback = False
+        self._log_playback_if_needed()
         self.save()
 
     def pause(self):
@@ -100,6 +111,9 @@ class CurrentPlayback(models.Model):
             if self.started_at:
                 elapsed = (now - self.started_at).total_seconds()
                 self.progress_seconds += int(elapsed)
+
+            self._log_playback_if_needed()
+
             self.paused_at = now
             self.is_paused = True
             self.save()
@@ -117,6 +131,9 @@ class CurrentPlayback(models.Model):
         self.progress_seconds = 0
         self.paused_at = None
         self.is_paused = False
+        
+        self.logged_playback = False
+        self._log_playback_if_needed()
         self.save()
 
 
