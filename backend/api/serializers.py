@@ -1,6 +1,6 @@
 from django.db.models import Sum
 from rest_framework import serializers
-from .models import CustomUser, Album, Song, CurrentPlayback
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback
 from drf_spectacular.utils import extend_schema_field
 from django.templatetags.static import static
 from mutagen.mp3 import MP3
@@ -10,16 +10,22 @@ from .utils import get_dominant_color
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
+    plays_test = serializers.SerializerMethodField()
     class Meta:
         model = Song
         fields = [
             'id', 'album', 'artist', 'title', 'duration', 
             'file', 'lyrics', 'track_number', 'plays', 'genre',
-            'is_indecent', 'featured_artists'
+            'is_indecent', 'featured_artists', 'plays_test'
         ]
         extra_kwargs = {
             'duration': {'read_only': True},
         }
+
+
+    def get_plays_test(self, obj):
+        songs = SongPlayback.objects.filter(song=obj).count()
+        return songs
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
