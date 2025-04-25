@@ -95,6 +95,7 @@ class CurrentPlayback(models.Model):
 
 
     def play(self, song):
+        self._log_playback_if_needed()
         self.song = song
         self.started_at = timezone.now()
         self.progress_seconds = 0
@@ -102,7 +103,6 @@ class CurrentPlayback(models.Model):
         self.is_paused = False
         # SongPlayback.objects.create(user=self.user, song=song)
         self.logged_playback = False
-        self._log_playback_if_needed()
         self.save()
 
     def pause(self):
@@ -126,6 +126,7 @@ class CurrentPlayback(models.Model):
             self.save()
 
     def reset(self, song=None):
+        self._log_playback_if_needed()
         self.song = song
         self.started_at = timezone.now() if song else None
         self.progress_seconds = 0
@@ -133,7 +134,6 @@ class CurrentPlayback(models.Model):
         self.is_paused = False
         
         self.logged_playback = False
-        self._log_playback_if_needed()
         self.save()
 
 

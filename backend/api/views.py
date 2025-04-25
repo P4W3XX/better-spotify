@@ -41,6 +41,11 @@ class ArtistViewSet(viewsets.ModelViewSet):
     ordering_fields = ['username', 'albums__title']
     http_method_names = ['get', 'put', 'patch', 'head', 'options']
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['many'] = self.action == 'list'
+        return context
+
 class AlbumViewSet(viewsets.ModelViewSet):
     queryset = Album.objects.prefetch_related('artist', 'songs')
     serializer_class = AlbumSerializer
