@@ -7,6 +7,10 @@ from mutagen.mp3 import MP3
 import datetime
 import os
 from .utils import get_dominant_color
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Count
+
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
@@ -203,19 +207,48 @@ class AlbumSerializer(serializers.ModelSerializer):
 
 class ArtistSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
+    top_songs = serializers.SerializerMethodField()
     # name = serializers.CharField(source='username', read_only=True)
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'image', 'type', 'albums']
+        fields = ['id', 'username', 'image', 'type', 'albums', 'top_songs']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.context.get('many', False):
+            self.fields.pop('top_songs')
+
 
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
         return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
     
+    @extend_schema_field(serializers.ListField)
+    def get_top_songs(self, obj):
+        limit = 10
+        last_month = timezone.now() - timedelta(days=30)
+    
+        songs_ids = SongPlayback.objects.filter(
+            song__album__artist=obj,
+            played_at__gte=last_month
+        ).values(
+            'song'
+        ).annotate(
+            play_count=Count('id')
+        ).order_by('-play_count')[:limit]
+
+        songs = []
+        for song in songs_ids:
+            song = Song.objects.get(id=song['song'])
+            songs.append(song)
+
+
+        return SongSerializer(songs, many=True, nested=True, context=self.context).data
+
+    
     def to_representation(self, instance):
-        # album_type = self.context['request'].query_params.get('album_type', None)
-        
         album_type = None
         if 'request' in self.context and hasattr(self.context['request'], 'query_params'):
             album_type = self.context['request'].query_params.get('album_type', None)
