@@ -7,10 +7,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
 
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback
+
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
                           CurrentPlaybackSerializer, PlaybackActionSerializer,
-                          UserPlaybackHistorySerializer)
+                          UserPlaybackHistorySerializer, PlaylistSerializer)
+
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -138,7 +140,20 @@ class SearchView(APIView):
             Q(username__icontains=query) | Q(similarity__gt=0.2)
         ).order_by('-similarity')
 
-        combined_results = list(songs) + list(albums) + list(artists)
+
+        playlists = Playlist.objects.annotate(
+            similarity=Greatest(
+                TrigramSimilarity('name', query),
+                TrigramSimilarity('name', query.lower()),
+                TrigramSimilarity('user__username', query),
+                TrigramSimilarity('user__username', query.lower())
+            )
+        ).filter(
+            (Q(user__username__icontains=query) |
+            Q(name__icontains=query) | Q(similarity__gt=0.2)) & Q(is_public=True)
+        ).order_by('-similarity')
+
+        combined_results = list(songs) + list(albums) + list(artists) + list(playlists)
         combined_results = sorted(combined_results, key=lambda x: self.get_relevance(x, query), reverse=False)
         combined_results.reverse()
 
@@ -160,6 +175,11 @@ class SearchView(APIView):
                 result_data['data_type'] = 'artist'
                 results.append(result_data)
                 result_data.pop('albums', None)
+            elif isinstance(obj, Playlist):
+                result_data = PlaylistSerializer(obj, context={'request': request}).data
+                result_data['data_type'] = 'playlist'
+                results.append(result_data)
+                result_data.pop('songs', None)
 
         return paginator.get_paginated_response(results)
 
@@ -170,6 +190,8 @@ class SearchView(APIView):
             return obj.title.lower().count(query.lower()) + obj.artist.username.lower().count(query.lower())
         elif isinstance(obj, CustomUser):
             return obj.username.lower().count(query.lower())
+        elif isinstance(obj, Playlist):
+            return obj.name.lower().count(query.lower()) + obj.user.username.lower().count(query.lower())
         return 0
     
 
@@ -205,9 +227,10 @@ class PlaybackControlAPIView(APIView):
             return Response({"status": "Playing"})
         elif action == 'reset':
             if not song_id:
-                return Response({"error": "song_id is required"}, status=400)
-            song = Song.objects.get(id=song_id)
-            current_playback.reset(song)
+                current_playback.reset()
+            else:
+                song = Song.objects.get(id=song_id)
+                current_playback.reset(song)
             return Response({"status": "Stopped"})
 
         
@@ -299,3 +322,13 @@ class TopSongsAPIView(APIView):
             data.append(data1)
 
         return Response(data)
+    
+
+class UserPlaylistViewSet(viewsets.ModelViewSet):
+    queryset = Playlist.objects.all()
+    serializer_class = PlaylistSerializer
+    permission_classes = [IsAuthenticated,]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Playlist.objects.filter(user=user)

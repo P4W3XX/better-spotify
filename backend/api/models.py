@@ -144,3 +144,15 @@ class SongPlayback(models.Model):
 
     def __str__(self):
         return f"{self.user.username} played {self.song.title}"
+    
+class Playlist(models.Model):
+    user = models.ForeignKey(CustomUser, related_name='playlists', on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='playlists/', blank=True, null=True)
+    is_public = models.BooleanField(default=False)
+    songs = models.ManyToManyField(Song, related_name='playlists', blank=True)
+    has_image = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.user} - {self.name}"
