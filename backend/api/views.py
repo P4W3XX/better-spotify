@@ -7,10 +7,12 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
 
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback
+
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
                           CurrentPlaybackSerializer, PlaybackActionSerializer,
-                          UserPlaybackHistorySerializer)
+                          UserPlaybackHistorySerializer, PlaylistSerializer)
+
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -205,9 +207,10 @@ class PlaybackControlAPIView(APIView):
             return Response({"status": "Playing"})
         elif action == 'reset':
             if not song_id:
-                return Response({"error": "song_id is required"}, status=400)
-            song = Song.objects.get(id=song_id)
-            current_playback.reset(song)
+                current_playback.reset()
+            else:
+                song = Song.objects.get(id=song_id)
+                current_playback.reset(song)
             return Response({"status": "Stopped"})
 
         
@@ -299,3 +302,12 @@ class TopSongsAPIView(APIView):
             data.append(data1)
 
         return Response(data)
+    
+
+class UserPlaylistViewSet(viewsets.ModelViewSet):
+    queryset = Playlist.objects.all()
+    serializer_class = PlaylistSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return Playlist.objects.filter(user=user)

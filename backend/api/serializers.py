@@ -1,15 +1,16 @@
 from django.db.models import Sum
 from rest_framework import serializers
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist
 from drf_spectacular.utils import extend_schema_field
 from django.templatetags.static import static
 from mutagen.mp3 import MP3
 import datetime
 import os
-from .utils import get_dominant_color
+from .utils import get_dominant_color, create_collage
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Count
+from django.conf import settings
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -37,6 +38,8 @@ class SongSerializer(serializers.ModelSerializer):
         if nested:
             self.fields.pop('lyrics')
             # self.fields.pop('album')
+            self.fields.pop('file')
+            self.fields.pop('genre')
 
     def validate_lyrics(self, value):
         if value in (None, '', []):
@@ -292,3 +295,70 @@ class CurrentPlaybackSerializer(serializers.ModelSerializer):
 class UserPlaybackHistorySerializer(serializers.Serializer):
     song = SongSerializer(nested=True)
     played_at = serializers.DateTimeField()
+        
+
+class PlaylistSerializer(serializers.ModelSerializer):
+    # songs = SongSerializer(many=True, nested=True)
+    theme = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Playlist
+        fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'songs',]
+
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+
+    #     if instance.has_image:
+    #         return super().to_representation(instance)
+    #     images = []
+    #     for song in instance.songs.all():
+    #         if song.album.image:
+    #             images.append(song.album.image.name)
+
+    #     os.makedirs(os.path.join(settings.MEDIA_ROOT, 'playlists'), exist_ok=True)
+
+    #     relative_path = os.path.join('playlists', f'playlist{instance.id}.jpg')
+    #     save_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+
+    #     collage = create_collage(images, save_path, size=(800, 800))
+
+    #     instance.image = relative_path
+    #     instance.save()
+
+    #     representation['songs'] = SongSerializer(instance.songs.all(), many=True, nested=True).data
+
+    #     return representation
+
+    def get_theme(self, obj):
+        return get_dominant_color(obj.image.path, 'RGBA') if obj.image else None
+
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['songs'] = SongSerializer(instance.songs.all(), many=True, nested=True).data
+
+        return representation
+    
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+
+        if instance.has_image:
+            return instance
+
+        images = []
+        for song in instance.songs.all():
+            if song.album.image:
+                images.append(song.album.image.name)
+
+        if images:
+            os.makedirs(os.path.join(settings.MEDIA_ROOT, 'playlists'), exist_ok=True)
+
+            relative_path = os.path.join('playlists', f'playlist{instance.id}.png')
+            save_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+
+            collage = create_collage(images, save_path, size=(800, 800))
+
+            instance.image = relative_path
+            instance.save()
+
+        return instance
