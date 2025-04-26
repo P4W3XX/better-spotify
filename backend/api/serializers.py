@@ -329,6 +329,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
 
     #     return representation
 
+    @extend_schema_field(serializers.CharField)
     def get_theme(self, obj):
         return get_dominant_color(obj.image.path, 'RGBA') if obj.image else None
 
