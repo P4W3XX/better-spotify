@@ -64,9 +64,6 @@ def create_collage(images, output_path, size=(800, 800)):
         collage.paste(img2, (size[0]//2, size[1]//2))
 
     elif num_images == 3 or num_images == 4:
-        # img1 = Image.open(images[0]).resize((size[0]//2, size[1]//2))
-        # img2 = Image.open(images[1]).resize((size[0]//2, size[1]//2))
-        # img3 = Image.open(images[2]).resize((size[0]//2, size[1]//2))
         img1 = Image.open(os.path.join(settings.MEDIA_ROOT, images[0].lstrip('/'))).resize((size[0]//2, size[1]//2))
         img2 = Image.open(os.path.join(settings.MEDIA_ROOT, images[1].lstrip('/'))).resize((size[0]//2, size[1]//2))
         img3 = Image.open(os.path.join(settings.MEDIA_ROOT, images[2].lstrip('/'))).resize((size[0]//2, size[1]//2))
@@ -74,7 +71,7 @@ def create_collage(images, output_path, size=(800, 800)):
         collage.paste(img2, (size[0]//2, 0))
         collage.paste(img3, (0, size[1]//2))
         if num_images == 4:
-            img4 = Image.open(images[3]).resize((size[0]//2, size[1]//2))
+            img4 = Image.open(os.path.join(settings.MEDIA_ROOT, images[3].lstrip('/'))).resize((size[0]//2, size[1]//2))
             collage.paste(img4, (size[0]//2, size[1]//2))
 
     collage.save(output_path)

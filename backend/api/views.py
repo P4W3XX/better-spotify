@@ -85,6 +85,7 @@ class SmallResultsSetPagination(PageNumberPagination):
 )
 class SearchView(APIView):
     permission_classes = [AllowAny,]
+    
     @extend_schema(request=None, responses=None)
     def get(self, request, *args, **kwargs):
         query = request.query_params.get('q', '').strip()

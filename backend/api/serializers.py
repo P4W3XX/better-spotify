@@ -1,6 +1,6 @@
 from django.db.models import Sum
 from rest_framework import serializers
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong
 from drf_spectacular.utils import extend_schema_field
 from django.templatetags.static import static
 from mutagen.mp3 import MP3
@@ -298,36 +298,18 @@ class UserPlaybackHistorySerializer(serializers.Serializer):
         
 
 class PlaylistSerializer(serializers.ModelSerializer):
-    # songs = SongSerializer(many=True, nested=True)
+    songs = serializers.ListField(child=serializers.IntegerField(), write_only=True)
     theme = serializers.SerializerMethodField()
 
     class Meta:
         model = Playlist
         fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'songs',]
 
-    # def to_representation(self, instance):
-    #     representation = super().to_representation(instance)
 
-    #     if instance.has_image:
-    #         return super().to_representation(instance)
-    #     images = []
-    #     for song in instance.songs.all():
-    #         if song.album.image:
-    #             images.append(song.album.image.name)
-
-    #     os.makedirs(os.path.join(settings.MEDIA_ROOT, 'playlists'), exist_ok=True)
-
-    #     relative_path = os.path.join('playlists', f'playlist{instance.id}.jpg')
-    #     save_path = os.path.join(settings.MEDIA_ROOT, relative_path)
-
-    #     collage = create_collage(images, save_path, size=(800, 800))
-
-    #     instance.image = relative_path
-    #     instance.save()
-
-    #     representation['songs'] = SongSerializer(instance.songs.all(), many=True, nested=True).data
-
-    #     return representation
+    def get_songs(self, obj):
+        playlist_songs = PlaylistSong.objects.filter(playlist=obj).order_by('order')
+        songs = [playlist_song.song for playlist_song in playlist_songs]
+        return SongSerializer(songs, many=True, nested=True).data
 
     @extend_schema_field(serializers.CharField)
     def get_theme(self, obj):
@@ -336,12 +318,35 @@ class PlaylistSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation['songs'] = SongSerializer(instance.songs.all(), many=True, nested=True).data
+        playlist_songs = PlaylistSong.objects.filter(playlist=instance).order_by('order')
+        songs = [playlist_song.song for playlist_song in playlist_songs]
+        representation['songs'] = SongSerializer(songs, many=True, nested=True).data
 
         return representation
     
+
     def update(self, instance, validated_data):
+        songs_order = validated_data.pop('songs', None)
         instance = super().update(instance, validated_data)
+
+        print("songs_order", songs_order)
+
+        if songs_order:
+            existing_playlist_songs = PlaylistSong.objects.filter(playlist=instance)
+
+            for playlist_song in existing_playlist_songs:
+                    playlist_song.delete()
+
+            for idx, song_id in enumerate(songs_order):
+                playlist_song, created = PlaylistSong.objects.get_or_create(
+                    playlist=instance,
+                    song_id=song_id,
+                    order=idx,
+                )
+                # playlist_song.order = idx
+                playlist_song.save()
+
+
 
         if instance.has_image:
             return instance

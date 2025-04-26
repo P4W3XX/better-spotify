@@ -151,8 +151,25 @@ class Playlist(models.Model):
     description = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='playlists/', blank=True, null=True)
     is_public = models.BooleanField(default=False)
-    songs = models.ManyToManyField(Song, related_name='playlists', blank=True)
     has_image = models.BooleanField(default=False)
+
+    songs = models.ManyToManyField(Song, through='PlaylistSong', related_name='playlists', blank=True)
     
     def __str__(self):
         return f"{self.user} - {self.name}"
+    
+    def add_song(self, song):
+        max_order = self.playlist_songs.aggregate(models.Max('order'))['order__max'] or 0
+        new_order = max_order + 1
+        PlaylistSong.objects.create(playlist=self, song=song, order=new_order)
+    
+class PlaylistSong(models.Model):
+    playlist = models.ForeignKey(Playlist, related_name='playlist_songs', on_delete=models.CASCADE)
+    song = models.ForeignKey(Song, related_name='playlist_songs', on_delete=models.CASCADE)
+    order = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.playlist.name} - {self.song.title} ({self.order})"
