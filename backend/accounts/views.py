@@ -42,18 +42,29 @@ class UserLoginAPIView(GenericAPIView):
         }
         return Response(data, status=status.HTTP_200_OK)
     
-class UserLogoutAPIView(GenericAPIView):
+class UserLogoutAPIView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(request=None, responses=None)
     def post(self, request, *args, **kwargs):
+        refresh_token = request.data.get("refresh", None)
+
+        if not refresh_token:
+            return Response(
+                { "detail": "Refresh token is required." },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
-            refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
             return Response(status=status.HTTP_205_RESET_CONTENT)
+        
         except Exception as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                { "detail": str(e) },
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
 class CustomUserProfileAPIView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAuthenticated,)
