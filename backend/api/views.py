@@ -1,14 +1,14 @@
 from rest_framework import filters, viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
 
 
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist
+from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
                           CurrentPlaybackSerializer, PlaybackActionSerializer,
                           UserPlaybackHistorySerializer, PlaylistSerializer)
@@ -18,8 +18,10 @@ from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from .utils import get_top_songs_last_month
+from .utils import get_top_songs_last_month, create_collage
 from collections import defaultdict
+from django.conf import settings
+import os
 # Create your views here.
 
 BASE_URL = 'http://127.0.0.1:8000'
@@ -333,3 +335,63 @@ class UserPlaylistViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         return Playlist.objects.filter(user=user)
+    
+
+
+class ModifyPlaylistAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request):
+        playlist_id = request.data.get('playlist_id', None)
+        if not playlist_id:
+            return Response({"error": "playlist_id is required"}, status=400)
+        playlist = Playlist.objects.get(id=playlist_id, user=request.user)
+        song_ids = request.data.get('song_ids', [])
+        action = request.data.get('action', 'add')
+
+
+        if action == 'add':
+            playlist_song_length = PlaylistSong.objects.filter(playlist=playlist).count()
+            for idx, song_id in enumerate(song_ids):
+                playlist_song, created = PlaylistSong.objects.get_or_create(
+                    playlist=playlist,
+                    song_id=song_id,
+                    order=idx+playlist_song_length,
+                )
+                playlist_song.save()
+
+
+        elif action == 'remove':
+            for song_id in song_ids:
+                try:
+                    song = PlaylistSong.objects.get(playlist=playlist, song_id=song_id)
+                    removed_order = song.order
+                    song.delete()
+
+                    PlaylistSong.objects.filter(
+                        playlist=playlist,
+                        order__gt=removed_order
+                    ).update(order=F('order') - 1)
+
+                except PlaylistSong.DoesNotExist:
+                    continue
+
+
+
+        images = []
+        for song in playlist.songs.all()[4]:
+            if song.album.image:
+                images.append(song.album.image.name)
+
+        if images:
+            os.makedirs(os.path.join(settings.MEDIA_ROOT, 'playlists'), exist_ok=True)
+
+            relative_path = os.path.join('playlists', f'playlist{playlist.id}.png')
+            save_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+
+            collage = create_collage(images, save_path, size=(800, 800))
+
+            playlist.image = relative_path
+            playlist.save()
+
+        return Response({"status": "success", "playlist": PlaylistSerializer(playlist, context={}).data})
