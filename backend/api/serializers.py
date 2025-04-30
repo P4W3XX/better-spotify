@@ -345,13 +345,21 @@ class UserPlaybackHistorySerializer(serializers.Serializer):
 
 
 class PlaylistSerializer(serializers.ModelSerializer):
-    songs = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
+    # songs = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
+    songs = serializers.PrimaryKeyRelatedField(queryset=Song.objects.all(), many=True, write_only=True, required=False)
     theme = serializers.SerializerMethodField()
     playlist_duration = serializers.SerializerMethodField()
 
     class Meta:
         model = Playlist
         fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'playlist_duration', 'songs',]
+
+    def __init__(self, instance=None, *args, **kwargs):
+        self.nested = kwargs.pop('nested', False)
+        super().__init__(instance, *args, **kwargs)
+
+        if self.nested:
+            self.fields.pop('songs')
 
 
     @extend_schema_field(serializers.DurationField)
@@ -381,8 +389,45 @@ class PlaylistSerializer(serializers.ModelSerializer):
         songs = [playlist_song.song for playlist_song in playlist_songs]
         
         representation['songs'] = SongSerializer(songs, many=True, nested=True).data
+        if self.nested:
+            representation.pop('songs', None)
 
         return representation
+    
+
+    def create(self, validated_data):
+        songs_order = validated_data.pop('songs', None)
+        playlist = Playlist.objects.create(**validated_data)
+
+        if songs_order:
+            for idx, song_id in enumerate(songs_order):
+                playlist_song, created = PlaylistSong.objects.get_or_create(
+                    playlist=playlist,
+                    song=song_id,
+                    order=idx,
+                )
+                playlist_song.save()
+
+        if playlist.has_image:
+            return playlist
+        
+        images = []
+        for song in playlist.songs.all():
+            if song.album.image:
+                images.append(song.album.image.name)
+
+        if images:
+            os.makedirs(os.path.join(settings.MEDIA_ROOT, 'playlists'), exist_ok=True)
+
+            relative_path = os.path.join('playlists', f'playlist{playlist.id}.png')
+            save_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+
+            collage = create_collage(images, save_path, size=(800, 800))
+
+            playlist.image = relative_path
+            playlist.save()
+
+        return playlist
     
 
     def update(self, instance, validated_data):
@@ -398,7 +443,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
             for idx, song_id in enumerate(songs_order):
                 playlist_song, created = PlaylistSong.objects.get_or_create(
                     playlist=instance,
-                    song_id=song_id,
+                    song=song_id,
                     order=idx,
                 )
                 playlist_song.save()
@@ -408,7 +453,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
             return instance
 
         images = []
-        for song in instance.songs.all()[4]:
+        for song in instance.songs.all():
             if song.album.image:
                 images.append(song.album.image.name)
 

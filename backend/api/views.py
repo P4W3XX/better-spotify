@@ -397,7 +397,7 @@ class ModifyPlaylistAPIView(APIView):
 
 
         images = []
-        for song in playlist.songs.all()[4]:
+        for song in playlist.songs.all():
             if song.album.image:
                 images.append(song.album.image.name)
 
