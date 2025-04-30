@@ -352,7 +352,11 @@ class PlaylistSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Playlist
-        fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'playlist_duration', 'songs',]
+        fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'playlist_duration', 'savings', 'songs',]
+        extra_kwargs = {
+            'savings': {'read_only': True},
+        }
+
 
     def __init__(self, instance=None, *args, **kwargs):
         self.nested = kwargs.pop('nested', False)

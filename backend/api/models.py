@@ -164,6 +164,7 @@ class Playlist(models.Model):
     image = models.ImageField(upload_to='playlists/', blank=True, null=True)
     is_public = models.BooleanField(default=False)
     has_image = models.BooleanField(default=False)
+    savings = models.PositiveIntegerField(default=0)
 
     songs = models.ManyToManyField(Song, through='PlaylistSong', related_name='playlists', blank=True)
     

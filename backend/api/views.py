@@ -1,13 +1,19 @@
 from rest_framework import filters, viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from django.db.models import Q, F
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 
 
+from .filters import ArtistFilter, AlbumFilter, SongFilter
+from .utils import get_top_songs_last_month, create_collage
 from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
                           CurrentPlaybackSerializer, PlaybackActionSerializer, UserPlaybackHistorySerializer, 
@@ -15,16 +21,9 @@ from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer,
                           LibraryItemSerializer, LibrarySerializer
                           )
 
-from django.contrib.contenttypes.models import ContentType
-
-
-from .filters import ArtistFilter, AlbumFilter, SongFilter
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from .utils import get_top_songs_last_month, create_collage
 from collections import defaultdict
-from django.conf import settings
 import os
 # Create your views here.
 
@@ -470,12 +469,13 @@ class ModifyLibraryAPIView(APIView):
         obj_id = request.data.get('id', None)
         object_type = request.data.get('object_type', None)
         
-        if object_type not in ['song', 'album', 'customuser']:
+        if object_type not in ['song', 'album', 'playlist', 'customuser']:
                 return Response({"error": "object_type must be either 'song', 'album' or 'customuser'"}, status=400)
 
         model_map = {
                 'song': Song,
                 'album': Album,
+                'playlist': Playlist,
                 'customuser': CustomUser
             }
         model = model_map.get(object_type)
@@ -489,10 +489,18 @@ class ModifyLibraryAPIView(APIView):
                 object_id=obj_id
             )
             library_item.save()
+            if object_type == 'playlist':
+                playlist = library_item.content_object
+                playlist.savings += 1
+                playlist.save()
+
 
         elif action == 'remove':
             try:
                 song = LibraryItem.objects.get(library=library, object_id=obj_id, content_type=ContentType.objects.get_for_model(model))
+                if object_type == 'playlist':
+                    playlist = song.content_object
+                    playlist.savings -= 1
                 song.delete()
             except LibraryItem.DoesNotExist:
                 print('LibraryItem does not exist, id: ', obj_id)
