@@ -8,10 +8,14 @@ from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
 
 
-from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist
+from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
-                          CurrentPlaybackSerializer, PlaybackActionSerializer,
-                          UserPlaybackHistorySerializer, PlaylistSerializer)
+                          CurrentPlaybackSerializer, PlaybackActionSerializer, UserPlaybackHistorySerializer, 
+                          PlaylistSerializer,
+                          LibraryItemSerializer, LibrarySerializer
+                          )
+
+from django.contrib.contenttypes.models import ContentType
 
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
@@ -336,6 +340,20 @@ class UserPlaylistViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return Playlist.objects.filter(user=user)
     
+    def create(self, request):
+        serializer = PlaylistSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        playlist = serializer.save(user=request.user)
+        library = Library.objects.get(user=request.user)
+        library_item = LibraryItem.objects.create(
+            library=library,
+            content_type=ContentType.objects.get_for_model(Playlist),
+            object_id=playlist.id
+        )
+        print('a')
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
 
 
 class ModifyPlaylistAPIView(APIView):
@@ -395,3 +413,20 @@ class ModifyPlaylistAPIView(APIView):
             playlist.save()
 
         return Response({"status": "success", "playlist": PlaylistSerializer(playlist, context={}).data})
+    
+
+
+
+class LibraryViewSet(viewsets.ModelViewSet):
+    queryset = Library.objects.all()
+    serializer_class = LibrarySerializer
+    permission_classes = [IsAuthenticated,]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Library.objects.filter(user=user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context

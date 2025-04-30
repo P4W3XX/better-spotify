@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.db.models import Count, Sum, F
 from django.conf import settings
 from .utils import get_dominant_color, create_collage
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -102,6 +102,12 @@ class SongSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+    
+
+
+
+
+
 
 class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
@@ -206,6 +212,12 @@ class AlbumSerializer(serializers.ModelSerializer):
                 instance.save()
 
         return instance
+    
+
+
+
+
+
 
 class ArtistSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
@@ -304,6 +316,8 @@ class ArtistSerializer(serializers.ModelSerializer):
 
 
 
+
+
 class PlaybackActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['play', 'pause', 'resume', 'reset'])
     song_id = serializers.IntegerField(required=False)
@@ -321,6 +335,7 @@ class CurrentPlaybackSerializer(serializers.ModelSerializer):
         ]
 
 
+
 class UserPlaybackHistorySerializer(serializers.Serializer):
     song = SongSerializer(nested=True)
     played_at = serializers.DateTimeField()
@@ -328,8 +343,9 @@ class UserPlaybackHistorySerializer(serializers.Serializer):
 
 
 
+
 class PlaylistSerializer(serializers.ModelSerializer):
-    songs = serializers.ListField(child=serializers.IntegerField(), write_only=True)
+    songs = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
     theme = serializers.SerializerMethodField()
     playlist_duration = serializers.SerializerMethodField()
 
@@ -408,3 +424,41 @@ class PlaylistSerializer(serializers.ModelSerializer):
             instance.save()
 
         return instance
+    
+
+
+
+
+class LibraryItemSerializer(serializers.ModelSerializer):
+    content_type = serializers.CharField(source='content_type.model', read_only=True)
+    library_obj = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LibraryItem
+        fields = ['id', 'content_type', 'library_obj']
+
+    def get_library_obj(self, obj):
+        content_type = obj.content_type.model_class()
+        if content_type:
+            try:
+                library_object = content_type.objects.get(id=obj.object_id)
+                if isinstance(library_object, Song):
+                    return SongSerializer(library_object, nested=True, context=self.context).data
+                elif isinstance(library_object, Playlist):
+                    return PlaylistSerializer(library_object, nested=True, context=self.context).data
+                elif isinstance(library_object, Album):
+                    return AlbumSerializer(library_object, nested=True, context=self.context).data
+                elif isinstance(library_object, CustomUser):
+                    return ArtistSerializer(library_object, nested=True, context=self.context).data
+            except content_type.DoesNotExist:
+                return None
+        return None
+
+
+
+
+class LibrarySerializer(serializers.ModelSerializer):
+    items = LibraryItemSerializer(many=True, read_only=True)
+    class Meta:
+        model = Library
+        fields = ['id', 'user', 'items']
