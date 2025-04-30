@@ -182,7 +182,7 @@ class PlaylistSong(models.Model):
     order = models.PositiveIntegerField()
 
     class Meta:
-        ordering = ['order']
+        ordering = ['playlist', 'order']
 
     def __str__(self):
         return f"{self.playlist.name} - {self.song.title} ({self.order})"

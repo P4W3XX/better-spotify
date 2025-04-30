@@ -356,9 +356,23 @@ class UserPlaylistViewSet(viewsets.ModelViewSet):
     
 
 
+
 class ModifyPlaylistAPIView(APIView):
     permission_classes = [IsAuthenticated,]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('playlist_id', type=int, description='ID of the playlist to modify'),
+            OpenApiParameter('song_ids', type=int, description='Comma-separated list of song IDs to add or remove'),
+            OpenApiParameter('action', type=str, description='Action to perform (add or remove)')
+        ],
+        request=None,
+        responses={
+            200: {
+                'status': {'type': 'string'},
+            },
+        }
+    )
     def post(self, request):
         playlist_id = request.data.get('playlist_id', None)
         if not playlist_id:
@@ -421,6 +435,7 @@ class LibraryViewSet(viewsets.ModelViewSet):
     queryset = Library.objects.all()
     serializer_class = LibrarySerializer
     permission_classes = [IsAuthenticated,]
+    http_method_names = ['post', 'get', 'head', 'options']
 
     def get_queryset(self):
         user = self.request.user
@@ -430,3 +445,57 @@ class LibraryViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter('action', type=str, description="Action to perform ('add' or 'remove')"),
+        OpenApiParameter('object_type', type=str, description="Type of object ('song', 'album', 'customuser')"),
+        OpenApiParameter('id', type=int, description="ID of the object to add or remove"),
+    ],
+    request=None,
+    responses={
+        200: {
+            'status': {'type': 'string'},
+        },
+    }
+)
+class ModifyLibraryAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request):
+        library = Library.objects.get(user=request.user)
+        action = request.data.get('action', 'add')
+        obj_id = request.data.get('id', None)
+        object_type = request.data.get('object_type', None)
+        
+        if object_type not in ['song', 'album', 'customuser']:
+                return Response({"error": "object_type must be either 'song', 'album' or 'customuser'"}, status=400)
+
+        model_map = {
+                'song': Song,
+                'album': Album,
+                'customuser': CustomUser
+            }
+        model = model_map.get(object_type)
+
+
+
+        if action == 'add':
+            library_item, created = LibraryItem.objects.get_or_create(
+                library=library,
+                content_type=ContentType.objects.get_for_model(model),
+                object_id=obj_id
+            )
+            library_item.save()
+
+        elif action == 'remove':
+            try:
+                song = LibraryItem.objects.get(library=library, object_id=obj_id, content_type=ContentType.objects.get_for_model(model))
+                song.delete()
+            except LibraryItem.DoesNotExist:
+                print('LibraryItem does not exist, id: ', obj_id)
+                pass
+
+        return Response({"status": "success"})

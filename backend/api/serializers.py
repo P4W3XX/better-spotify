@@ -26,7 +26,7 @@ class SongSerializer(serializers.ModelSerializer):
             'duration': {'read_only': True},
         }
 
-
+    @extend_schema_field(serializers.IntegerField)
     def get_plays_test(self, obj):
         songs = SongPlayback.objects.filter(song=obj).count()
         return songs
@@ -482,6 +482,8 @@ class LibraryItemSerializer(serializers.ModelSerializer):
         model = LibraryItem
         fields = ['id', 'content_type', 'library_obj']
 
+
+    @extend_schema_field(serializers.DictField)
     def get_library_obj(self, obj):
         content_type = obj.content_type.model_class()
         if content_type:
