@@ -222,12 +222,12 @@ class AlbumSerializer(serializers.ModelSerializer):
 class ArtistSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
     top_songs = serializers.SerializerMethodField()
-    number_of_plays_last_month = serializers.SerializerMethodField()
+    number_of_listeners = serializers.SerializerMethodField()
     number_of_popularity = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'image', 'type', 'number_of_plays_last_month', 'number_of_popularity', 'albums', 'top_songs']
+        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'albums', 'top_songs']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -254,12 +254,12 @@ class ArtistSerializer(serializers.ModelSerializer):
         return ''
 
     @extend_schema_field(serializers.IntegerField)
-    def get_number_of_plays_last_month(self, obj):
+    def get_number_of_listeners(self, obj):
         last_month = timezone.now() - timedelta(days=30)
         return SongPlayback.objects.filter(
             song__album__artist=obj,
             played_at__gte=last_month
-        ).count()
+        ).aggregate(Count('user', distinct=True))['user__count']
 
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):

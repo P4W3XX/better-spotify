@@ -1,4 +1,4 @@
-from rest_framework import filters, viewsets, status
+from rest_framework import filters, viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -430,20 +430,13 @@ class ModifyPlaylistAPIView(APIView):
 
 
 
-class LibraryViewSet(viewsets.ModelViewSet):
-    queryset = Library.objects.all()
-    serializer_class = LibrarySerializer
+class LibraryAPIView(APIView):
     permission_classes = [IsAuthenticated,]
-    http_method_names = ['post', 'get', 'head', 'options']
 
-    def get_queryset(self):
-        user = self.request.user
-        return Library.objects.filter(user=user)
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
+    def get(self, request):
+        library = Library.objects.get(user=request.user)
+        serializer = LibrarySerializer(library, context={'request': request})
+        return Response(serializer.data)
 
 
 
