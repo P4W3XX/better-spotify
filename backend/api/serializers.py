@@ -9,7 +9,7 @@ from django.utils import timezone
 from django.db.models import Count, Sum, F
 from django.conf import settings
 from .utils import get_dominant_color, create_collage
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem
 
 
 class SongSerializer(serializers.ModelSerializer):
@@ -26,7 +26,7 @@ class SongSerializer(serializers.ModelSerializer):
             'duration': {'read_only': True},
         }
 
-
+    @extend_schema_field(serializers.IntegerField)
     def get_plays_test(self, obj):
         songs = SongPlayback.objects.filter(song=obj).count()
         return songs
@@ -102,6 +102,12 @@ class SongSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+    
+
+
+
+
+
 
 class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
@@ -206,16 +212,22 @@ class AlbumSerializer(serializers.ModelSerializer):
                 instance.save()
 
         return instance
+    
+
+
+
+
+
 
 class ArtistSerializer(serializers.ModelSerializer):
     albums = serializers.SerializerMethodField()
     top_songs = serializers.SerializerMethodField()
-    number_of_plays_last_month = serializers.SerializerMethodField()
+    number_of_listeners = serializers.SerializerMethodField()
     number_of_popularity = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'image', 'type', 'number_of_plays_last_month', 'number_of_popularity', 'albums', 'top_songs']
+        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'albums', 'top_songs']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -242,12 +254,12 @@ class ArtistSerializer(serializers.ModelSerializer):
         return ''
 
     @extend_schema_field(serializers.IntegerField)
-    def get_number_of_plays_last_month(self, obj):
+    def get_number_of_listeners(self, obj):
         last_month = timezone.now() - timedelta(days=30)
         return SongPlayback.objects.filter(
             song__album__artist=obj,
             played_at__gte=last_month
-        ).count()
+        ).aggregate(Count('user', distinct=True))['user__count']
 
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
@@ -304,6 +316,8 @@ class ArtistSerializer(serializers.ModelSerializer):
 
 
 
+
+
 class PlaybackActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['play', 'pause', 'resume', 'reset'])
     song_id = serializers.IntegerField(required=False)
@@ -321,6 +335,7 @@ class CurrentPlaybackSerializer(serializers.ModelSerializer):
         ]
 
 
+
 class UserPlaybackHistorySerializer(serializers.Serializer):
     song = SongSerializer(nested=True)
     played_at = serializers.DateTimeField()
@@ -328,14 +343,27 @@ class UserPlaybackHistorySerializer(serializers.Serializer):
 
 
 
+
 class PlaylistSerializer(serializers.ModelSerializer):
-    songs = serializers.ListField(child=serializers.IntegerField(), write_only=True)
+    # songs = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
+    songs = serializers.PrimaryKeyRelatedField(queryset=Song.objects.all(), many=True, write_only=True, required=False)
     theme = serializers.SerializerMethodField()
     playlist_duration = serializers.SerializerMethodField()
 
     class Meta:
         model = Playlist
-        fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'playlist_duration', 'songs',]
+        fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'playlist_duration', 'savings', 'songs',]
+        extra_kwargs = {
+            'savings': {'read_only': True},
+        }
+
+
+    def __init__(self, instance=None, *args, **kwargs):
+        self.nested = kwargs.pop('nested', False)
+        super().__init__(instance, *args, **kwargs)
+
+        if self.nested:
+            self.fields.pop('songs')
 
 
     @extend_schema_field(serializers.DurationField)
@@ -365,8 +393,45 @@ class PlaylistSerializer(serializers.ModelSerializer):
         songs = [playlist_song.song for playlist_song in playlist_songs]
         
         representation['songs'] = SongSerializer(songs, many=True, nested=True).data
+        if self.nested:
+            representation.pop('songs', None)
 
         return representation
+    
+
+    def create(self, validated_data):
+        songs_order = validated_data.pop('songs', None)
+        playlist = Playlist.objects.create(**validated_data)
+
+        if songs_order:
+            for idx, song_id in enumerate(songs_order):
+                playlist_song, created = PlaylistSong.objects.get_or_create(
+                    playlist=playlist,
+                    song=song_id,
+                    order=idx,
+                )
+                playlist_song.save()
+
+        if playlist.has_image:
+            return playlist
+        
+        images = []
+        for song in playlist.songs.all():
+            if song.album.image:
+                images.append(song.album.image.name)
+
+        if images:
+            os.makedirs(os.path.join(settings.MEDIA_ROOT, 'playlists'), exist_ok=True)
+
+            relative_path = os.path.join('playlists', f'playlist{playlist.id}.png')
+            save_path = os.path.join(settings.MEDIA_ROOT, relative_path)
+
+            collage = create_collage(images, save_path, size=(800, 800))
+
+            playlist.image = relative_path
+            playlist.save()
+
+        return playlist
     
 
     def update(self, instance, validated_data):
@@ -382,7 +447,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
             for idx, song_id in enumerate(songs_order):
                 playlist_song, created = PlaylistSong.objects.get_or_create(
                     playlist=instance,
-                    song_id=song_id,
+                    song=song_id,
                     order=idx,
                 )
                 playlist_song.save()
@@ -392,7 +457,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
             return instance
 
         images = []
-        for song in instance.songs.all()[4]:
+        for song in instance.songs.all():
             if song.album.image:
                 images.append(song.album.image.name)
 
@@ -408,3 +473,43 @@ class PlaylistSerializer(serializers.ModelSerializer):
             instance.save()
 
         return instance
+    
+
+
+
+
+class LibraryItemSerializer(serializers.ModelSerializer):
+    content_type = serializers.CharField(source='content_type.model', read_only=True)
+    library_obj = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LibraryItem
+        fields = ['id', 'content_type', 'library_obj']
+
+
+    @extend_schema_field(serializers.DictField)
+    def get_library_obj(self, obj):
+        content_type = obj.content_type.model_class()
+        if content_type:
+            try:
+                library_object = content_type.objects.get(id=obj.object_id)
+                if isinstance(library_object, Song):
+                    return SongSerializer(library_object, nested=True, context=self.context).data
+                elif isinstance(library_object, Playlist):
+                    return PlaylistSerializer(library_object, nested=True, context=self.context).data
+                elif isinstance(library_object, Album):
+                    return AlbumSerializer(library_object, nested=True, context=self.context).data
+                elif isinstance(library_object, CustomUser):
+                    return ArtistSerializer(library_object, nested=True, context=self.context).data
+            except content_type.DoesNotExist:
+                return None
+        return None
+
+
+
+
+class LibrarySerializer(serializers.ModelSerializer):
+    items = LibraryItemSerializer(many=True, read_only=True)
+    class Meta:
+        model = Library
+        fields = ['id', 'user', 'items']

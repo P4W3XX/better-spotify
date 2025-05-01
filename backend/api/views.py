@@ -1,26 +1,29 @@
-from rest_framework import filters, viewsets, status
+from rest_framework import filters, viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.db.models import Q, F
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated, AllowAny
+
+from django.db.models import Q, F
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
-
-
-from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist
-from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
-                          CurrentPlaybackSerializer, PlaybackActionSerializer,
-                          UserPlaybackHistorySerializer, PlaylistSerializer)
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework.permissions import IsAuthenticated, AllowAny
-
 from .utils import get_top_songs_last_month, create_collage
+from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library
+from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
+                          CurrentPlaybackSerializer, PlaybackActionSerializer, UserPlaybackHistorySerializer, 
+                          PlaylistSerializer,
+                          LibraryItemSerializer, LibrarySerializer
+                          )
+
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+
 from collections import defaultdict
-from django.conf import settings
 import os
 # Create your views here.
 
@@ -336,11 +339,39 @@ class UserPlaylistViewSet(viewsets.ModelViewSet):
         user = self.request.user
         return Playlist.objects.filter(user=user)
     
+    def create(self, request):
+        serializer = PlaylistSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        playlist = serializer.save(user=request.user)
+        library = Library.objects.get(user=request.user)
+        library_item = LibraryItem.objects.create(
+            library=library,
+            content_type=ContentType.objects.get_for_model(Playlist),
+            object_id=playlist.id
+        )
+        print('a')
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+
 
 
 class ModifyPlaylistAPIView(APIView):
     permission_classes = [IsAuthenticated,]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('playlist_id', type=int, description='ID of the playlist to modify'),
+            OpenApiParameter('song_ids', type=int, description='Comma-separated list of song IDs to add or remove'),
+            OpenApiParameter('action', type=str, description='Action to perform (add or remove)')
+        ],
+        request=None,
+        responses={
+            200: {
+                'status': {'type': 'string'},
+            },
+        }
+    )
     def post(self, request):
         playlist_id = request.data.get('playlist_id', None)
         if not playlist_id:
@@ -379,7 +410,7 @@ class ModifyPlaylistAPIView(APIView):
 
 
         images = []
-        for song in playlist.songs.all()[4]:
+        for song in playlist.songs.all():
             if song.album.image:
                 images.append(song.album.image.name)
 
@@ -395,3 +426,77 @@ class ModifyPlaylistAPIView(APIView):
             playlist.save()
 
         return Response({"status": "success", "playlist": PlaylistSerializer(playlist, context={}).data})
+    
+
+
+
+class LibraryAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def get(self, request):
+        library = Library.objects.get(user=request.user)
+        serializer = LibrarySerializer(library, context={'request': request})
+        return Response(serializer.data)
+
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter('action', type=str, description="Action to perform ('add' or 'remove')"),
+        OpenApiParameter('object_type', type=str, description="Type of object ('song', 'album', 'customuser')"),
+        OpenApiParameter('id', type=int, description="ID of the object to add or remove"),
+    ],
+    request=None,
+    responses={
+        200: {
+            'status': {'type': 'string'},
+        },
+    }
+)
+class ModifyLibraryAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request):
+        library = Library.objects.get(user=request.user)
+        action = request.data.get('action', 'add')
+        obj_id = request.data.get('id', None)
+        object_type = request.data.get('object_type', None)
+        
+        if object_type not in ['song', 'album', 'playlist', 'customuser']:
+                return Response({"error": "object_type must be either 'song', 'album' or 'customuser'"}, status=400)
+
+        model_map = {
+                'song': Song,
+                'album': Album,
+                'playlist': Playlist,
+                'customuser': CustomUser
+            }
+        model = model_map.get(object_type)
+
+
+
+        if action == 'add':
+            library_item, created = LibraryItem.objects.get_or_create(
+                library=library,
+                content_type=ContentType.objects.get_for_model(model),
+                object_id=obj_id
+            )
+            library_item.save()
+            if object_type == 'playlist':
+                playlist = library_item.content_object
+                playlist.savings += 1
+                playlist.save()
+
+
+        elif action == 'remove':
+            try:
+                song = LibraryItem.objects.get(library=library, object_id=obj_id, content_type=ContentType.objects.get_for_model(model))
+                if object_type == 'playlist':
+                    playlist = song.content_object
+                    playlist.savings -= 1
+                song.delete()
+            except LibraryItem.DoesNotExist:
+                print('LibraryItem does not exist, id: ', obj_id)
+                pass
+
+        return Response({"status": "success"})

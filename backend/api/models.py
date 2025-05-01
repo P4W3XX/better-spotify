@@ -1,6 +1,8 @@
 from django.utils import timezone
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 # Create your models here.
 class CustomUserManager(BaseUserManager):
@@ -39,6 +41,9 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
     
+
+
+    
 class Album(models.Model):
     title = models.CharField(max_length=255)
     artist = models.ForeignKey(CustomUser, related_name='albums', on_delete=models.CASCADE)
@@ -71,6 +76,9 @@ class Song(models.Model):
     def __str__(self):
         return self.title
     
+
+
+
 
 class CurrentPlayback(models.Model):
     user = models.OneToOneField(CustomUser, related_name='current_playback', on_delete=models.CASCADE)
@@ -145,6 +153,10 @@ class SongPlayback(models.Model):
     def __str__(self):
         return f"{self.user.username} played {self.song.title}"
     
+
+
+
+
 class Playlist(models.Model):
     user = models.ForeignKey(CustomUser, related_name='playlists', on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -152,6 +164,7 @@ class Playlist(models.Model):
     image = models.ImageField(upload_to='playlists/', blank=True, null=True)
     is_public = models.BooleanField(default=False)
     has_image = models.BooleanField(default=False)
+    savings = models.PositiveIntegerField(default=0)
 
     songs = models.ManyToManyField(Song, through='PlaylistSong', related_name='playlists', blank=True)
     
@@ -163,13 +176,40 @@ class Playlist(models.Model):
         new_order = max_order + 1
         PlaylistSong.objects.create(playlist=self, song=song, order=new_order)
     
+
 class PlaylistSong(models.Model):
     playlist = models.ForeignKey(Playlist, related_name='playlist_songs', on_delete=models.CASCADE)
     song = models.ForeignKey(Song, related_name='playlist_songs', on_delete=models.CASCADE)
     order = models.PositiveIntegerField()
 
     class Meta:
-        ordering = ['order']
+        ordering = ['playlist', 'order']
 
     def __str__(self):
         return f"{self.playlist.name} - {self.song.title} ({self.order})"
+
+
+
+
+class Library(models.Model):
+    user = models.OneToOneField(CustomUser, related_name='library', on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.user.username}'s Library"
+    
+
+class LibraryItem(models.Model):
+    library = models.ForeignKey(Library, related_name='items', on_delete=models.CASCADE)
+    
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    added_at = models.DateTimeField(auto_now_add=True)
+    is_pinned = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.library.user.username} - {self.content_object}"
+    
+    class Meta:
+        ordering = ['-added_at']
