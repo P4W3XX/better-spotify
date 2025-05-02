@@ -323,12 +323,12 @@ class TopSongsAPIView(APIView):
                 song_obj.pop('genre')
 
                 song_obj.pop('plays')
-                song_obj['play_count'] = song.pop('play_count')
+                #song_obj['play_count'] = song.pop('play_count')
                 songs_data.append(song_obj)
             data1 = {}
             
             data1['genre'] = genre
-            data1['cover'] = BASE_URL + CustomUser.objects.get(id=songs_data[0]['artist']).image.url if songs_data[0]['artist'] else None
+            data1['cover'] = BASE_URL + CustomUser.objects.get(id=songs_data[0]['artist']).get_image_url if songs_data[0]['artist'] else ""
             data1['songs'] = songs_data
             data.append(data1)
 

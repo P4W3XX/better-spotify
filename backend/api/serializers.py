@@ -110,8 +110,8 @@ class SongSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        if self.playlist:
-            representation['cover'] = BASE_URL + instance.album.image.url if instance.album.image else None
+        # if self.playlist:
+        representation['cover'] = BASE_URL + instance.album.image.url if instance.album.image else None
         return representation
 
 
