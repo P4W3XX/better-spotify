@@ -41,7 +41,11 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
     
-
+    @property
+    def get_image_url(self):
+        if self.image:
+            return self.image.url
+        return ""
 
     
 class Album(models.Model):
@@ -89,6 +93,8 @@ class CurrentPlayback(models.Model):
     paused_at = models.DateTimeField(null=True, blank=True) 
     progress_seconds = models.PositiveIntegerField(default=0)
     logged_playback = models.BooleanField(default=False)
+
+    #add clicked playlists or albums song charfield or json
 
     # started_at + progress
     
