@@ -11,6 +11,7 @@ from django.conf import settings
 from .utils import get_dominant_color, create_collage
 from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem
 
+BASE_URL = "http://127.0.0.1:8000"
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
@@ -33,12 +34,15 @@ class SongSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
+        self.playlist = kwargs.pop('playlist', False)
+
         super().__init__(*args, **kwargs)
         if nested:
             # self.fields.pop('album')
             self.fields.pop('lyrics')
             self.fields.pop('file')
             self.fields.pop('genre')
+
 
     def validate_lyrics(self, value):
         if value in (None, '', []):
@@ -103,6 +107,12 @@ class SongSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
     
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if self.playlist:
+            representation['cover'] = BASE_URL + instance.album.image.url if instance.album.image else None
+        return representation
 
 
 
@@ -383,11 +393,11 @@ class PlaylistSerializer(serializers.ModelSerializer):
             total_time += song.duration
         return str(total_time)
 
-    @extend_schema_field(serializers.ListField)
-    def get_songs(self, obj):
-        playlist_songs = PlaylistSong.objects.filter(playlist=obj).order_by('order')
-        songs = [playlist_song.song for playlist_song in playlist_songs]
-        return SongSerializer(songs, many=True, nested=True).data
+    # @extend_schema_field(serializers.ListField)
+    # def get_songs(self, obj):
+    #     playlist_songs = PlaylistSong.objects.filter(playlist=obj).order_by('order')
+    #     songs = [playlist_song.song for playlist_song in playlist_songs]
+    #     return SongSerializer(songs, many=True, nested=True).data
 
     @extend_schema_field(serializers.CharField)
     def get_theme(self, obj):
@@ -400,7 +410,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
         playlist_songs = PlaylistSong.objects.filter(playlist=instance).order_by('order')
         songs = [playlist_song.song for playlist_song in playlist_songs]
         
-        representation['songs'] = SongSerializer(songs, many=True, nested=True).data
+        representation['songs'] = SongSerializer(songs, many=True, nested=True, playlist=True).data
         if self.nested:
             representation.pop('songs', None)
 
