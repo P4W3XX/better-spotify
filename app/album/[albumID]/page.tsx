@@ -623,6 +623,9 @@ export default function Album() {
                 key={index}
                 index={index}
                 title={song.title}
+                isIndex={true}
+                isDuration={true}
+                isPlays={true}
                 artist={artistInfo.name}
                 feats={song.featured_artists}
                 isCover={false}
