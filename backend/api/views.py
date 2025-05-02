@@ -110,6 +110,7 @@ class SearchView(APIView):
                 TrigramSimilarity('title', query.lower()),
                 TrigramSimilarity('album__title', query),
                 TrigramSimilarity('album__title', query.lower()),
+                
                 TrigramSimilarity('album__artist__username', query),
                 TrigramSimilarity('album__artist__username', query.lower())
             )
@@ -170,12 +171,13 @@ class SearchView(APIView):
             if isinstance(obj, Song):
                 result_data = SongSerializer(obj, context={'request': request}).data
                 result_data['data_type'] = 'song'
+                result_data['cover'] = BASE_URL + obj.album.image.url if obj.album.image else None
                 results.append(result_data)
             elif isinstance(obj, Album):
                 result_data = AlbumSerializer(obj, context={'request': request}).data
                 result_data['data_type'] = 'album'
                 results.append(result_data)
-                result_data.pop('songs', None)
+                # result_data.pop('songs', None)
             elif isinstance(obj, CustomUser):
                 result_data = ArtistSerializer(obj, context={'request': request}).data
                 result_data['data_type'] = 'artist'
@@ -248,6 +250,7 @@ class PlaybackControlAPIView(APIView):
         return Response({"status": "Stopped / Not playing any song"})
     
 
+
 class UserPlaybackHistoryAPIView(APIView):
     permission_classes = [IsAuthenticated,]
 
@@ -262,6 +265,8 @@ class UserPlaybackHistoryAPIView(APIView):
         playback_history = SongPlayback.objects.filter(user=user).order_by('-played_at')
         serializer = UserPlaybackHistorySerializer(playback_history, many=True, context={'request': request})
         return Response(serializer.data)
+
+
 
 class TopSongsAPIView(APIView):
     permission_classes = [AllowAny,]

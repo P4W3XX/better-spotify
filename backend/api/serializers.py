@@ -35,8 +35,8 @@ class SongSerializer(serializers.ModelSerializer):
         nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
         if nested:
-            self.fields.pop('lyrics')
             # self.fields.pop('album')
+            self.fields.pop('lyrics')
             self.fields.pop('file')
             self.fields.pop('genre')
 
@@ -235,24 +235,6 @@ class ArtistSerializer(serializers.ModelSerializer):
         if self.context.get('many', False):
             self.fields.pop('top_songs')
 
-
-    @extend_schema_field(serializers.IntegerField)
-    def get_number_of_popularity(self, obj):
-        last_month = timezone.now() - timedelta(days=30)
-        top_artists = (
-            SongPlayback.objects.filter(played_at__gte=last_month)
-            .values(artist_id=F('song__album__artist'))
-            .annotate(play_count=Count('id'))
-            .order_by('-play_count')
-        )
-
-        number_of_popularity = 0
-        for artist in top_artists:
-            number_of_popularity += 1
-            if artist['artist_id'] == obj.id:
-                return number_of_popularity
-        return ''
-
     @extend_schema_field(serializers.IntegerField)
     def get_number_of_listeners(self, obj):
         last_month = timezone.now() - timedelta(days=30)
@@ -260,10 +242,31 @@ class ArtistSerializer(serializers.ModelSerializer):
             song__album__artist=obj,
             played_at__gte=last_month
         ).aggregate(Count('user', distinct=True))['user__count']
+    
+
+    @extend_schema_field(serializers.IntegerField)
+    def get_number_of_popularity(self, obj):
+        artists = CustomUser.objects.filter(type='artist')
+        popularity = {}
+        for artist in artists:
+            popularity[artist.id] = self.get_number_of_listeners(artist)
+
+        popularity = dict(sorted(popularity.items(), key=lambda item: item[1], reverse=True))
+
+
+        number_popularity = 0
+        for artist in popularity.keys():
+            number_popularity += 1
+            if artist == obj.id:
+                break
+        
+        return number_popularity
+    
 
     @extend_schema_field(serializers.ListField)
     def get_albums(self, obj):
         return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
+    
     
     @extend_schema_field(serializers.ListField)
     def get_top_songs(self, obj):
@@ -310,6 +313,11 @@ class ArtistSerializer(serializers.ModelSerializer):
                 representation['image'] = request.build_absolute_uri(static('default.jpg'))
             else:
                 representation['image'] = static('default.jpg')
+
+
+        if instance.type == 'listener':
+            representation.pop('number_of_listeners')
+            representation.pop('number_of_popularity')
         
         return representation
     
