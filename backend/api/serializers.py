@@ -35,8 +35,8 @@ class SongSerializer(serializers.ModelSerializer):
         nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
         if nested:
-            self.fields.pop('lyrics')
             # self.fields.pop('album')
+            self.fields.pop('lyrics')
             self.fields.pop('file')
             self.fields.pop('genre')
 
