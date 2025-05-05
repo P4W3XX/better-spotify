@@ -1,26 +1,33 @@
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export const runtime = 'edge';
+
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
+    // Simplified error-resistant implementation
     const url = new URL(request.url);
     const cookieName = url.searchParams.get("key");
-    const cookieValue = cookieName ? cookieStore.get(cookieName)?.value : null;
+    
+    if (!cookieName) {
+      return new Response(JSON.stringify({ value: 0 }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    const cookieStore = await cookies();
+    const cookie = cookieStore.get(cookieName);
+    const cookieValue = cookie?.value || "0";
 
-    return new NextResponse(JSON.stringify({ value: cookieValue || 0 }), {
-      headers: { "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ value: cookieValue }), {
+      headers: { "Content-Type": "application/json" }
     });
   } catch (error) {
-    console.error("Error accessing cookies:", error);
+    console.error("Cookie access error:", error);
     
-    // Return a fallback value instead of throwing a 500
-    return new NextResponse(JSON.stringify({ 
-      value: 0, 
-      error: "Could not access cookies" 
-    }), {
+    // Always return a valid response, never throw
+    return new Response(JSON.stringify({ value: 0 }), {
       headers: { "Content-Type": "application/json" },
-      status: 200 // Still return 200 to prevent app breaking
+      status: 200
     });
   }
 }
