@@ -12,6 +12,13 @@ export default function UseLoginToken({ children }: { children: React.ReactNode 
 
     useEffect(() => {
         const checkToken = async () => {
+            axios.get('/api/test').then((res) => {
+                console.log('Test API response:', res.data.value)
+            }
+            ).catch((err) => {
+                console.error('Error fetching test API:', err)
+            }
+            )
             console.log('Checking token...')
             const token = await axios.get('/api/get-cookie?key=token')
             if (token.data.value > 0) {
