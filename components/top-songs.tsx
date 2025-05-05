@@ -1,6 +1,11 @@
+import { useEffect } from "react"
 import { SongPreview } from "./song-preview"
 
 export default function TopSongs({ songs }: { songs: { id: string, feats: [], title: string, plays: number, duration: string, artist: number }[] }) {
+
+    useEffect(() => {
+        console.log(songs)
+    }, [songs])
     return (
         <div className=" flex flex-col w-full flex-1 gap-y-2">
             <h1 className=" text-2xl font-semibold text-start">

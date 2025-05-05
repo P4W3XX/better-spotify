@@ -67,9 +67,13 @@ export default function BestResult({ type, songs, title, artistId, username, cov
     const [isHover, setIsHover] = useState(false);
     const [artistName, setArtistName] = useState<string>('');
 
+
+
+
     useEffect(() => {
         if (artistId) {
             setIsLoading(true);
+            setArtistName('');
             axios.get(`http://127.0.0.1:8000/api/artists/${artistId}/`)
                 .then((res) => {
                     setArtistName(res.data.username);
@@ -80,7 +84,7 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                     console.log(err);
                 });
         }
-    }, [artistId]);
+    }, [artistId,type]);
     return (
         <div className=" w-full flex flex-1 max-w-[25rem] rounded-2xl gap-y-2 h-full flex-col">
             <h1 className=" text-2xl font-semibold">
@@ -127,7 +131,7 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                                         •
                                     </p>
                                     <p className="font-medium">
-                                        {artistName}
+                                        {artistName || ''}
                                     </p>
                                 </>
                             )}
