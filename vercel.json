@@ -20,24 +20,6 @@
       "dest": "backend/betterspotify/wsgi.py"
     },
     {
-      "src": "/api/get-cookie",
-      "dest": "app/api/get-cookie/route.ts",
-      "methods": ["GET"],
-      "runtime": "nodejs18.x"
-    },
-    {
-      "src": "/api/set-cookie",
-      "dest": "app/api/set-cookie/route.ts",
-      "methods": ["GET"],
-      "runtime": "nodejs18.x"
-    },
-    {
-      "src": "/api/test",
-      "dest": "app/api/test/route.ts",
-      "methods": ["GET"],
-      "runtime": "nodejs18.x"
-    },
-    {
       "src": "/static/(.*)",
       "dest": "backend/static/$1"
     },
