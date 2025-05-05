@@ -205,8 +205,9 @@ class SearchView(APIView):
 
 @extend_schema(
     parameters=[
-        OpenApiParameter('action', type=str, description='Action to perform (play, pause, resume, reset)'),
-        OpenApiParameter('song_id', type=int, description='ID of the song to play or reset')
+        OpenApiParameter('action', type=str, description='Action to perform (play, pause, resume, reset, seek)'),
+        OpenApiParameter('song_id', type=int, description='ID of the song to play or reset'),
+        OpenApiParameter('progress_seconds', type=int, description='Used for seek action, seconds to seek to'),
     ]
 )
 class PlaybackControlAPIView(APIView):
@@ -218,6 +219,7 @@ class PlaybackControlAPIView(APIView):
         serializer.is_valid(raise_exception=True)
         action = serializer.validated_data['action']
         song_id = serializer.validated_data.get('song_id')
+        progress_seconds = serializer.validated_data.get('progress_seconds', None)
 
         current_playback = CurrentPlayback.objects.get(user=request.user)
 
@@ -240,6 +242,11 @@ class PlaybackControlAPIView(APIView):
                 song = Song.objects.get(id=song_id)
                 current_playback.reset(song)
             return Response({"status": "Stopped"})
+        elif action == 'seek':
+            if progress_seconds is None:
+                return Response({"error": "progress_seconds is required"}, status=400)
+            current_playback.seek_to(progress_seconds)
+            return Response({"status": "Seeked to {}".format(progress_seconds)})
 
         
     def get(self, request):
