@@ -1,13 +1,10 @@
 "use client";
 import React from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Input } from '@/components/ui/input';
 import { useState } from 'react';
 
 export default function LoginPage() {
-    const router = useRouter();
-    const [steps, setSteps] = useState<'Login' | 'Register' | null>(null);
+    const [steps,] = useState<'Login' | 'Register' | null>(null);
     return (
         <main style={{
             backgroundImage: "url('/loginBG.svg')",
