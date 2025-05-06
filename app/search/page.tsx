@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import axios from 'axios';
 import BestResult from "@/components/best-result";
 import TopSongs from "@/components/top-songs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SearchResultsProps {
     results: { id: string, image: string, title: string, data_type: string, artist: number, username: string, songs: [{ id: number }], plays: number, duration: string, feats: [] }[];
@@ -48,6 +49,7 @@ export default function SearchPage() {
                 console.log("Popular Covers: ", data);
             } catch (error) {
                 console.error("Error fetching popular covers:", error);
+                setPopularCovers([]); // Set to empty array on error to avoid undefined state
             }
         };
         fetchPopularCovers();
@@ -110,7 +112,7 @@ export default function SearchPage() {
 
     return (
         <main style={{
-            overflowY: isSearching ? "hidden" : "auto",
+            overflowY: isSearching || !popularCovers ? "hidden" : "auto",
         }} className="w-full pb-[7rem] px-5 relative h-svh">
             <motion.div initial={false} animate={{
                 opacity: isSearching && search.length === 0 ? 1 : 0,
@@ -201,6 +203,14 @@ export default function SearchPage() {
                         {popularCovers?.map((cover, index) => (
                             <PopularCover key={index} genre={cover.genre} cover={cover.cover} />
                         ))}
+                        {!popularCovers && (
+                            <>
+                                <Skeleton className="w-full h-[20rem] rounded-3xl" />
+                                <Skeleton className="w-full h-[20rem] rounded-3xl" /><Skeleton className="w-full h-[20rem] rounded-3xl" /><Skeleton className="w-full h-[20rem] rounded-3xl" /><Skeleton className="w-full h-[20rem] rounded-3xl" /><Skeleton className="w-full h-[20rem] rounded-3xl" /><Skeleton className="w-full h-[20rem] rounded-3xl" /><Skeleton className="w-full h-[20rem] rounded-3xl" />
+                                <Skeleton className="w-full h-[20rem] rounded-3xl" /> <Skeleton className="w-full h-[20rem] rounded-3xl" /> <Skeleton className="w-full h-[20rem] rounded-3xl" /> <Skeleton className="w-full h-[20rem] rounded-3xl" />
+
+                            </>
+                        )}
                     </motion.div>
                 )}
                 {search.length > 0 && (
