@@ -7,9 +7,8 @@ export async function GET(request: Request) {
   const cookieValue = url.searchParams.get("value");
 
   if (cookieKey && cookieValue) {
-    cookieStore.set(cookieKey, cookieValue, {
-      expires: new Date(Date.now() + 60 * 60 * 24 * 1000 * 7), // 7 days
-    });
+    cookieStore.set(cookieKey, cookieValue);
+    console.log("Cookie set:", cookieKey, cookieValue);
 
     return new Response(JSON.stringify({ value: cookieValue }), {
       headers: { "Content-Type": "application/json" },

@@ -5,6 +5,7 @@ import Sidebar from "@/components/sidebar";
 import PlayBar from "@/components/playbar";
 import { AlbumCoverShow } from "@/components/album-cover";
 import UseLoginToken from "@/hooks/loginTokten";
+import { Toaster } from "@/components/ui/sonner"
 
 
 const poppins = Poppins({
@@ -30,6 +31,7 @@ export default function RootLayout({
 
       <body className={`${poppins.className}  w-full flex h-full overflow-hidden`}>
         <UseLoginToken>
+          <Toaster />
           <AlbumCoverShow />
           <Sidebar />
           {children}
