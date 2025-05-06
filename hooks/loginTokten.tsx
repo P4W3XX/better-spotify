@@ -3,37 +3,39 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 
 
 
 export default function UseLoginToken({ children }: { children: React.ReactNode }) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(true)
-    const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [islogged, setIsLoggedIn] = useState(false)
+    const pathname = usePathname()
 
     useEffect(() => {
         const checkToken = async () => {
-            axios.get('/api/test').then((res) => {
-                console.log('Test API response:', res.data.value)
-            }
-            ).catch((err) => {
-                console.error('Error fetching test API:', err)
-            }
-            )
-            const token = await axios.get('/api/get-cookie?key=token')
-            if (token.data.value !== '0') {
-                console.log('Token found:', token.data.value)
-                setIsLoggedIn(true)
+            if (!islogged) {
+                const token = await axios.get('/api/get-cookie?key=token')
+                if (token.data.value !== '0') {
+                    console.log('Token found:', token.data.value)
+                    setIsLoggedIn(true)
+                    if (pathname === '/login') {
+                        router.back()
+                    }
+                } else {
+                    axios.get('/api/set-cookie?key=token&value=0')
+                    setIsLoggedIn(false)
+                    router.push('/login')
+                }
             } else {
-                axios.get('/api/set-cookie?key=token&value=0')
-                setIsLoggedIn(false)
-                router.push('/login')
+                console.log('Already logged in, skipping token check')
             }
             setIsLoading(false)
         }
         checkToken()
     }, [])
-    if (isLoading && !isLoggedIn) return (<><div style={{
+    if (isLoading) return (<><div style={{
         backgroundImage: "url('/loginBG.svg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
