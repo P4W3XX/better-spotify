@@ -1,9 +1,9 @@
 export default function PopularCover({
-    title,
-    artist,
+    genre,
+    cover,
 }: {
-    title: string
-    artist?: string
+    genre: string
+    cover?: string
 }) {
     return (
         <div className="
@@ -22,7 +22,7 @@ export default function PopularCover({
                   z-40 rounded-3xl
                 " />
                 <div
-                    style={{ backgroundImage: `url('/${artist}.jpg')` }}
+                    style={{ backgroundImage: `url('${cover}')` }}
                     className="
                       absolute inset-0
                       bg-cover bg-top
@@ -47,7 +47,7 @@ export default function PopularCover({
                   text-2xl sm:text-3xl md:text-4xl lg:text-5xl
                   w-3/4
                 ">
-                    {title}
+                    {genre}
                 </h1>
             </div>
         </div>
