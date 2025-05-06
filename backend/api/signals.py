@@ -8,7 +8,7 @@ def create_current_playback(sender, instance, created, **kwargs):
     if created:
         CurrentPlayback.objects.create(user=instance)
         playlist = Playlist.objects.create(user=instance, name="Liked Songs")
-        library =Library.objects.create(user=instance)
+        library = Library.objects.create(user=instance)
         LibraryItem.objects.create(library=library, 
                                    content_type=ContentType.objects.get_for_model(Playlist), 
                                    object_id=playlist.id)

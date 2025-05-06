@@ -339,6 +339,7 @@ class ArtistSerializer(serializers.ModelSerializer):
 class PlaybackActionSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['play', 'pause', 'resume', 'reset'])
     song_id = serializers.IntegerField(required=False)
+    progress_seconds = serializers.IntegerField(required=False)
 
 
 

@@ -150,6 +150,11 @@ class CurrentPlayback(models.Model):
         self.logged_playback = False
         self.save()
 
+    def seek_to(self, new_progress_seconds):
+        self.progress_seconds = max(0, new_progress_seconds)
+        self.started_at = timezone.now()
+        self.save()
+
 
 class SongPlayback(models.Model):
     user = models.ForeignKey(CustomUser, related_name='song_playbacks', on_delete=models.CASCADE)
