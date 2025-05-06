@@ -20,15 +20,12 @@ export default function UseLoginToken({ children }: { children: React.ReactNode 
                 console.error('Error fetching test API:', err)
             }
             )
-            console.log('Checking token...')
             const token = await axios.get('/api/get-cookie?key=token')
             if (token.data.value !== '0') {
                 console.log('Token found:', token.data.value)
                 setIsLoggedIn(true)
                 router.push('/')
             } else {
-                console.log('Token not found')
-                console.log('Redirecting to login...')
                 axios.get('/api/set-cookie?key=token&value=0')
                 setIsLoggedIn(false)
                 router.push('/login')

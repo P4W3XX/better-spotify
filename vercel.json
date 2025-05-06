@@ -16,6 +16,18 @@
   ],
   "routes": [
     {
+      "src": "/api/get-cookie",
+      "dest": "app/api/get-cookie/route.ts"
+    },
+    {
+      "src": "/api/set-cookie",
+      "dest": "app/api/set-cookie/route.ts"
+    },
+    {
+      "src": "/api/test",
+      "dest": "app/api/test/route.ts"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "backend/betterspotify/wsgi.py"
     },
