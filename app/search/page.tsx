@@ -18,6 +18,11 @@ interface SearchResultsProps {
     count: number;
 }
 
+interface PopularCoverProps {
+    genre: string;
+    cover: string;
+}
+
 export default function SearchPage() {
     const [search, setSearch] = useState<string>("");
     const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -25,11 +30,27 @@ export default function SearchPage() {
     const [showLastSearches, setShowLastSearches] = useState(false);
     const [searchResults, setSearchResults] = useState<SearchResultsProps>({ results: [], count: 0 });
     const [lastSearch, setLastSearch] = useState<string>(""); // Cache last search query
+    const [popularCovers, setPopularCovers] = useState<PopularCoverProps[]>();
 
     const mobile = useMediaQuery("(max-width: 768px)");
 
     useEffect(() => {
         setIsMounted(true);
+        const fetchPopularCovers = async () => {
+            try {
+                const response = await axios.get(`http://127.0.0.1:8000/api/top-songs/`);
+                console.log("Popular Covers: ", response.data);
+                const data = response.data.map((item: { genre: string; cover: string }) => ({
+                    genre: item.genre || "Unknown Genre",
+                    cover: item.cover || "",
+                }));
+                setPopularCovers(data);
+                console.log("Popular Covers: ", data);
+            } catch (error) {
+                console.error("Error fetching popular covers:", error);
+            }
+        };
+        fetchPopularCovers();
     }, []);
 
     useEffect(() => {
@@ -173,10 +194,13 @@ export default function SearchPage() {
             <AnimatePresence mode="wait">
                 {search.length === 0 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full mt-6 grid  grid-cols-2 z-0 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
-                        <PopularCover title="RAP" artist="travis" />
+                        {/*<PopularCover title="RAP" artist="travis" />
                         <PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" />
                         <PopularCover title="TRAP" artist="carti" />
-                        <PopularCover title="DISCO POLO" artist="zenek" />
+                        <PopularCover title="DISCO POLO" artist="zenek" /> */}
+                        {popularCovers?.map((cover, index) => (
+                            <PopularCover key={index} genre={cover.genre} cover={cover.cover} />
+                        ))}
                     </motion.div>
                 )}
                 {search.length > 0 && (
