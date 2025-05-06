@@ -24,7 +24,6 @@ export default function UseLoginToken({ children }: { children: React.ReactNode 
             if (token.data.value !== '0') {
                 console.log('Token found:', token.data.value)
                 setIsLoggedIn(true)
-                router.push('/')
             } else {
                 axios.get('/api/set-cookie?key=token&value=0')
                 setIsLoggedIn(false)
