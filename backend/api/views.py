@@ -361,7 +361,6 @@ class UserPlaylistViewSet(viewsets.ModelViewSet):
             content_type=ContentType.objects.get_for_model(Playlist),
             object_id=playlist.id
         )
-        print('a')
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
