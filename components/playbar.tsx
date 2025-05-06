@@ -224,59 +224,69 @@ export default function PlayBar() {
     }
   }, [action]);
 
-  /* 
   const [lastSongID, setLastSongID] = useState<string | null>(null);
+
+  const fetchToken = async () => {
+    try {
+      const response = await axios.get("/api/get-cookie?key=token");
+      console.log("Token fetched:", response.data.value);
+      return response.data
+    } catch (error) {
+      console.error("Error fetching token:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (currentSongID) {
-      const token = ""
-      if (action === "Play" && currentSongID !== lastSongID) { //play new song
-        audioRef.current?.play();
-        axios.post(`http://127.0.0.1:8000/api/playback/control/`, 
-          {
-            action: "play",
-            song_id: currentSongID,
-          },
-          {
-            headers: {
-              "Authorization": `Bearer {token}`,
-            },
-          }
-        );
+      const handlePlaybackControl = async () => {
+        try {
+          const tokenResponse = await fetchToken();
+          const token = tokenResponse?.value;
 
-      } else if (action === "Play" && currentSongID === lastSongID) { //play same song (resume)
-        audioRef.current?.play();
-        axios.post(`http://127.0.0.1:8000/api/playback/control/`, 
-          {
-            action: "resume",
-          },
-          {
-            headers: {
-              "Authorization": `Bearer {token}`,
-            },
+          if (!token) {
+            console.error("No token available for authorization");
+            return;
           }
-        );
 
-      } else if (action === "Pause") {
-        audioRef.current?.pause();
-        axios.post(`http://127.0.0.1:8000/api/playback/control/`, 
-          {
-            action: "pause",
-          },
-          {
-            headers: {
-              "Authorization": `Bearer {token}`,
-            },
+          let payload = {};
+          if (action === "Play" && currentSongID !== lastSongID) {
+            payload = {
+              action: "play",
+              song_id: currentSongID,
+            };
+          } else if (action === "Play" && currentSongID === lastSongID) {
+            payload = {
+              action: "resume"
+            };
+          } else if (action === "Pause") {
+            payload = {
+              action: "pause"
+            };
           }
-        );
-      }
 
-      setLastSongID(currentSongID);
+          await axios.post('http://127.0.0.1:8000/api/playback/control/', payload, {
+            headers: {
+              "Authorization": `Bearer ${token}`
+            }
+          });
+
+          if (action === "Play") {
+            audioRef.current?.play();
+          } else if (action === "Pause") {
+            audioRef.current?.pause();
+          }
+
+        } catch (error) {
+          console.error("Playback control error:", error);
+        }
+
+        setLastSongID(currentSongID);
+      };
+      handlePlaybackControl();
     }
-  }, [action]);
+  }, [action, currentSongID]);
   //todo save song before quitting app
-  
-  */
 
   useEffect(() => {
     const handleResize = () => {
