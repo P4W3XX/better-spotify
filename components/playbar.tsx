@@ -224,6 +224,60 @@ export default function PlayBar() {
     }
   }, [action]);
 
+  /* 
+  const [lastSongID, setLastSongID] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentSongID) {
+      const token = ""
+      if (action === "Play" && currentSongID !== lastSongID) { //play new song
+        audioRef.current?.play();
+        axios.post(`http://127.0.0.1:8000/api/playback/control/`, 
+          {
+            action: "play",
+            song_id: currentSongID,
+          },
+          {
+            headers: {
+              "Authorization": `Bearer {token}`,
+            },
+          }
+        );
+
+      } else if (action === "Play" && currentSongID === lastSongID) { //play same song (resume)
+        audioRef.current?.play();
+        axios.post(`http://127.0.0.1:8000/api/playback/control/`, 
+          {
+            action: "resume",
+          },
+          {
+            headers: {
+              "Authorization": `Bearer {token}`,
+            },
+          }
+        );
+
+      } else if (action === "Pause") {
+        audioRef.current?.pause();
+        axios.post(`http://127.0.0.1:8000/api/playback/control/`, 
+          {
+            action: "pause",
+          },
+          {
+            headers: {
+              "Authorization": `Bearer {token}`,
+            },
+          }
+        );
+      }
+
+      setLastSongID(currentSongID);
+    }
+  }, [action]);
+  //todo save song before quitting app
+  
+  */
+
   useEffect(() => {
     const handleResize = () => {
       if (titleRef.current && titleHandle.current && artistsRef.current && artistsHandle.current) {
