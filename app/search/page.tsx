@@ -24,6 +24,7 @@ export default function SearchPage() {
     const [isMounted, setIsMounted] = useState(false);
     const [showLastSearches, setShowLastSearches] = useState(false);
     const [searchResults, setSearchResults] = useState<SearchResultsProps>({ results: [], count: 0 });
+    const [lastSearch, setLastSearch] = useState<string>(""); // Cache last search query
 
     const mobile = useMediaQuery("(max-width: 768px)");
 
@@ -41,14 +42,13 @@ export default function SearchPage() {
         }
     }, [isSearching]);
 
-
     useEffect(() => {
-        if (search.length > 0) {
+        if (search.length > 0 && search !== lastSearch) { // Only fetch if search query changes
+            console.log("searching for: ", search);
             const fetchSearchResults = async () => {
                 try {
                     const response = await axios.get(`http://127.0.0.1:8000/api/search/?q=${search}`);
                     console.log(response.data.results);
-                    // Map through results to extract only the needed properties
                     setSearchResults({
                         results: response.data.results.map((item: {
                             id: string;
@@ -61,10 +61,10 @@ export default function SearchPage() {
                             plays?: number;
                             duration?: string;
                             feats?: [];
-
+                            cover?: string;
                         }) => ({
                             id: item.id,
-                            image: item.image,
+                            image: item.image || item.cover,
                             title: item.title,
                             data_type: item.data_type,
                             artist: item.artist,
@@ -76,18 +76,16 @@ export default function SearchPage() {
                         })),
                         count: response.data.count,
                     });
-                    console.log(searchResults);
+                    setLastSearch(search); // Update last search query
                 } catch (error) {
                     console.error("Error fetching search results:", error);
                 }
             };
             fetchSearchResults();
         }
-    }, [search]);
+    }, [search, lastSearch]); // Add lastSearch as a dependency
 
     if (!isMounted) return null;
-
-
 
     return (
         <main style={{

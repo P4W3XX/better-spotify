@@ -4,6 +4,7 @@ import "./globals.css";
 import Sidebar from "@/components/sidebar";
 import PlayBar from "@/components/playbar";
 import { AlbumCoverShow } from "@/components/album-cover";
+import UseLoginToken from "@/hooks/loginTokten";
 
 
 const poppins = Poppins({
@@ -26,11 +27,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="dark">
+
       <body className={`${poppins.className}  w-full flex h-full overflow-hidden`}>
-        <AlbumCoverShow />
-        <Sidebar />
-        {children}
-        <PlayBar />
+        <UseLoginToken>
+          <AlbumCoverShow />
+          <Sidebar />
+          {children}
+          <PlayBar />
+        </UseLoginToken>
       </body>
     </html>
   );
