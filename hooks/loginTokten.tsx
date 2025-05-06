@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 export default function UseLoginToken({ children }: { children: React.ReactNode }) {
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(true)
-    const [, setIsLoggedIn] = useState(false)
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
 
     useEffect(() => {
         const checkToken = async () => {
@@ -33,7 +33,7 @@ export default function UseLoginToken({ children }: { children: React.ReactNode 
         }
         checkToken()
     }, [])
-    if (isLoading) return (<><div style={{
+    if (isLoading && !isLoggedIn) return (<><div style={{
         backgroundImage: "url('/loginBG.svg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
