@@ -8,6 +8,10 @@ export default function Page() {
 
     console.log('Access Token:', accessToken)
     return (
-        <div></div>
+        <div>
+            <h1 className="text-3xl font-bold underline">Library</h1>
+            <p className="text-2xl">Access Token: {accessToken}</p>
+            <p className="text-2xl">Access Token: {accessToken}</p>
+        </div>
     )
 }
