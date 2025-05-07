@@ -1354,7 +1354,7 @@ export default function PlayBar() {
                   >
                     <span
                       onClick={() => {
-                        router.push(`/artist/${currentSongDetails.artist}`);
+                        router.push(`/profile/${currentSongDetails.artist}`);
                       }}
                       className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                     >
@@ -1366,7 +1366,7 @@ export default function PlayBar() {
                         <span
                           key={index}
                           onClick={() => {
-                            router.push(`/artist/${currentSongDetails.feats[index]}`);
+                            router.push(`/profile/${currentSongDetails.feats[index]}`);
                           }}
                           className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                         >
