@@ -99,6 +99,7 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                             <Image
                                 src={cover}
                                 alt=""
+                                unoptimized
                                 width={200}
                                 height={200}
                                 className=" size-[10rem] rounded-2xl"
