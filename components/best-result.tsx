@@ -57,7 +57,7 @@ const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
 };
 
 
-export default function BestResult({ type, songs, title, artistId, username, cover }: { type: string, songs?: [{ id: number }], title: string, artistId: number, username?: string, cover: string }) {
+export default function BestResult({ type, songs, title, artistId, username, cover, is_indecent }: { type: string, songs?: [{ id: number }], title: string, artistId: number, username?: string, cover: string, is_indecent?: boolean }) {
 
     const currentSongID = useCurrentSongStore((state) => state.currentSongID);
     const setCurrentSongID = useCurrentSongStore((state) => state.setCurrentSongID);
@@ -84,7 +84,7 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                     console.log(err);
                 });
         }
-    }, [artistId,type]);
+    }, [artistId, type]);
     return (
         <div className=" w-full flex flex-1 max-w-[25rem] rounded-2xl gap-y-2 h-full flex-col">
             <h1 className=" text-2xl font-semibold">
@@ -115,9 +115,15 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                     {isLoading ? (
                         <Skeleton className=" w-[6rem] h-[1.5rem] rounded-2xl" />
                     ) : (
-                        <h1 className=" text-4xl font-semibold">
-                            {type === "artist" ? username : title}
-                        </h1>)}
+                        <div className=" flex items-center gap-x-1">
+                            {is_indecent && (
+                                <div className=" size-8 min-w-[16px] flex items-center text-lg justify-center rounded-sm bg-white/30 font-medium mr-1">E</div>
+                            )}
+                            <h1 className=" text-4xl font-semibold">
+                                {type === "artist" ? username : title}
+                            </h1>
+                        </div>
+                    )}
                     {isLoading ? (
                         <Skeleton className=" w-[8rem] h-[1rem] rounded-2xl" />
                     ) : (
