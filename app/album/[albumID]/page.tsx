@@ -302,6 +302,7 @@ interface AlbumInfo {
 
 interface SongInfo {
   title: string;
+  is_indecent: boolean;
   artist: string;
   cover: string;
   duration: string;
@@ -620,6 +621,7 @@ export default function Album() {
           {albumInfo.songs.length > 0 ? (
             albumInfo.songs.map((song: SongInfo, index: number) => (
               <SongPreview
+                isIndecent={song.is_indecent}
                 key={index}
                 index={index}
                 title={song.title}

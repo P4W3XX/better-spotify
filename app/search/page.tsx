@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTokenStore } from "@/store/token";
 
 interface SearchResultsProps {
-    results: { id: string, image: string, title: string, data_type: string, artist: number, username: string, songs: [{ id: number }], plays: number, duration: string, feats: [] }[];
+    results: { id: string, image: string, title: string, data_type: string, artist: number, username: string, songs: [{ id: number }], plays: number, duration: string, feats: [], is_indecent: boolean }[];
     count: number;
 }
 
@@ -136,6 +136,7 @@ export default function SearchPage() {
                             plays?: number;
                             duration?: string;
                             feats?: [];
+                            is_indecent?: boolean;
                             cover?: string;
                         }) => ({
                             id: item.id,
@@ -145,6 +146,7 @@ export default function SearchPage() {
                             artist: item.artist,
                             username: item.username,
                             songs: item.songs,
+                            is_indecent: item.is_indecent || false,
                             plays: item.plays,
                             duration: item.duration,
                             feats: item.feats,
@@ -248,7 +250,7 @@ export default function SearchPage() {
                         opacity: isSearching ? 1 : 0,
                     }} transition={{
                         ease: "easeInOut",
-                    }} className=" font-medium  hover:bg-zinc-800/80 z-[100] rounded-xl h-[3rem] cursor-pointer flex items-center justify-center">
+                    }} className=" font-medium  hover:bg-zinc-800/80 z-[100] rounded-xl h-[3rem] cursor-pointer flex items-center justify-center" onClick={() => { setIsSearching(false); setSearch("") }}>
                         Cancle
                     </motion.button>
                 )}
@@ -272,11 +274,12 @@ export default function SearchPage() {
                 {search.length > 0 && (
                     <motion.div>
                         <div className=" w-full flex h-[20rem] gap-10">
-                            <BestResult type={searchResults.results?.[0]?.data_type || 'album'} title={searchResults.results?.[0]?.title} username={searchResults.results?.[0]?.username} artistId={searchResults.results?.[0]?.artist} cover={searchResults.results?.[0]?.image} songs={searchResults.results?.[0]?.songs} />
+                            <BestResult type={searchResults.results?.[0]?.data_type || 'album'} title={searchResults.results?.[0]?.title} is_indecent={searchResults.results?.[0]?.is_indecent} username={searchResults.results?.[0]?.username} artistId={searchResults.results?.[0]?.artist} cover={searchResults.results?.[0]?.image} songs={searchResults.results?.[0]?.songs} />
                             <TopSongs songs={searchResults.results
                                 .filter((song) => song.data_type === 'song')
                                 .map(song => ({
                                     id: song.id,
+                                    is_indecent: song.is_indecent || false,
                                     feats: song.feats || [],
                                     title: song.title,
                                     plays: song.plays || 0,
