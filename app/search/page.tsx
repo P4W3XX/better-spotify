@@ -13,6 +13,7 @@ import axios from 'axios';
 import BestResult from "@/components/best-result";
 import TopSongs from "@/components/top-songs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTokenStore } from "@/store/token";
 
 interface SearchResultsProps {
     results: { id: string, image: string, title: string, data_type: string, artist: number, username: string, songs: [{ id: number }], plays: number, duration: string, feats: [] }[];
@@ -24,6 +25,19 @@ interface PopularCoverProps {
     cover: string;
 }
 
+interface UserHistoryProps {
+    id: string;
+    image: string;
+    title: string;
+    data_type: string;
+    artist: string;
+    username: string;
+    songs?: [{ id: number }];
+    plays?: number;
+    duration?: string;
+    feats?: [];
+}
+
 export default function SearchPage() {
     const [search, setSearch] = useState<string>("");
     const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -32,6 +46,8 @@ export default function SearchPage() {
     const [searchResults, setSearchResults] = useState<SearchResultsProps>({ results: [], count: 0 });
     const [lastSearch, setLastSearch] = useState<string>(""); // Cache last search query
     const [popularCovers, setPopularCovers] = useState<PopularCoverProps[]>();
+    const [userHistory, setUserHistory] = useState<UserHistoryProps[]>([]);
+    const accessToken = useTokenStore((state) => state.accessToken);
 
     const mobile = useMediaQuery("(max-width: 768px)");
 
@@ -56,6 +72,37 @@ export default function SearchPage() {
     }, []);
 
     useEffect(() => {
+        if (isSearching && search.length === 0) {
+            const fetchUserHistory = async () => {
+                await axios.get('http://127.0.0.1:8000/api/user-history/', {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        Accept: 'application/json',
+                    },
+                }).then((response) => {
+                    const data = response.data.map((item: UserHistoryProps) => ({
+                        id: item.id,
+                        image: item.image,
+                        title: item.title,
+                        data_type: "song",
+                        artist: item.artist,
+                        songs: item.songs,
+                        feats: item.feats,
+                    }));
+                    setUserHistory(data);
+                }
+                ).catch((error) => {
+                    console.error("Error fetching user history:", error);
+                }
+
+                );
+            }
+            fetchUserHistory();
+        }
+    }, [isSearching]);
+
+
+    useEffect(() => {
         if (isSearching) {
             setTimeout(() => {
                 setShowLastSearches(true);
@@ -66,7 +113,7 @@ export default function SearchPage() {
     }, [isSearching]);
 
     useEffect(() => {
-        if (search.length > 0 && search !== lastSearch) { // Only fetch if search query changes
+        if (search.length > 0 && search !== lastSearch) {
             console.log("searching for: ", search);
             const fetchSearchResults = async () => {
                 try {
@@ -156,11 +203,15 @@ export default function SearchPage() {
                         <div className=" mt-2 px-4 flex flex-col gap-y-1">
                             {showLastSearches && (
                                 <>
-                                    <SongPreview index={0} isDuration={false} isPlays={false} feats={[]} id="1" isIndex={false} isCover title="4x4" artist="Travis Scott" duration="0" plays={0} />
-                                    <SongPreview index={0} isDuration={false} isPlays={false} feats={[]} id="1" isIndex={false} isCover title="4x4" artist="Travis Scott" duration="0" plays={0} />
-                                    <SongPreview index={0} isDuration={false} isPlays={false} feats={[]} id="1" isIndex={false} isCover title="4x4" artist="Travis Scott" duration="0" plays={0} />
-                                    <SongPreview index={0} isDuration={false} isPlays={false} feats={[]} id="1" isIndex={false} isCover title="4x4" artist="Travis Scott" duration="0" plays={0} />
-                                    <SongPreview index={0} isDuration={false} isPlays={false} feats={[]} id="1" isIndex={false} isCover title="4x4" artist="Travis Scott" duration="0" plays={0} />
+                                    {userHistory.length > 0 ? (
+                                        userHistory.map((song, index) => (
+                                            <SongPreview key={index} index={index} id={song.id || '0'} isDuration isCover isIndex isPlays title={song.title} artist={song.artist} artistId={typeof song.artist === 'string' ? parseInt(song.artist) : undefined} plays={song.plays || 0} duration={song.duration || ''} feats={song.feats || []} />
+                                        ))
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <p className="text-white/50">No recent searches</p>
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>

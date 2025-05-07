@@ -199,7 +199,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
             />)}</div>)}
       <div className=" w-full flex flex-col">
         <h1 className=" font-semibold md:text-lg text-md truncate">{title}</h1>
-        <p className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium">
+        <div className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium">
           {Object.values(isLoading).some((loading) => loading) ? (
             <Skeleton className=" w-[50px] h-[10px] rounded-lg" />
           ) : (
@@ -215,7 +215,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
               </span>
             )
           )}
-        </p>
+        </div>
       </div>
       {Object.values(isLoading).some((loading) => loading) ? (
         <Skeleton className=" w-[50px] h-[10px] rounded-lg" />

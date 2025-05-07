@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useTokenStore } from '@/store/token';
 
 export default function LoginPage() {
     const [steps, setSteps] = useState<'Login' | 'Register' | null>(null);
@@ -14,6 +15,8 @@ export default function LoginPage() {
     const [password, setPassword] = useState<string>('');
     const [username, setUsername] = useState<string>('');
     const [confirmPassword, setConfirmPassword] = useState<string>('');
+    const setAccessToken = useTokenStore((state) => state.setAccessToken);
+    const setRefreshToken = useTokenStore((state) => state.setRefreshToken);
     const router = useRouter();
 
     const handleLogin = () => {
@@ -24,6 +27,8 @@ export default function LoginPage() {
                 console.log('Login successful:', response);
                 axios.get(`/api/set-cookie?key=token&value=${response.data.tokens.access}`).then(() => {
                     console.log('Token set successfully');
+                    setAccessToken(response.data.tokens.access)
+                    setRefreshToken(response.data.tokens.refresh)
                     router.refresh();
                     router.push('/')
 
@@ -64,6 +69,8 @@ export default function LoginPage() {
                 });
                 axios.get(`/api/set-cookie?key=token&value=${response.data.tokens.access}`).then(() => {
                     console.log('Token Access set successfully');
+                    setAccessToken(response.data.tokens.access)
+                    setRefreshToken(response.data.tokens.refresh)
                     router.refresh();
                     router.push('/')
                 })

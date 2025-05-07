@@ -4,21 +4,27 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-
+import { useTokenStore } from '@/store/token';
 
 
 export default function UseLoginToken({ children }: { children: React.ReactNode }) {
     const router = useRouter()
-    const [isLoading, setIsLoading] = useState(true)
-    const [islogged, setIsLoggedIn] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
+    const [, setIsLoggedIn] = useState(false)
+    const accessToken = useTokenStore((state) => state.accessToken);
+    const setAccessToken = useTokenStore((state) => state.setAccessToken);
+
     const pathname = usePathname()
 
     useEffect(() => {
         const checkToken = async () => {
-            if (!islogged) {
+            if (!accessToken) {
+                console.log('No token found, checking cookie...')
+                setIsLoading(true)
                 const token = await axios.get('/api/get-cookie?key=token')
                 if (token.data.value !== '0') {
                     console.log('Token found:', token.data.value)
+                    setAccessToken(token.data.value)
                     setIsLoggedIn(true)
                     if (pathname === '/login') {
                         router.back()
@@ -34,7 +40,7 @@ export default function UseLoginToken({ children }: { children: React.ReactNode 
             setIsLoading(false)
         }
         checkToken()
-    }, [])
+    }, [pathname])
     if (isLoading) return (<><div style={{
         backgroundImage: "url('/loginBG.svg')",
         backgroundSize: 'cover',
