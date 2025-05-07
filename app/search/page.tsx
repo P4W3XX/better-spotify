@@ -26,16 +26,17 @@ interface PopularCoverProps {
 }
 
 interface UserHistoryProps {
-    id: string;
-    image: string;
-    title: string;
-    data_type: string;
-    artist: string;
-    username: string;
-    songs?: [{ id: number }];
-    plays?: number;
-    duration?: string;
-    feats?: [];
+    song: {
+        id: string;
+        cover: string;
+        title: string;
+        album: string;
+        plays: number;
+        artist: number;
+        is_indecent: boolean;
+        duration: string;
+        featured_artists?: string[];
+    };
 }
 
 export default function SearchPage() {
@@ -80,21 +81,25 @@ export default function SearchPage() {
                         Accept: 'application/json',
                     },
                 }).then((response) => {
+                    console.log("User History: ", response.data);
                     const data = response.data.map((item: UserHistoryProps) => ({
-                        id: item.id,
-                        image: item.image,
-                        title: item.title,
-                        data_type: "song",
-                        artist: item.artist,
-                        songs: item.songs,
-                        feats: item.feats,
+                        song: {
+                            id: item.song.id,
+                            cover: item.song.cover,
+                            title: item.song.title,
+                            album: item.song.album,
+                            plays: item.song.plays,
+                            artist: item.song.artist,
+                            is_indecent: item.song.is_indecent,
+                            duration: item.song.duration,
+                            featured_artists: item.song.featured_artists || [],
+                        }
                     }));
                     setUserHistory(data);
                 }
                 ).catch((error) => {
                     console.error("Error fetching user history:", error);
                 }
-
                 );
             }
             fetchUserHistory();
@@ -204,12 +209,16 @@ export default function SearchPage() {
                             {showLastSearches && (
                                 <>
                                     {userHistory.length > 0 ? (
-                                        userHistory.map((song, index) => (
-                                            <SongPreview key={index} index={index} id={song.id || '0'} isDuration isCover isIndex isPlays title={song.title} artist={song.artist} artistId={typeof song.artist === 'string' ? parseInt(song.artist) : undefined} plays={song.plays || 0} duration={song.duration || ''} feats={song.feats || []} />
-                                        ))
+                                        <>
+                                            {console.log("User History: ", userHistory)}
+                                            {userHistory.map((song, index) => (
+                                                <SongPreview key={index} isIndecent={song.song.is_indecent} index={index} feats={song.song.featured_artists
+                                                    || []} title={song.song.title} isCover isDuration={false} isPlays={false} isIndex={false} artistId={song.song.artist} duration={song.song.duration || '0'} plays={song.song.plays || 0} id={song.song.id} />
+                                            ))}
+                                        </>
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <p className="text-white/50">No recent searches</p>
+                                        <div className="w-full flex items-center justify-center h-full">
+                                            <p className="text-white/50">No history found</p>
                                         </div>
                                     )}
                                 </>
@@ -247,10 +256,6 @@ export default function SearchPage() {
             <AnimatePresence mode="wait">
                 {search.length === 0 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full mt-6 grid  grid-cols-2 z-0 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
-                        {/*<PopularCover title="RAP" artist="travis" />
-                        <PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" /><PopularCover title="R&B" artist="sza" />
-                        <PopularCover title="TRAP" artist="carti" />
-                        <PopularCover title="DISCO POLO" artist="zenek" /> */}
                         {popularCovers?.map((cover, index) => (
                             <PopularCover key={index} genre={cover.genre} cover={cover.cover} />
                         ))}

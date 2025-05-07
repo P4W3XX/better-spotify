@@ -7,9 +7,11 @@ import axios from "axios";
 import { useCurrentSongStore } from "@/store/current-song";
 import { motion } from "framer-motion";
 import { Skeleton } from "./ui/skeleton";
+import { useRouter } from "next/navigation";
 
 const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
   if (!isPlaying) return null;
+
   return (
     <div className=" flex space-x-1 group-hover:hidden items-center justify-center">
       <motion.div
@@ -56,7 +58,8 @@ const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
   );
 };
 
-export const SongPreview = ({ index, title, artist, feats, plays, duration, isCover, id, isIndex, isPlays, isDuration, artistId }: { index: number, title: string, artist?: string, feats: string[], plays: number, duration: string, isCover: boolean, id: string, isIndex: boolean, isPlays: boolean, isDuration: boolean, artistId?: number }) => {
+export const SongPreview = ({ index, title, artist, feats, plays, duration, isCover, id, isIndex, isPlays, isDuration, artistId,
+  isIndecent }: { index: number, title: string, artist?: string, feats?: string[], plays: number, duration: string, isCover: boolean, id: string, isIndex: boolean, isPlays: boolean, isDuration: boolean, artistId?: number, isIndecent: boolean }) => {
 
   const [songCover, setSongCover] = useState<string | null>(null);
   const [featsState, setFeatsState] = useState<Array<string> | null>(null);
@@ -65,6 +68,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
   const currentSongID = useCurrentSongStore((state) => state.currentSongID);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const action = useCurrentSongStore((state) => state.action);
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState({
     songCover: false,
     feats: false,
@@ -95,6 +99,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
       setFeatsState(null);
       setIsLoading((prev) => ({ ...prev, feats: true }));
       try {
+        if (!feats || feats.length === 0) return;
         const featNames = await Promise.all(
           feats.map(async (artistId) => {
             const res = await axios.get(`http://127.0.0.1:8000/api/artists/${artistId}/`);
@@ -128,7 +133,8 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
     fetchFeats();
   }, [feats, artistId]);
 
-  const handleSongAction = () => {
+  const handleSongAction = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
     setCurrentSongID(id.toString());
     if (currentSongID === id.toString()) {
       setAction(action === "Play" ? "Pause" : "Play");
@@ -169,7 +175,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
       </div>
       {songCover && (
         <div className=" max-w-[48px] w-full relative mr-3">
-          {!isIndex && (<button onClick={handleSongAction} className={` hover:scale-105  group-hover:flex absolute top-0 left-0 bg-black/50 h-full w-full right-0 mx-auto bottom-0 my-auto active:scale-95 transition-all ${currentSongID === id.toString() && action === "Pause" ? 'flex' : 'hidden'} cursor-pointer rounded-md items-center justify-center`}>
+          {!isIndex && (<button onClick={(e) => handleSongAction(e)} className={` hover:scale-105  group-hover:flex absolute top-0 left-0 bg-black/50 h-full w-full right-0 mx-auto bottom-0 my-auto active:scale-95 transition-all ${currentSongID === id.toString() && action === "Pause" ? 'flex' : 'hidden'} cursor-pointer rounded-md items-center justify-center`}>
             {currentSongID === id.toString() ? (
               action === "Play" ? (
                 <Pause className=" text-white md:size-[24px] size-[20px]"
@@ -199,18 +205,35 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
             />)}</div>)}
       <div className=" w-full flex flex-col">
         <h1 className=" font-semibold md:text-lg text-md truncate">{title}</h1>
-        <div className=" text-white/50 text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium">
+        <div className=" text-white/50 flex text-xs w-max cursor-pointer group-hover:text-white transition-colors font-medium">
+          {isIndecent && (
+            <div className=" size-4 min-w-[16px] flex items-center text-xs justify-center rounded-[2px] bg-white/30 font-medium mr-1">E</div>
+          )}
           {Object.values(isLoading).some((loading) => loading) ? (
             <Skeleton className=" w-[50px] h-[10px] rounded-lg" />
           ) : (
-            <span className=" text-white/50 font-medium">{artistId ? artistName : artist}</span>
+            <span onClick={(e) => {
+              e.stopPropagation();
+              if (artistId) {
+                router.push(`/profile/${artistId}`);
+              } else {
+                router.push(`/profile/${artist}`);
+              }
+            }} className=" text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artistId ? artistName : artist}</span>
           )}
           {Object.values(isLoading).some((loading) => loading) ? (
             <Skeleton className=" w-[50px] h-[10px] rounded-lg" />
           ) : (
             featsState && featsState.length > 0 && (
-              <span className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
-                {","}
+              <span onClick={(e) => {
+                e.stopPropagation();
+                if (artistId) {
+                  router.push(`/profile/${artistId}`);
+                } else {
+                  router.push(`/profile/${artist}`);
+                }
+              }} className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                {" ,"}
                 {featsState.join(", ")}
               </span>
             )
