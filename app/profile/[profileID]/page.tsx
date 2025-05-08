@@ -1,13 +1,11 @@
 "use client";
 import ItemCover from "@/components/item-cover";
 import { SongPreview } from "@/components/song-preview";
-import { useAlbumCoverStore } from "@/store/album-cover";
 import axios from "axios";
 import { Ellipsis, Music } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { title } from "process";
-import { use, useEffect, useRef, useState } from "react";
+import {useEffect, useRef, useState } from "react";
 import { VscVerifiedFilled } from "react-icons/vsc";
 import { Pause, Play, Shuffle } from "lucide-react";
 import { useCurrentSongStore } from "@/store/current-song";
@@ -56,7 +54,6 @@ export default function Profile() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [scrollY, setScrollY] = useState(0);
   const setCurrentSongID = useCurrentSongStore(
     (state) => state.setCurrentSongID
   );
@@ -131,9 +128,9 @@ export default function Profile() {
           name: artistResponse.data.username,
           cover: artistResponse.data.image || "/slabiak2.jpg",
           type: artistResponse.data.type,
-          albums: artistResponse.data.albums?.map((album: any) => ({
+          albums: artistResponse.data.albums?.map((album:AlbumInfo) => ({
             title: album.title,
-            image: album.image,
+            cover: album.cover,
             id: album.id,
           })),
         });
@@ -153,14 +150,13 @@ export default function Profile() {
             albumDuration: albumResponse?.data.album_duration,
             theme: albumResponse?.data.theme,
             totalPlays: albumResponse?.data.total_plays,
-            songs: albumResponse?.data.songs?.map((song: any) => ({
+            songs: albumResponse?.data.songs?.map((song: SongInfo) => ({
               title: song.title,
               artist: song.artist,
               cover: song.cover || "/slabiak2.jpg",
               duration: song.duration,
               plays: song.plays,
               featured_artists: song.featured_artists || [],
-              isCover: song.is_cover || false,
               id: song.id,
             })),
           });
@@ -254,7 +250,7 @@ export default function Profile() {
         > 
           <div
             style={{ backgroundImage: `url(${artistInfo.cover})` }}
-            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-fill bg-center"
+            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-cover bg-center"
           >
             <div className="flex flex-row pt-8 w-full justify-start items-center gap-x-3 md:pt-30 pt-65">
               <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width>920 ? "block":"hidden"}`} />
@@ -338,7 +334,11 @@ export default function Profile() {
                   id={song.id}
                   plays={song.plays}
                   duration={song.duration}
-                  artistId={artistInfo.id}
+                  artistId={Number(artistInfo.id)}
+                  isIndex={true}
+                  isPlays={true}
+                  isDuration={true}
+                  isIndecent={false}
                 />
               ))
             ) : (
