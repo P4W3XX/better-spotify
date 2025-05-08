@@ -253,8 +253,11 @@ class PlaybackControlAPIView(APIView):
         current_playback = CurrentPlayback.objects.get(user=request.user)
         if current_playback.song:
             data = CurrentPlaybackSerializer(current_playback).data
-            return Response({"data": data, "status": "Playing"})
-        return Response({"status": "Stopped / Not playing any song"})
+            if current_playback.is_paused:
+                return Response({"data": data, "status": "Paused"})
+            else:
+                return Response({"data": data, "status": "Playing"})
+        return Response({"status": "Not playing any song"})
     
 
 
