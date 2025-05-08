@@ -42,6 +42,8 @@ interface ArtistInfo {
   cover: string;
   type: string;
   albums: AlbumInfo[];
+  top_songs: SongInfo[];
+  number_of_listeners: number;
 }
 
 export default function Profile() {
@@ -53,6 +55,8 @@ export default function Profile() {
     cover: "",
     type: "",
     albums: [] as AlbumInfo[],
+    top_songs: [] as SongInfo[],
+    number_of_listeners: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +140,17 @@ export default function Profile() {
             image: album.image,
             id: album.id,
           })),
+          top_songs: artistResponse.data.top_songs?.map((song: any) => ({
+            title: song.title,
+            artist: song.artist,
+            cover: song.cover || "/slabiak2.jpg",
+            duration: song.duration,
+            plays: song.plays,
+            featured_artists: song.featured_artists || [],
+            isCover: song.is_cover || false,
+            id: song.id,
+          })),
+          number_of_listeners: artistResponse.data.number_of_listeners,
         });
 
         if (artistResponse.data.albums) {
@@ -270,7 +285,7 @@ export default function Profile() {
                 width > 920 ? "block" : "hidden"
               }`}
             >
-              45 584 400 słuchaczy w miesiącu
+              {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
           </div>
           <div className="sticky top-0 flex flex-row gap-x-6 items-center justify-start bg-cyan-950 w-full px-4 py-4">
@@ -326,8 +341,8 @@ export default function Profile() {
           </div>
           <aside className="bg-gradient-to-t from-black to-cyan-950 flex flex-col w-full h-[20rem] gap-y-3 px-4">
             <h2 className="text-3xl font-semibold mt-6">Popularne</h2>
-            {albumInfo.songs.length > 0 ? (
-              albumInfo.songs.map((song: SongInfo, index: number) => (
+            {artistInfo.top_songs.length > 0 ? (
+              artistInfo.top_songs.map((song: SongInfo, index: number) => (
                 <SongPreview
                   key={index}
                   index={index}

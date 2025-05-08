@@ -345,6 +345,7 @@ class PlaybackActionSerializer(serializers.Serializer):
 
 
 class CurrentPlaybackSerializer(serializers.ModelSerializer):
+    song = SongSerializer(nested=True)
     class Meta:
         model = CurrentPlayback
         fields = [
