@@ -12,14 +12,17 @@ interface SynchronizedLyricsProps {
     lyrics: LyricLine[];
     currentTime: number;
     setCurrentTime: (time: number) => void;
+    audioRef: React.RefObject<HTMLAudioElement>;
+    className?: string;
 }
 
 // Component for a single lyric line with gradient effect
-const LyricLine = ({ line, currentTime, setCurrentTime }: {
+const LyricLine = ({ line, currentTime, setCurrentTime, audioRef }: {
     line: LyricLine,
     currentTime: number,
     activeIndex: number,
     setCurrentTime: (time: number) => void;
+    audioRef: React.RefObject<HTMLAudioElement>;
 }) => {
     const isActive = currentTime >= line.startTime && currentTime <= line.endTime;
     const hasParentheses = line.text.includes('(') && line.text.includes(')');
@@ -32,7 +35,15 @@ const LyricLine = ({ line, currentTime, setCurrentTime }: {
 
     return (
         <motion.div
-            onClick={() => { setCurrentTime(line.startTime); console.log(line.startTime); }}
+            onClick={() => {
+                if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = line.startTime;
+                    audioRef.current.play();
+                }
+                setCurrentTime(line.startTime);
+                console.log(line.startTime);
+            }}
             className={`py-2 my-1 text-3xl hover:bg-white/10 group rounded-2xl px-2 font-semibold transition-all duration-200 ${alignment}`}
             initial={{ opacity: 0.5 }}
             animate={{
@@ -57,7 +68,7 @@ const LyricLine = ({ line, currentTime, setCurrentTime }: {
         </motion.div>
     );
 };
-export const SynchronizedLyrics = ({ lyrics, currentTime, setCurrentTime }: SynchronizedLyricsProps) => {
+export const SynchronizedLyrics = ({ lyrics, currentTime, setCurrentTime, audioRef, className }: SynchronizedLyricsProps) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const activeLineIndex = lyrics.findIndex(
         line => currentTime >= line.startTime && currentTime <= line.endTime
@@ -72,8 +83,8 @@ export const SynchronizedLyrics = ({ lyrics, currentTime, setCurrentTime }: Sync
     }, [activeLineIndex]);
 
     return (
-        <ScrollArea className="w-full h-full" ref={scrollContainerRef}>
-            <div className="px-4 pb-4 pt-8">
+        <ScrollArea className={`w-full h-full`} ref={scrollContainerRef}>
+            <div className={`px-4 pb-4 pt-8 ${className}`}>
                 {lyrics.map((line, index) => (
                     <div key={index} data-index={index}>
                         <LyricLine
@@ -81,6 +92,7 @@ export const SynchronizedLyrics = ({ lyrics, currentTime, setCurrentTime }: Sync
                             currentTime={currentTime}
                             activeIndex={activeLineIndex}
                             setCurrentTime={setCurrentTime}
+                            audioRef={audioRef}
                         />
                     </div>
                 ))}

@@ -87,10 +87,12 @@ export default function PlayBar() {
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isLyricText, setIsLyricText] = useState<string>("");
+  const [isMoved, setIsMoved] = useState(false);
 
   useEffect(() => {
     setIsLyricText(noLyricTexts[Math.floor(Math.random() * noLyricTexts.length)]);
   }, [currentSongID]);
+
 
   useEffect(() => {
     if (audioRef.current) {
@@ -201,6 +203,33 @@ export default function PlayBar() {
     const secs = seconds % 60;
     return `${hours > 0 ? `${hours}:` : ""}${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
+
+  useEffect(() => {
+    if (isFullScreen) {
+      let inactivityTimeout: NodeJS.Timeout;
+
+      const resetTimer = () => {
+        clearTimeout(inactivityTimeout);
+        setIsMoved(false);
+        console.log("Mouse moved, resetting timer");
+
+        inactivityTimeout = setTimeout(() => {
+          setIsMoved(true);
+          console.log("Mouse inactive for 3 seconds, hiding controls");
+        }, 3000);
+      };
+
+      resetTimer();
+
+      window.addEventListener('mousemove', resetTimer);
+
+      return () => {
+        window.removeEventListener('mousemove', resetTimer);
+        clearTimeout(inactivityTimeout);
+        setIsMoved(false);
+      };
+    }
+  }, [isFullScreen]);
 
   const handlePlay = () => {
     if (audioRef.current) {
@@ -436,7 +465,7 @@ export default function PlayBar() {
           }}
           className=" absolute w-full z-[9999] flex-col flex items-center justify-end h-full"
         >
-          <div className=" h-1 bg-white/20 w-1/3 rounded-full absolute z-20 top-2" />
+          <div className=" h-1 bg-white/20 w-1/3 rounded-full absolute z-[9999] top-2" />
           <motion.div
             animate={{
               opacity: isLyric ? 1 : 0,
@@ -450,11 +479,13 @@ export default function PlayBar() {
           >
             {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
               <SynchronizedLyrics
+                className=" !pt-[6rem] !pb-[8rem]"
                 lyrics={currentSongDetails.lyric.lyric}
                 currentTime={formatTimeToSeconds(currentTime)}
+                audioRef={audioRef as React.RefObject<HTMLAudioElement>}
                 setCurrentTime={(time: number) => {
                   console.log("Setting current time:", time);
-                  if (audioRef.current) {
+                  if (audioRef.current && !audioRef.current.paused) {
                     audioRef.current.currentTime = time;
                   }
                   setCurrentTime(formatSecondsToTime(time));
@@ -464,7 +495,9 @@ export default function PlayBar() {
               <p className=" text-white/50 h-svh w-full flex items-center justify-center text-center text-xl font-medium">{isLyricText}</p>
             )}
           </motion.div>
-          <motion.div className=" w-full absolute flex backdrop-blur-3xl z-[9999] items-center top-0 py-4 left-0 right-0 px-4 gap-x-4">
+          <motion.div style={{
+            backdropFilter: !isLyric ? "blur(0px)" : "blur(16px)",
+          }} className=" w-full absolute flex z-[999] items-center top-0 py-4 left-0 right-0 px-4 gap-x-4">
             {isLyric && (
               <>
                 <motion.img
@@ -575,7 +608,7 @@ export default function PlayBar() {
                   opacity: isBlended ? 1 : 0,
                 }}
                 key={"BlendedCover"}
-                className=" absolute h-full w-full object-center object-cover z-10 left-0 top-0 bg-gradient-to-t from-black/70 to-90%"
+                className=" absolute h-full w-full object-center object-cover z-10 left-0 top-0 bg-black/40"
               />
               <motion.img
                 key={"BlendedImage"}
@@ -608,7 +641,7 @@ export default function PlayBar() {
             />
           </div>
           <div className=" w-full h-full absolute top-0 left-0 bg-gradient-to-t from-black/70 to-70%" />
-          <div className={` pb-10 transition-all flex h-[40%] ${isLyric ? 'backdrop-blur-none pointer-events-none' : ' pointer-events-auto backdrop-blur-lg'} justify-between w-full flex-col z-50 px-5 relative`}>
+          <div className={` pb-10 transition-all flex h-[40%] ${isLyric ? 'backdrop-blur-none pointer-events-none' : ' pointer-events-auto'} justify-between w-full flex-col z-50 px-5 relative`}>
             <AnimatePresence mode="wait">
               <motion.div className=" w-full items-center justify-center flex flex-col">
                 <motion.div
@@ -715,7 +748,14 @@ export default function PlayBar() {
                 min={0}
                 onValueChange={(value) => {
                   if (audioRef.current) {
+                    const wasPlaying = !audioRef.current.paused;
+                    if (wasPlaying) {
+                      audioRef.current.pause();
+                    }
                     audioRef.current.currentTime = value[0];
+                    if (wasPlaying) {
+                      audioRef.current.play();
+                    }
                   }
                   setCurrentTime(formatSecondsToTime(value[0]));
                 }}
@@ -787,7 +827,9 @@ export default function PlayBar() {
             </motion.div>
 
           </div>
-          <div className=" w-full backdrop-blur-lg pt-5 flex items-center justify-between z-[999] px-5 pb-5">
+          <div style={{
+            backdropFilter: !isLyric ? "blur(0px)" : "blur(16px)",
+          }} className=" w-full pt-5 flex items-center justify-between z-[999] px-5 pb-5">
             <button
               onClick={() => {
                 setIsLyric(!isLyric);
@@ -1035,11 +1077,12 @@ export default function PlayBar() {
                 }} className=" max-w-[40rem] w-full max-h-[30rem] h-full overflow-auto">
                   {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
                     <SynchronizedLyrics
+                      audioRef={audioRef as React.RefObject<HTMLAudioElement>}
                       lyrics={currentSongDetails.lyric.lyric}
                       currentTime={formatTimeToSeconds(currentTime)}
                       setCurrentTime={(time: number) => {
                         console.log("Setting current time:", time);
-                        if (audioRef.current) {
+                        if (audioRef.current && !audioRef.current.paused) {
                           audioRef.current.currentTime = time;
                         }
                         setCurrentTime(formatSecondsToTime(time));
@@ -1094,7 +1137,10 @@ export default function PlayBar() {
             layoutId={"cover"}
             animate={{
               opacity: isLyric || isBlended ? 0 : 1,
-              scale: action === "Play" ? 1 : 0.8,
+              scale: action === "Play" ? isMoved ? 1.5 : 1 : 0.8,
+            }}
+            transition={{
+              ease: "easeInOut",
             }}
             className="rounded-lg bg-transparent size-auto absolute top-0 bottom-0 my-[13rem] left-0 right-0 mx-auto max-h-[30rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
             src={currentSongDetails.cover || "/albumPlaceholder.svg"}
@@ -1102,8 +1148,12 @@ export default function PlayBar() {
             width={600}
             height={600}
           />
-          <div className=" z-10 w-full h-max backdrop-blur-lg flex flex-col space-y-8 px-10 pb-10">
-            <div>
+          <div className=" z-10 w-full h-max  flex flex-col space-y-8 p-10">
+            <motion.div animate={{
+              y: !isMoved ? 0 : 170,
+            }} transition={{
+              ease: "easeInOut",
+            }}>
               <h1 className=" text-7xl font-semibold">
                 {currentSongDetails.title || ""}
               </h1>
@@ -1136,8 +1186,13 @@ export default function PlayBar() {
                     </span>
                   ))}
               </div>
-            </div>
-            <div>
+            </motion.div>
+            <motion.div animate={{
+              opacity: !isMoved ? 1 : 0,
+              y: !isMoved ? 0 : 200,
+            }} transition={{
+              ease: "easeInOut",
+            }}>
               <Slider
                 className=" w-full "
                 isThumb={false}
@@ -1146,7 +1201,14 @@ export default function PlayBar() {
                 min={0}
                 onValueChange={(value) => {
                   if (audioRef.current) {
+                    const wasPlaying = !audioRef.current.paused;
+                    if (wasPlaying) {
+                      audioRef.current.pause();
+                    }
                     audioRef.current.currentTime = value[0];
+                    if (wasPlaying) {
+                      audioRef.current.play();
+                    }
                   }
                   setCurrentTime(formatSecondsToTime(value[0]));
                 }}
@@ -1159,8 +1221,13 @@ export default function PlayBar() {
                 </p>
                 <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
               </div>
-            </div>
-            <div className=" flex items-center justify-center w-full gap-x-5">
+            </motion.div>
+            <motion.div animate={{
+              opacity: !isMoved ? 1 : 0,
+              y: !isMoved ? 0 : 200,
+            }} transition={{
+              ease: "easeInOut",
+            }} className=" flex items-center justify-center w-full gap-x-5">
               <button onClick={() => {
                 setIsShuffled(!isShuffled);
               }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
@@ -1205,9 +1272,14 @@ export default function PlayBar() {
                   <Repeat1 size={40} className={` text-white`} />
                 )}
               </button>
-            </div>
+            </motion.div>
           </div>
-          <div className=" w-full h-max absolute z-[100] space-x-4 top-4 flex items-center justify-center">
+          <motion.div animate={{
+            opacity: !isMoved ? 1 : 0,
+            y: !isMoved ? 0 : -200,
+          }} transition={{
+            ease: "easeInOut",
+          }} className=" w-full h-max absolute z-[100] space-x-4 top-4 flex items-center justify-center">
             <button
               onClick={() => {
                 setIsLyric(!isLyric);
@@ -1282,7 +1354,7 @@ export default function PlayBar() {
             >
               <Minimize2 size={25} className={` transition-opacity `} />
             </button>
-          </div>
+          </motion.div>
         </motion.main >
         <main className=" w-full fixed bottom-0 p-2 space-x-[5%] justify-between z-[51] border-t border-zinc-800 items-center flex h-[6rem] bg-black">
           {currentSongDetails.url && <audio src={currentSongDetails.url} autoPlay ref={audioRef}></audio>}
@@ -1459,7 +1531,14 @@ export default function PlayBar() {
                 min={0}
                 onValueChange={(value) => {
                   if (audioRef.current) {
+                    const wasPlaying = !audioRef.current.paused;
+                    if (wasPlaying) {
+                      audioRef.current.pause();
+                    }
                     audioRef.current.currentTime = value[0];
+                    if (wasPlaying) {
+                      audioRef.current.play();
+                    }
                   }
                   setCurrentTime(formatSecondsToTime(value[0]));
                 }}
