@@ -28,7 +28,7 @@ export default function Profile() {
           Najpopularniejsi wykonawcy w tym miesiącu
         </h3>
         <p className="text-sm font-medium text-zinc-400">
-          Widoczne tylko dla ciebie
+          Widoczne tylko dla ciebie cieeeepłe bułeaczki
         </p>
         <div className="flex flex-row gap-x-4 flex-wrap mt-4">
         </div>
