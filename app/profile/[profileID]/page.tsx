@@ -161,13 +161,8 @@ export default function Profile() {
             })),
           });
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Error fetching data:", err);
-        if (err.response?.status === 404) {
-          setError("Artist not found.");
-        } else {
-          setError("Failed to load data. Please try again later.");
-        }
       } finally {
         setLoading(false);
       }

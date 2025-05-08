@@ -1,9 +1,5 @@
 "use client";
-import { useAlbumCoverStore } from "@/store/album-cover";
-import { useCurrentSongStore } from "@/store/current-song";
-import axios from "axios";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 
 
 
