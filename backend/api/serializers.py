@@ -319,13 +319,16 @@ class ArtistSerializer(serializers.ModelSerializer):
 
 
         if request := self.context.get('request'):
-            if instance in request.user.followed_artists.all():
-                representation['is_followed'] = True
-            else:
-                representation['is_followed'] = False
+            try:
+                if instance in request.user.followed_artists.all():
+                    representation['is_followed'] = True
+                else:
+                    representation['is_followed'] = False
 
-            if instance == request.user:
-                representation.pop('is_followed', None)        
+                if instance == request.user:
+                    representation.pop('is_followed', None)
+            except AttributeError:
+                representation['is_followed'] = False    
 
 
         view = self.context.get('view')
