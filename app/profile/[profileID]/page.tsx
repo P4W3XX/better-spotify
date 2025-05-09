@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { VscVerifiedFilled } from "react-icons/vsc";
 import { Pause, Play, Shuffle } from "lucide-react";
 import { useCurrentSongStore } from "@/store/current-song";
+import { useTokenStore } from "@/store/token";
 
 interface AlbumInfo {
   title: string;
@@ -65,6 +66,8 @@ export default function Profile() {
   const action = useCurrentSongStore((state) => state.action);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const [width, setWidth] = useState(0);
+  const [following, setFollowing] = useState(false);
+  const accessToken = useTokenStore((state) => state.accessToken);
 
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo>({
     id: "",
@@ -89,6 +92,48 @@ export default function Profile() {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  useEffect(()=>{
+    const fetchData = async () => {
+      const respo = await axios.get(`http://127.0.0.1:8000/api/artists/${profileID}/`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }).then((response) => {
+        setFollowing(response.data.is_followed)
+      }).catch((error) => {
+        console.error('error: ', error)
+      })
+    }
+
+    if (!accessToken) return
+    fetchData();
+  }, [profileID, accessToken])
+
+  const toggleFollow = async () => {
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:8000/api/toggle-follow/`,
+        { user_id: profileID },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      console.log("Response:", response.data.status);
+      if (response.data.status == "Following") {
+        setFollowing(true);
+      }
+      else if (response.data.status == "Unfollowed") {
+        setFollowing(false);
+      }
+    } 
+    catch (error) {
+      console.error("Błąd przy toggle follow:");
+    }
+    // setFollowing(!following);
+  };
 
   {/*   useEffect(() => {
     const box = handleRef.current;
@@ -324,8 +369,11 @@ export default function Profile() {
               )}
             </button>
             <Shuffle className=" text-gray-500 w-[2rem] h-[2rem] hover:brightness-150  hover:scale-105 cursor-pointer" />
-            <button className="border-1 text-gray-300 border-gray-500 rounded-xl text-sm font-medium py-1 px-4 hover:brightness-150  hover:scale-105 cursor-pointer">
-              Obserwuj
+            <button className="border-1 text-gray-300 border-gray-500 rounded-xl text-sm font-medium py-1 px-4 hover:brightness-150  hover:scale-105 cursor-pointer"
+              onClick={toggleFollow}
+            >
+              {/* Obserwuj */}
+              {following ? "Obserwujesz" : "Obserwuj"}
             </button>
             <Ellipsis className="w-[2rem] h-[2rem] text-gray-500 hover:brightness-150  hover:scale-105 cursor-pointer" />
           </div>
