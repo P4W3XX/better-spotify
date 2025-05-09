@@ -5,7 +5,7 @@ import axios from "axios";
 import { Ellipsis, Music } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import {useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { VscVerifiedFilled } from "react-icons/vsc";
 import { Pause, Play, Shuffle } from "lucide-react";
 import { useCurrentSongStore } from "@/store/current-song";
@@ -90,7 +90,7 @@ export default function Profile() {
     };
   }, []);
 
-{/*   useEffect(() => {
+  {/*   useEffect(() => {
     const box = handleRef.current;
     if (!box) {
       console.warn("handleRef is not attached to any element.");
@@ -132,19 +132,19 @@ export default function Profile() {
           name: artistResponse.data.username,
           cover: artistResponse.data.image || "/slabiak2.jpg",
           type: artistResponse.data.type,
-          albums: artistResponse.data.albums?.map((album:AlbumInfo) => ({
+          albums: artistResponse.data.albums?.map((album: AlbumInfo) => ({
             title: album.title,
             cover: album.cover,
             id: album.id,
           })),
-          top_songs: artistResponse.data.top_songs?.map((song: any) => ({
+          top_songs: artistResponse.data.top_songs?.map((song: SongInfo) => ({
             title: song.title,
             artist: song.artist,
             cover: song.cover || "/slabiak2.jpg",
             duration: song.duration,
             plays: song.plays,
             featured_artists: song.featured_artists || [],
-            isCover: song.is_cover || false,
+            isCover: song.isCover || false,
             id: song.id,
           })),
           number_of_listeners: artistResponse.data.number_of_listeners,
@@ -257,13 +257,13 @@ export default function Profile() {
         <main
           ref={handleRef}
           className="flex flex-col w-full h-full overflow-auto mb-[30rem]"
-        > 
+        >
           <div
             style={{ backgroundImage: `url(${artistInfo.cover})` }}
             className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-cover bg-center"
           >
             <div className="flex flex-row pt-8 w-full justify-start items-center gap-x-3 md:pt-30 pt-65">
-              <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width>920 ? "block":"hidden"}`} />
+              <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width > 920 ? "block" : "hidden"}`} />
               <h3 className={`text-md ${width > 920 ? "block" : "hidden"}`}>
                 Zweryfikowany wykonawca
               </h3>
@@ -272,9 +272,8 @@ export default function Profile() {
               {artistInfo.name}
             </h1>
             <p
-              className={`text-md font-medium ${
-                width > 920 ? "block" : "hidden"
-              }`}
+              className={`text-md font-medium ${width > 920 ? "block" : "hidden"
+                }`}
             >
               {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
@@ -303,9 +302,9 @@ export default function Profile() {
               className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center"
             >
               {currentSongID &&
-              albumInfo.songs.some(
-                (song) => song.id.toString() === currentSongID
-              ) ? (
+                albumInfo.songs.some(
+                  (song) => song.id.toString() === currentSongID
+                ) ? (
                 action === "Play" ? (
                   <Pause
                     className="text-black md:size-[24px] size-[20px]"
