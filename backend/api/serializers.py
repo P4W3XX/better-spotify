@@ -237,7 +237,7 @@ class ArtistSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'albums', 'top_songs']
+        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'number_of_followers', 'albums', 'top_songs']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

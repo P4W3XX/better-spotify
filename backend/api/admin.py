@@ -23,7 +23,7 @@ class CustomAdminUser(UserAdmin):
 
     model = CustomUser
 
-    list_display = ('email', 'username', 'type', 'is_staff', 'is_active')
+    list_display = ('email', 'username', 'type', 'is_staff', 'is_active',)
     list_filter = ('is_staff', 'is_active', 'type')
     ordering = ('email',)
 
