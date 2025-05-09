@@ -205,7 +205,7 @@ export default function PlayBar() {
   };
 
   useEffect(() => {
-    if (isFullScreen) {
+    if (isFullScreen && !isMobile && action === "Play") {
       let inactivityTimeout: NodeJS.Timeout;
 
       const resetTimer = () => {
@@ -229,7 +229,7 @@ export default function PlayBar() {
         setIsMoved(false);
       };
     }
-  }, [isFullScreen]);
+  }, [isFullScreen,action]);
 
   const handlePlay = () => {
     if (audioRef.current) {
@@ -1059,6 +1059,12 @@ export default function PlayBar() {
               <AnimatePresence mode="wait">
                 <motion.img
                   key={"LyricCover"}
+                  animate={{
+                    scale: action === "Play" ? isMoved ? 1.2 : 1 : 0.8,
+                  }}
+                  transition={{
+                    ease: "easeInOut",
+                  }}
                   layoutId={"cover"}
                   className="rounded-lg bg-transparent size-auto max-h-[30rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
                   src={currentSongDetails.cover || "/albumPlaceholder.svg"}
@@ -1070,11 +1076,16 @@ export default function PlayBar() {
                   opacity: 0,
                 }} animate={{
                   opacity: 1,
+                  scale: action === "Play" ? isMoved ? 1.2 : 1 : 0.8,
+                  marginLeft: isMoved ? action === "Play" ? '7rem': '-7rem' : action === "Play" ? 0 : "-7rem",
                 }} exit={{
                   opacity: 0,
                 }} transition={{
-                  delay: 0.2,
-                }} className=" max-w-[40rem] w-full max-h-[30rem] h-full overflow-auto">
+                  ease: "easeInOut",
+                }} className=" max-w-[40rem] w-full max-h-[30rem] relative h-full overflow-auto">
+                  <div style={{
+                    backgroundImage: `linear-gradient(to bottom, ${currentSongDetails.theme || "#474747"} 0%, rgba(0, 0, 0, 0) 100%)`,
+                  }} className=" w-full h-16  sticky z-[999]  top-0 left-0" />
                   {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
                     <SynchronizedLyrics
                       audioRef={audioRef as React.RefObject<HTMLAudioElement>}
