@@ -95,15 +95,17 @@ export default function Profile() {
 
   useEffect(()=>{
     const fetchData = async () => {
-      await axios.get(`http://127.0.0.1:8000/api/artists/${profileID}/`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }).then((response) => {
+      try{
+        const response = await axios.get(`http://127.0.0.1:8000/api/artists/${profileID}/`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
         setFollowing(response.data.is_followed)
-      }).catch(() => {
-        console.error('error')
-      })
+      }
+      catch (error) {
+        console.error("Error fetching data:", error);
+      }
     }
 
     if (!accessToken) return
