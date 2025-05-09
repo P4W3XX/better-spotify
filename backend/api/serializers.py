@@ -143,15 +143,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         if nested:
             self.fields.pop('artist')
             self.fields.pop('songs')
-
-    # @extend_schema_field(serializers.CharField)
-    # def get_theme(self, obj):
-    #     if obj.image:
-    #         image_path = obj.image.path
-    #         if os.path.exists(image_path):
-    #             dominant_color = get_dominant_color(image_path)
-    #             return dominant_color
-    #     return None
     
 
     @extend_schema_field(serializers.ListField)
@@ -164,13 +155,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         total_time = datetime.timedelta(0)
         for song in obj.songs.all():
             total_time += song.duration
-
-        # total_seconds = total_time.total_seconds()
-        # hours = total_seconds // 3600
-        # minutes = (total_seconds % 3600) // 60
-        # seconds = total_seconds % 60
-
-        # return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
         return str(total_time)
 
     @extend_schema_field(serializers.IntegerField)
@@ -230,20 +214,31 @@ class AlbumSerializer(serializers.ModelSerializer):
 
 
 class ArtistSerializer(serializers.ModelSerializer):
-    albums = serializers.SerializerMethodField()
     top_songs = serializers.SerializerMethodField()
     number_of_listeners = serializers.SerializerMethodField()
     number_of_popularity = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'albums', 'top_songs']
+        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'number_of_followers', 'albums', 'top_songs']
 
     def __init__(self, *args, **kwargs):
+        self.nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
 
         if self.context.get('many', False):
             self.fields.pop('top_songs')
+
+        if self.nested:
+            self.fields.pop('albums')
+            self.fields.pop('number_of_listeners')
+            self.fields.pop('number_of_popularity')
+            self.fields.pop('number_of_followers')
+            self.fields.pop('type')
+            self.fields.pop('top_songs')
+
+        
+
 
     @extend_schema_field(serializers.IntegerField)
     def get_number_of_listeners(self, obj):
@@ -271,12 +266,6 @@ class ArtistSerializer(serializers.ModelSerializer):
                 break
         
         return number_popularity
-    
-
-    @extend_schema_field(serializers.ListField)
-    def get_albums(self, obj):
-        return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
-    
     
     @extend_schema_field(serializers.ListField)
     def get_top_songs(self, obj):
@@ -312,8 +301,7 @@ class ArtistSerializer(serializers.ModelSerializer):
             albums = instance.albums.all().order_by('-release_date')
 
         representation = super().to_representation(instance)
-        representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
-
+        
         if instance.type != 'artist':# or self.context.get('many', False):
             representation.pop('albums', None)
 
@@ -328,6 +316,26 @@ class ArtistSerializer(serializers.ModelSerializer):
         if instance.type == 'listener':
             representation.pop('number_of_listeners')
             representation.pop('number_of_popularity')
+
+
+        if request := self.context.get('request'):
+            if instance in request.user.followed_artists.all():
+                representation['is_followed'] = True
+            else:
+                representation['is_followed'] = False
+
+            if instance == request.user:
+                representation.pop('is_followed', None)        
+
+
+        view = self.context.get('view')
+        if view and getattr(view, 'action', None) == 'list':
+            pass
+        elif view and getattr(view, 'action', None) == 'retrieve':
+            representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
+        
+        if self.nested:
+            representation.pop('albums', None)
         
         return representation
     

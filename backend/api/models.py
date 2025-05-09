@@ -37,6 +37,7 @@ class CustomUser(AbstractUser):
 
     image = models.ImageField(upload_to='users/', blank=True, null=True)
     type = models.CharField(max_length=50, choices=[('artist', 'Artist'), ('listener', 'Listener')], default='listener')
+    followed_artists = models.ManyToManyField('self', symmetrical=False, related_name='followers', blank=True)
     
     def __str__(self):
         return self.username
@@ -46,6 +47,29 @@ class CustomUser(AbstractUser):
         if self.image:
             return self.image.url
         return ""
+    
+    @property
+    def number_of_followed_artists(self):
+        return self.followed_artists.count()
+    
+    @property
+    def number_of_followers(self):
+        return self.followers.count()
+    
+    def follow(self, artist):
+        library = Library.objects.get(user=self)
+        if artist == self:
+            raise ValueError("You cannot follow yourself.")
+        
+        if artist in self.followed_artists.all():
+            self.followed_artists.remove(artist)
+            library_item = LibraryItem.objects.get(library=library, content_type=ContentType.objects.get_for_model(artist), object_id=artist.id)
+            library_item.delete()
+        else:
+            self.followed_artists.add(artist)
+            library_item = LibraryItem.objects.create(library=library, content_type=ContentType.objects.get_for_model(artist), object_id=artist.id)
+            library_item.save()
+
 
     
 class Album(models.Model):

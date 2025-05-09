@@ -514,3 +514,36 @@ class ModifyLibraryAPIView(APIView):
                 pass
 
         return Response({"status": "success"})
+    
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter('user_id', type=int, description='ID of the artist to follow/unfollow'),
+    ],
+    request=None,
+    responses={
+        200: {
+            'status': {'type': 'string'},
+        },
+    }
+)
+class ToggleFollowAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request):
+        user_id = request.data.get('user_id', None)
+
+        if not user_id:
+            return Response({"error": "user_id are required"}, status=400)
+
+        try:
+            artist = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "Artist not found"}, status=404)
+
+        request.user.follow(artist)
+        if artist in request.user.followed_artists.all():
+            return Response({"status": "Following"})
+        else:
+            return Response({"status": "Unfollowed"})
