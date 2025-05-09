@@ -57,13 +57,19 @@ class CustomUser(AbstractUser):
         return self.followers.count()
     
     def follow(self, artist):
+        library = Library.objects.get(user=self)
         if artist == self:
             raise ValueError("You cannot follow yourself.")
         
         if artist in self.followed_artists.all():
             self.followed_artists.remove(artist)
+            library_item = LibraryItem.objects.get(library=library, content_type=ContentType.objects.get_for_model(artist), object_id=artist.id)
+            library_item.delete()
         else:
             self.followed_artists.add(artist)
+            library_item = LibraryItem.objects.create(library=library, content_type=ContentType.objects.get_for_model(artist), object_id=artist.id)
+            library_item.save()
+
 
     
 class Album(models.Model):

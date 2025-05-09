@@ -240,10 +240,22 @@ class ArtistSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'number_of_followers', 'albums', 'top_songs']
 
     def __init__(self, *args, **kwargs):
+        self.nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
 
         if self.context.get('many', False):
             self.fields.pop('top_songs')
+
+        if self.nested:
+            self.fields.pop('albums')
+            self.fields.pop('number_of_listeners')
+            self.fields.pop('number_of_popularity')
+            self.fields.pop('number_of_followers')
+            self.fields.pop('type')
+            self.fields.pop('top_songs')
+
+        
+
 
     @extend_schema_field(serializers.IntegerField)
     def get_number_of_listeners(self, obj):
@@ -313,6 +325,9 @@ class ArtistSerializer(serializers.ModelSerializer):
 
         representation = super().to_representation(instance)
         representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
+        if self.nested:
+            representation.pop('albums', None)
+            
 
         if instance.type != 'artist':# or self.context.get('many', False):
             representation.pop('albums', None)

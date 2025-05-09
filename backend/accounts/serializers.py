@@ -6,14 +6,17 @@ from datetime import timedelta
 from django.utils import timezone
 from api.models import SongPlayback, Song
 from django.db.models import Count
-from api.serializers import SongSerializer
+from api.serializers import SongSerializer, ArtistSerializer
 
 class CustomUserSerializer(serializers.ModelSerializer):
     top_listened_songs = serializers.SerializerMethodField()
+    followed_artists = ArtistSerializer(many=True, read_only=True, nested=True)
+
+    #get followed artists
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'number_of_followed_artists', 'number_of_followers', 'type', 'image', 'top_listened_songs']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'number_of_followed_artists', 'number_of_followers', 'type', 'image', 'followed_artists', 'top_listened_songs']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
