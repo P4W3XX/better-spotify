@@ -63,13 +63,17 @@ export default function ItemCover({
   artistID,
   cover = "/cover.jpg",
   type = "album",
+  setHover = () => { },
   songs = [],
+  theme = "dark",
   id = 1,
 }: {
   title?: string;
   artistID?: string;
+  theme?: string;
   cover?: string;
   songs?: { id: number }[];
+  setHover?: (hover: string) => void;
   id?: number;
   type?: string;
 }) {
@@ -105,6 +109,8 @@ export default function ItemCover({
       onClick={() => handleClick()}
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
+      onMouseOver={() => setHover(theme ? theme : "#0a0a0a")}
+      onMouseOut={() => setHover("#0a0a0a")}
       className="flex flex-col w-full h-full items-center space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl p-3"
     >
       <div className="relative w-full aspect-square">
