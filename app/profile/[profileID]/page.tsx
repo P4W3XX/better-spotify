@@ -131,8 +131,8 @@ export default function Profile() {
         setFollowing(false);
       }
     } 
-    catch (error) {
-      console.error("Błąd przy toggle follow:");
+    catch (err) {
+      console.error("Błąd przy toggle follow:", err);
     }
     // setFollowing(!following);
   };
