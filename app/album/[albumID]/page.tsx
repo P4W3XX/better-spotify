@@ -634,6 +634,7 @@ export default function Album() {
                 id={song.id}
                 plays={song.plays}
                 duration={song.duration}
+                artistId={parseInt(albumInfo.artist)}
               />
             ))
           ) : (
