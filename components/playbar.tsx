@@ -89,6 +89,7 @@ export default function PlayBar() {
   const [isLyricText, setIsLyricText] = useState<string>("");
   const [isMoved, setIsMoved] = useState(false);
 
+
   useEffect(() => {
     setIsLyricText(noLyricTexts[Math.floor(Math.random() * noLyricTexts.length)]);
   }, [currentSongID]);
@@ -229,7 +230,7 @@ export default function PlayBar() {
         setIsMoved(false);
       };
     }
-  }, [isFullScreen,action]);
+  }, [isFullScreen, action]);
 
   const handlePlay = () => {
     if (audioRef.current) {
@@ -1077,7 +1078,7 @@ export default function PlayBar() {
                 }} animate={{
                   opacity: 1,
                   scale: action === "Play" ? isMoved ? 1.2 : 1 : 0.8,
-                  marginLeft: isMoved ? action === "Play" ? '7rem': '-7rem' : action === "Play" ? 0 : "-7rem",
+                  marginLeft: isMoved ? action === "Play" ? '7rem' : '-7rem' : action === "Play" ? 0 : "-7rem",
                 }} exit={{
                   opacity: 0,
                 }} transition={{

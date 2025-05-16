@@ -29,12 +29,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
 
-      <body className={`${poppins.className}  w-full pt-2 gap-x-2 pr-2 bg-black flex h-full overflow-hidden`}>
+      <body className={`${poppins.className}  w-full md:pt-2 md:gap-x-2 md:pr-2 md:bg-black bg-background flex h-full overflow-hidden`}>
         <UseLoginToken>
-          <Toaster />
-          <AlbumCoverShow />
-          <Sidebar />
-          {children}
+            <Toaster />
+            <AlbumCoverShow />
+            <Sidebar />
+            {children}
           <PlayBar />
         </UseLoginToken>
       </body>
