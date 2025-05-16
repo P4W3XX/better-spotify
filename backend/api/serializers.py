@@ -15,11 +15,13 @@ BASE_URL = "http://127.0.0.1:8000"
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
+    artist_username = serializers.CharField(source='album.artist.username', read_only=True)
+
     plays_test = serializers.SerializerMethodField()
     class Meta:
         model = Song
         fields = [
-            'id', 'album', 'artist', 'title', 'duration', 
+            'id', 'album', 'artist', 'artist_username', 'title', 'duration', 
             'file', 'lyrics', 'track_number', 'plays', 'genre',
             'is_indecent', 'featured_artists', 'plays_test'
         ]
@@ -124,11 +126,12 @@ class AlbumSerializer(serializers.ModelSerializer):
     album_duration = serializers.SerializerMethodField()
     total_plays = serializers.SerializerMethodField()
     # theme = serializers.SerializerMethodField()
+    artist_username = serializers.CharField(source='artist.username', read_only=True)
 
     class Meta:
         model = Album
         fields = [
-            'id', 'title', 'album_type', 'artist', 'image', 
+            'id', 'title', 'album_type', 'artist', 'artist_username', 'image', 
             'release_date', 'album_duration', 'theme',
             'total_plays', 'songs'
         ]
