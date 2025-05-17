@@ -9,7 +9,8 @@ from django.utils import timezone
 from django.db.models import Count, Sum, F
 from django.conf import settings
 from .utils import get_dominant_color, create_collage
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem, PlaybackHistory
+from django.contrib.contenttypes.models import ContentType
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -547,3 +548,47 @@ class LibrarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Library
         fields = ['id', 'user', 'items']
+
+
+class PlaybackHistorySerializer(serializers.ModelSerializer):
+    content_object = serializers.SerializerMethodField()
+    content_type = serializers.CharField()
+
+    class Meta:
+        model = PlaybackHistory
+        fields = ['id', 'played_at', 'content_type', 'object_id', 'content_object']
+
+    def get_content_object(self, obj):
+        if isinstance(obj.content_object, Album):
+            return AlbumSerializer(obj.content_object, nested=True, context=self.context).data
+        elif isinstance(obj.content_object, Playlist):
+            return PlaylistSerializer(obj.content_object, nested=True, context=self.context).data
+        return None
+    
+
+    def create(self, validated_data):
+        content_type = validated_data.pop('content_type', None)
+
+        if content_type.lower() == 'album':
+            content_type = ContentType.objects.get_for_model(Album)
+        elif content_type.lower() == 'playlist':
+            content_type = ContentType.objects.get_for_model(Playlist)
+        elif content_type.lower() == 'profile':
+            content_type = ContentType.objects.get_for_model(CustomUser)
+        else:
+            raise serializers.ValidationError("Invalid content type")
+
+        if not content_type:
+            raise serializers.ValidationError("Missing content_type")
+
+        return PlaybackHistory.objects.create(
+            user=self.context.get('request').user,
+            content_type=content_type,
+            object_id=validated_data['object_id']
+        )
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['content_type'] = instance.content_type.model
+
+        return representation

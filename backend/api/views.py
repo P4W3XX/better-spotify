@@ -14,11 +14,13 @@ from django.contrib.contenttypes.models import ContentType
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
 from .utils import get_top_songs_last_month, create_collage
-from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library
+from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library, PlaybackHistory
+
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
                           CurrentPlaybackSerializer, PlaybackActionSerializer, UserPlaybackHistorySerializer, 
                           PlaylistSerializer,
-                          LibraryItemSerializer, LibrarySerializer
+                          LibraryItemSerializer, LibrarySerializer,
+                          PlaybackHistorySerializer
                           )
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -547,3 +549,14 @@ class ToggleFollowAPIView(APIView):
             return Response({"status": "Following"})
         else:
             return Response({"status": "Unfollowed"})
+        
+
+
+class PlaybackHistoryViewSet(viewsets.ModelViewSet):
+    queryset = PlaybackHistory.objects.all()
+    serializer_class = PlaybackHistorySerializer
+    permission_classes = [IsAuthenticated,]
+
+    def get_queryset(self):
+        user = self.request.user
+        return PlaybackHistory.objects.filter(user=user)
