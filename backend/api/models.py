@@ -248,3 +248,16 @@ class LibraryItem(models.Model):
     
     class Meta:
         ordering = ['-added_at']
+
+
+
+class PlaybackHistory(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    played_at = models.DateTimeField(auto_now_add=True)
+
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    class Meta:
+        ordering = ['-played_at']
