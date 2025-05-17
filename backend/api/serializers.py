@@ -573,6 +573,8 @@ class PlaybackHistorySerializer(serializers.ModelSerializer):
             content_type = ContentType.objects.get_for_model(Album)
         elif content_type.lower() == 'playlist':
             content_type = ContentType.objects.get_for_model(Playlist)
+        elif content_type.lower() == 'profile':
+            content_type = ContentType.objects.get_for_model(CustomUser)
         else:
             raise serializers.ValidationError("Invalid content type")
 
