@@ -411,7 +411,7 @@ export default function Album() {
   return (
     <main
       style={{ backgroundColor: albumInfo.theme }}
-      className={` relative w-full h-svh flex flex-col ${albumCover ? "overflow-hidden" : " overflow-auto"
+      className={` relative w-full h-[calc(100svh-6.5rem)] flex rounded-xl flex-col ${albumCover ? "overflow-hidden" : " overflow-auto"
         }`}
       ref={handleRef}
     >

@@ -63,13 +63,17 @@ export default function ItemCover({
   artistID,
   cover = "/cover.jpg",
   type = "album",
+  setHover = () => { },
   songs = [],
+  theme = "dark",
   id = 1,
 }: {
   title?: string;
   artistID?: string;
+  theme?: string;
   cover?: string;
   songs?: { id: number }[];
+  setHover?: (hover: string) => void;
   id?: number;
   type?: string;
 }) {
@@ -105,7 +109,9 @@ export default function ItemCover({
       onClick={() => handleClick()}
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
-      className="flex flex-col w-full h-full items-center space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl p-3"
+      onMouseOver={() => setHover(theme ? theme : "#0a0a0a")}
+      onMouseOut={() => setHover("#0a0a0a")}
+      className="flex flex-col w-full h-full items-center space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl md:p-3 p-2"
     >
       <div className="relative w-full aspect-square">
         {cover ? (
@@ -173,7 +179,7 @@ export default function ItemCover({
             <Skeleton className="w-1/2 h-[20px]" />
           ))}
         {type ? (
-          <p className="text-white/50 text-xs sm:text-sm w-max cursor-pointer group-hover:text-white transition-colors font-medium">
+          <p className="text-white/50 md:block hidden text-xs sm:text-sm w-max cursor-pointer group-hover:text-white transition-colors font-medium">
             {type.slice(0, 1).toUpperCase() + type.slice(1)}
           </p>
         ) : (

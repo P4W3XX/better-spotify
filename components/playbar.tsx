@@ -89,6 +89,7 @@ export default function PlayBar() {
   const [isLyricText, setIsLyricText] = useState<string>("");
   const [isMoved, setIsMoved] = useState(false);
 
+
   useEffect(() => {
     setIsLyricText(noLyricTexts[Math.floor(Math.random() * noLyricTexts.length)]);
   }, [currentSongID]);
@@ -229,7 +230,7 @@ export default function PlayBar() {
         setIsMoved(false);
       };
     }
-  }, [isFullScreen,action]);
+  }, [isFullScreen, action]);
 
   const handlePlay = () => {
     if (audioRef.current) {
@@ -1077,15 +1078,12 @@ export default function PlayBar() {
                 }} animate={{
                   opacity: 1,
                   scale: action === "Play" ? isMoved ? 1.2 : 1 : 0.8,
-                  marginLeft: isMoved ? action === "Play" ? '7rem': '-7rem' : action === "Play" ? 0 : "-7rem",
+                  marginLeft: isMoved ? action === "Play" ? '7rem' : '-7rem' : action === "Play" ? 0 : "-7rem",
                 }} exit={{
                   opacity: 0,
                 }} transition={{
                   ease: "easeInOut",
                 }} className=" max-w-[40rem] w-full max-h-[30rem] relative h-full overflow-auto">
-                  <div style={{
-                    backgroundImage: `linear-gradient(to bottom, ${currentSongDetails.theme || "#474747"} 0%, rgba(0, 0, 0, 0) 100%)`,
-                  }} className=" w-full h-16  sticky z-[999]  top-0 left-0" />
                   {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
                     <SynchronizedLyrics
                       audioRef={audioRef as React.RefObject<HTMLAudioElement>}
@@ -1367,13 +1365,13 @@ export default function PlayBar() {
             </button>
           </motion.div>
         </motion.main >
-        <main className=" w-full fixed bottom-0 p-2 space-x-[5%] justify-between z-[51] border-t border-zinc-800 items-center flex h-[6rem] bg-black">
+        <main className=" w-full fixed bottom-0 p-2 left-0 pl-2 space-x-[5%] justify-between z-[51] items-center flex h-[6rem] bg-black">
           {currentSongDetails.url && <audio src={currentSongDetails.url} autoPlay ref={audioRef}></audio>}
           <div className=" flex items-center w-[70%] max-w-[25rem] relative gap-x-2">
             <div className=" h-full w-5 absolute right-0 top-0 bg-gradient-to-l from-black z-50" />
             {currentSongDetails.cover ? (
               <Image
-                className=" rounded-md size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+                className=" rounded-xl size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
                 src={currentSongDetails.cover}
                 alt="cover"
                 unoptimized
