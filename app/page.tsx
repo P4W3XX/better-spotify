@@ -5,11 +5,13 @@ import axios from "axios";
 import Chip from "@/components/chip";
 import { AnimatePresence, motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Item {
   id: number;
   title: string;
   artist: string;
+  artistID: string;
   cover: string;
   songs: { id: number }[];
   type: string;
@@ -19,9 +21,11 @@ interface Item {
 interface mappedItems {
   id: number;
   title: string;
+  artist_username: string;
   artist: string;
   image: string;
   theme: string;
+  album_type: string;
   type: string;
   songs: { id: number }[];
 }
@@ -29,11 +33,13 @@ interface mappedItems {
 export default function Home() {
   const [Items, setItems] = useState<Item[]>([]);
   const [backgroundTheme, setBackgroundTheme] = useState<string>("");
-  const [SeeAll, setSeeAll] = useState<'Welcome Back' | 'Albums' | null>(null);
+  const [filter, setFilter] = useState<'All' | 'Artists' | 'Albums' | 'Songs' | 'Ep'>('All');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true);
         const res = await axios.get("http://127.0.0.1:8000/api/albums/").then((res) => res.data).catch((err) => {
           console.log(err);
         })
@@ -41,16 +47,21 @@ export default function Home() {
         const mappedItems = res.map((item: mappedItems) => ({
           id: item.id,
           title: item.title,
-          artist: item.artist,
+          artist: item.artist_username,
           theme: item.theme,
           cover: item.image,
+          artistID: item.artist,
           songs: item.songs,
-          type: item.type,
+          type: item.type || item.album_type
         }));
         console.log(mappedItems);
+        setIsLoading(false);
         setItems(mappedItems);
       } catch (error) {
         console.error("Error fetching data:", error);
+      }
+      finally {
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -65,68 +76,91 @@ export default function Home() {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
+  const handleFilter = (title: string) => {
+    if (title === filter) {
+      setFilter('All');
+    } else {
+      setFilter(title as 'All' | 'Artists' | 'Albums' | 'Songs' | 'Ep');
+    }
+  };
+
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{
         opacity: 1,
-        backgroundImage: `linear-gradient(to bottom, ${hexToRGBA(backgroundTheme || "#0a0a0a", 0.4)} 0%, #0a0a0a 30%)`,
+        backgroundImage: `linear-gradient(to bottom, ${hexToRGBA(backgroundTheme || "#171717", .75)} 0%, ${hexToRGBA("#171717", .75)} 30%)`,
       }}
+      style={{
+        overflow: isLoading ? "hidden" : "auto",
+      }}
+      layout="position"
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      layout
-      className="p-4 sm:p-6 md:p-8 lg:p-6 relative w-full md::h-[calc(100svh-6.5rem)] h-svh bg-background md:rounded-xl"
+      className="p-4 sm:p-6 md:p-8 lg:p-6 relative w-full md:h-[calc(100svh-6.5rem)] overflow-auto h-svh md:rounded-xl"
     >
+      <div className="flex items-center w-full gap-x-3 z-20">
+        <Chip title="All" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
+        <Chip title="Albums" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
+        <Chip title="Songs" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
+        <Chip title="Ep" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
+        <Chip title="Artists" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
+      </div>
       <AnimatePresence mode="wait">
-        {!SeeAll && (
+        {filter === 'All' && (
           <motion.div
             key="Welcome"
+            layoutId="Welcome"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
             className=" flex flex-col w-full h-full"
           >
-            <div className="flex items-center w-full gap-x-3 z-20">
-              <Chip title="Albums" onClick={() => { }} />
-              <Chip title="Songs" onClick={() => { }} />
-              <Chip title="Artists" onClick={() => { }} />
-            </div>
             <motion.div className=" w-full flex flex-col mt-5">
-              <div className="w-full flex items-center justify-between h-min  mb-3">
+              <div className="w-full flex items-center justify-between">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Welcome Back</h1>
-                <button
-                  onClick={() => setSeeAll('Welcome Back')}
-                  className="font-semibold text-muted-foreground hover:text-white transition-colors cursor-pointer"
-                >
-                  See more
-                </button>
               </div>
               <Carousel opts={{ align: "start" }} className="w-full">
                 <CarouselContent>
-                  {Items.slice(0, 10).map((item) => (
-                    <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
-                      <ItemCover
-                        setHover={setBackgroundTheme}
-                        title={item.title}
-                        artistID={item.artist}
-                        cover={item.cover}
-                        theme={item.theme}
-                        type={item.type}
-                        songs={item.songs}
-                        id={item.id}
-                      />
-                    </CarouselItem>
-                  ))}
+                  {isLoading ? (
+                    Array(10).fill(0).map((_, index) => (
+                      <CarouselItem key={index} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                        <div className="flex flex-col gap-2 md:p-3 p-2">
+                          <Skeleton className="w-full aspect-square rounded-lg bg-white/10" />
+                          <Skeleton className="w-2/3 h-7 rounded-md bg-white/10" />
+                          <Skeleton className="w-1/2 h-3.5 rounded-md bg-white/10" />
+                          <Skeleton className="w-1/3 h-3.5 rounded-md bg-white/10" />
+                        </div>
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    Items.slice(0, 10).map((item) => (
+                      <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                        <ItemCover
+                          setHover={setBackgroundTheme}
+                          title={item.title}
+                          artist={item.artist}
+                          artistID={item.artist}
+                          cover={item.cover}
+                          theme={item.theme}
+                          type={item.type}
+                          songs={item.songs}
+                          id={item.id}
+                        />
+                      </CarouselItem>
+                    ))
+                  )
+                  }
                 </CarouselContent>
               </Carousel>
             </motion.div>
-            <motion.div className=" w-full flex flex-col mt-10">
-              <div className="w-full flex items-center justify-between h-min  mb-3">
+            <motion.div layoutId="Albums" className=" w-full flex flex-col mt-10">
+              <div className="w-full flex items-center justify-between h-min">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Albums</h1>
                 <button
-                  onClick={() => setSeeAll('Albums')}
+                  onClick={() => setFilter('Albums')}
                   className="font-semibold text-muted-foreground hover:text-white transition-colors cursor-pointer"
                 >
                   See more
@@ -134,62 +168,141 @@ export default function Home() {
               </div>
               <Carousel opts={{ align: "start" }} className="w-full">
                 <CarouselContent>
-                  {Items.slice(0, 10).map((item) => (
-                    <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
-                      <ItemCover
-                        setHover={setBackgroundTheme}
-                        title={item.title}
-                        artistID={item.artist}
-                        cover={item.cover}
-                        theme={item.theme}
-                        type={item.type}
-                        songs={item.songs}
-                        id={item.id}
-                      />
-                    </CarouselItem>
-                  ))}
+                  {isLoading ? (
+                    Array(10).fill(0).map((_, index) => (
+                      <CarouselItem key={index} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                        <div className="flex flex-col gap-2 md:p-3 p-2">
+                          <Skeleton className="w-full aspect-square rounded-lg bg-white/10" />
+                          <Skeleton className="w-2/3 h-7 rounded-md bg-white/10" />
+                          <Skeleton className="w-1/2 h-3.5 rounded-md bg-white/10" />
+                          <Skeleton className="w-1/3 h-3.5 rounded-md bg-white/10" />
+                        </div>
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    Items.filter((item) => (item.type === 'album')).slice(0, 10).map((item) => (
+                      <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                        <ItemCover
+                          setHover={setBackgroundTheme}
+                          title={item.title}
+                          artist={item.artist}
+                          artistID={item.artist}
+                          cover={item.cover}
+                          theme={item.theme}
+                          type={item.type}
+                          songs={item.songs}
+                          id={item.id}
+                        />
+                      </CarouselItem>
+                    )))
+                  }
+                </CarouselContent>
+              </Carousel>
+            </motion.div>
+            <motion.div initial={{
+              opacity: 0,
+            }} animate={{
+              opacity: 1,
+            }} exit={{
+              opacity: 1,
+            }} layoutId="Ep" className=" w-full flex flex-col pb-6 mt-10">
+              <div className="w-full flex items-center justify-between h-min  mb-3">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Ep</h1>
+                <button
+                  onClick={() => setFilter('Ep')}
+                  className="font-semibold text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                >
+                  See more
+                </button>
+              </div>
+              <Carousel opts={{ align: "start" }} className="w-full">
+                <CarouselContent>
+                  {isLoading ? (
+                    Array(10).fill(0).map((_, index) => (
+                      <CarouselItem key={index} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                        <div className="flex flex-col gap-2 md:p-3 p-2">
+                          <Skeleton className="w-full aspect-square rounded-lg bg-white/10" />
+                          <Skeleton className="w-2/3 h-7 rounded-md bg-white/10" />
+                          <Skeleton className="w-1/2 h-3.5 rounded-md bg-white/10" />
+                          <Skeleton className="w-1/3 h-3.5 rounded-md bg-white/10" />
+                        </div>
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    Items.filter((item) => (item.type === 'ep')).slice(0, 10).map((item) => (
+                      <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                        <ItemCover
+                          setHover={setBackgroundTheme}
+                          title={item.title}
+                          artist={item.artist}
+                          artistID={item.artist}
+                          cover={item.cover}
+                          theme={item.theme}
+                          type={item.type}
+                          songs={item.songs}
+                          id={item.id}
+                        />
+                      </CarouselItem>
+                    )))
+                  }
                 </CarouselContent>
               </Carousel>
             </motion.div>
           </motion.div>
         )}
-        {SeeAll && (
-          <>
-            <motion.div
-              key="SeeAll"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="w-full flex items-center justify-between mt-3 mb-3"
-            >
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">{SeeAll}</h1>
-              <button
-                onClick={() => setSeeAll(null)}
-                className="font-semibold text-muted-foreground hover:text-white transition-colors cursor-pointer"
-              >
-                See less
-              </button>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }} className="grid grid-cols-3 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-3 z-20 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-              {Items.map((item) => (
-                <ItemCover
-                  setHover={setBackgroundTheme}
-                  key={item.id}
-                  title={item.title}
-                  artistID={item.artist}
-                  cover={item.cover}
-                  theme={item.theme}
-                  type={item.type}
-                  songs={item.songs}
-                  id={item.id}
-                />
-              ))}
-            </motion.div>
-          </>
+        {filter !== 'All' && (
+          <motion.div>
+            {(() => {
+              const filterValue = filter as 'All' | 'Artists' | 'Albums' | 'Songs' | 'Ep';
+              let typeFilter = filterValue.toLowerCase();
+              if (typeFilter.endsWith('s')) {
+                typeFilter = typeFilter.slice(0, -1);
+              }
+              const filteredItems = Items.filter(item =>
+                item.type === typeFilter
+              );
+
+              if (filteredItems.length > 0) {
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-4 mt-6">
+                    {filteredItems.map((item) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <ItemCover
+                          setHover={setBackgroundTheme}
+                          title={item.title}
+                          artist={item.artist}
+                          artistID={item.artist}
+                          cover={item.cover}
+                          theme={item.theme}
+                          type={item.type}
+                          songs={item.songs}
+                          id={item.id}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                );
+              } else {
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="mt-6 flex items-center justify-center w-full absolute pointer-events-none top-0 left-0 bottom-0 right-0 mx-auto my-auto"
+                  >
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20">No {filter} found</h1>
+                  </motion.div>
+                );
+              }
+            })()}
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.div>

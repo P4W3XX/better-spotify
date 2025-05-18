@@ -3,8 +3,7 @@ import Image from "next/image";
 import { Pause, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "./ui/skeleton";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useState } from "react";
 import { useCurrentSongStore } from "@/store/current-song";
 import { motion } from "framer-motion";
 
@@ -60,6 +59,7 @@ const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
 
 export default function ItemCover({
   title = "4x4",
+  artist,
   artistID,
   cover = "/cover.jpg",
   type = "album",
@@ -73,12 +73,12 @@ export default function ItemCover({
   theme?: string;
   cover?: string;
   songs?: { id: number }[];
+  artist?: string;
   setHover?: (hover: string) => void;
   id?: number;
   type?: string;
 }) {
   const router = useRouter();
-  const [artistName, setArtistName] = useState<string>("");
   const [isHover, setIsHover] = useState(false);
   const handleClick = () => {
     router.push(
@@ -90,19 +90,6 @@ export default function ItemCover({
   const currentSongID = useCurrentSongStore((state) => state.currentSongID);
   const action = useCurrentSongStore((state) => state.action);
   const setAction = useCurrentSongStore((state) => state.setAction);
-
-  useEffect(() => {
-    const fetchArtistName = async () => {
-      if (!artistID) return;
-      try {
-        const res = await axios.get(`http://127.0.0.1:8000/api/artists/${artistID}/`);
-        setArtistName(res.data.username);
-      } catch (error) {
-        console.error("Error fetching artist data:", error);
-      }
-    };
-    fetchArtistName();
-  }, [artistID]);
 
   return (
     <div
@@ -165,7 +152,7 @@ export default function ItemCover({
           <Skeleton className="w-1/2 mb-2 h-[24px]" />
         )}
         {type !== "profile" &&
-          (artistName ? (
+          (artist ? (
             <p
               onClick={(e) => {
                 e.stopPropagation();
@@ -173,7 +160,7 @@ export default function ItemCover({
               }}
               className="text-white/50 text-xs sm:text-sm truncate w-min cursor-pointer group-hover:text-white transition-colors font-medium hover:underline"
             >
-              {artistName}
+              {artist}
             </p>
           ) : (
             <Skeleton className="w-1/2 h-[20px]" />
