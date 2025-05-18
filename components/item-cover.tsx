@@ -96,8 +96,8 @@ export default function ItemCover({
       onClick={() => handleClick()}
       onMouseEnter={() => setIsHover(true)}
       onMouseLeave={() => setIsHover(false)}
-      onMouseOver={() => setHover(theme ? theme : "#0a0a0a")}
-      onMouseOut={() => setHover("#0a0a0a")}
+      onMouseOver={() => setHover(theme ? theme : "#404040")}
+      onMouseOut={() => setHover("#404040")}
       className="flex flex-col w-full h-full items-center space-y-2 relative group hover:bg-white/8 cursor-pointer transition-all rounded-2xl md:p-3 p-2"
     >
       <div className="relative w-full aspect-square">

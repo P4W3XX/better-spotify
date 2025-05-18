@@ -6,6 +6,7 @@ import Chip from "@/components/chip";
 import { AnimatePresence, motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
+import WelcomeBack from "@/components/welcomeBack";
 
 interface Item {
   id: number;
@@ -90,17 +91,14 @@ export default function Home() {
       initial={{ opacity: 0 }}
       animate={{
         opacity: 1,
-        backgroundImage: `linear-gradient(to bottom, ${hexToRGBA(backgroundTheme || "#171717", .75)} 0%, ${hexToRGBA("#171717", .75)} 30%)`,
-      }}
-      style={{
-        overflow: isLoading ? "hidden" : "auto",
+        backgroundImage: `linear-gradient(to bottom, ${hexToRGBA(backgroundTheme || "#404040", .75)} 0%, ${hexToRGBA("#171717", .75)} 30%)`,
       }}
       layout="position"
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="p-4 sm:p-6 md:p-8 lg:p-6 relative w-full md:h-[calc(100svh-6.5rem)] overflow-auto h-svh md:rounded-xl"
+      className=" relative w-full p-4 sm:p-6 md:p-8 lg:p-6 md:h-[calc(100svh-6.5rem)] h-svh md:rounded-xl"
     >
-      <div className="flex items-center w-full gap-x-3 z-20">
+      <div className="flex items-center w-full sticky gap-x-3 z-20 mb-5">
         <Chip title="All" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
         <Chip title="Albums" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
         <Chip title="Songs" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
@@ -110,53 +108,31 @@ export default function Home() {
       <AnimatePresence mode="wait">
         {filter === 'All' && (
           <motion.div
-            key="Welcome"
-            layoutId="Welcome"
+            key="MainPage"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            style={{
+              overflow: isLoading ? "hidden" : "auto",
+            }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className=" flex flex-col w-full h-full"
+            className=" flex flex-col w-full h-full gap-y-20 overflow-auto"
           >
-            <motion.div className=" w-full flex flex-col mt-5">
-              <div className="w-full flex items-center justify-between">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Welcome Back</h1>
+            <motion.div className=" w-full flex flex-col">
+              <div className="w-full grid grid-cols-2 gap-5">
+                {isLoading ? (
+                  Array(4).fill(0).map((_, index) => (
+                    <Skeleton key={index} className="w-full h-[5rem] rounded-lg bg-white/10" />
+                  ))
+                ) : (
+                  Items.slice(0, 10).map((item, index) => (
+                    <WelcomeBack key={index} setHover={setBackgroundTheme} title={item.title} theme={item.theme} url={item.cover} type={item.type} songs={item.songs} id={item.id} />
+                  ))
+                )
+                }
               </div>
-              <Carousel opts={{ align: "start" }} className="w-full">
-                <CarouselContent>
-                  {isLoading ? (
-                    Array(10).fill(0).map((_, index) => (
-                      <CarouselItem key={index} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
-                        <div className="flex flex-col gap-2 md:p-3 p-2">
-                          <Skeleton className="w-full aspect-square rounded-lg bg-white/10" />
-                          <Skeleton className="w-2/3 h-7 rounded-md bg-white/10" />
-                          <Skeleton className="w-1/2 h-3.5 rounded-md bg-white/10" />
-                          <Skeleton className="w-1/3 h-3.5 rounded-md bg-white/10" />
-                        </div>
-                      </CarouselItem>
-                    ))
-                  ) : (
-                    Items.slice(0, 10).map((item) => (
-                      <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
-                        <ItemCover
-                          setHover={setBackgroundTheme}
-                          title={item.title}
-                          artist={item.artist}
-                          artistID={item.artist}
-                          cover={item.cover}
-                          theme={item.theme}
-                          type={item.type}
-                          songs={item.songs}
-                          id={item.id}
-                        />
-                      </CarouselItem>
-                    ))
-                  )
-                  }
-                </CarouselContent>
-              </Carousel>
             </motion.div>
-            <motion.div layoutId="Albums" className=" w-full flex flex-col mt-10">
+            <motion.div layoutId="Albums" className=" w-full flex flex-col">
               <div className="w-full flex items-center justify-between h-min">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Albums</h1>
                 <button
@@ -166,11 +142,11 @@ export default function Home() {
                   See more
                 </button>
               </div>
-              <Carousel opts={{ align: "start" }} className="w-full">
+              <Carousel opts={{ align: "start" }} className="w-full mt-3">
                 <CarouselContent>
                   {isLoading ? (
                     Array(10).fill(0).map((_, index) => (
-                      <CarouselItem key={index} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                      <CarouselItem key={index} className="2xl:basis-1/7 xl:basis-1/5 md:basis-1/4 basis-1/3">
                         <div className="flex flex-col gap-2 md:p-3 p-2">
                           <Skeleton className="w-full aspect-square rounded-lg bg-white/10" />
                           <Skeleton className="w-2/3 h-7 rounded-md bg-white/10" />
@@ -181,7 +157,7 @@ export default function Home() {
                     ))
                   ) : (
                     Items.filter((item) => (item.type === 'album')).slice(0, 10).map((item) => (
-                      <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                      <CarouselItem key={item.id} className="2xl:basis-1/7 xl:basis-1/5 md:basis-1/4 basis-1/3  ">
                         <ItemCover
                           setHover={setBackgroundTheme}
                           title={item.title}
@@ -205,8 +181,8 @@ export default function Home() {
               opacity: 1,
             }} exit={{
               opacity: 1,
-            }} layoutId="Ep" className=" w-full flex flex-col pb-6 mt-10">
-              <div className="w-full flex items-center justify-between h-min  mb-3">
+            }} layoutId="Ep" className=" w-full flex flex-col pb-16">
+              <div className="w-full flex items-center justify-between h-min">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Ep</h1>
                 <button
                   onClick={() => setFilter('Ep')}
@@ -215,11 +191,11 @@ export default function Home() {
                   See more
                 </button>
               </div>
-              <Carousel opts={{ align: "start" }} className="w-full">
+              <Carousel opts={{ align: "start" }} className="w-full mt-3">
                 <CarouselContent>
                   {isLoading ? (
                     Array(10).fill(0).map((_, index) => (
-                      <CarouselItem key={index} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                      <CarouselItem key={index} className="2xl:basis-1/7 xl:basis-1/5 md:basis-1/4 basis-1/3">
                         <div className="flex flex-col gap-2 md:p-3 p-2">
                           <Skeleton className="w-full aspect-square rounded-lg bg-white/10" />
                           <Skeleton className="w-2/3 h-7 rounded-md bg-white/10" />
@@ -230,7 +206,7 @@ export default function Home() {
                     ))
                   ) : (
                     Items.filter((item) => (item.type === 'ep')).slice(0, 10).map((item) => (
-                      <CarouselItem key={item.id} className="2xl:basis-1/6 xl:basis-1/5 md:basis-1/4 basis-1/3">
+                      <CarouselItem key={item.id} className="2xl:basis-1/7 xl:basis-1/5 md:basis-1/4 basis-1/3">
                         <ItemCover
                           setHover={setBackgroundTheme}
                           title={item.title}
@@ -264,7 +240,7 @@ export default function Home() {
 
               if (filteredItems.length > 0) {
                 return (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 gap-4 mt-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 space-x-4 mt-6">
                     {filteredItems.map((item) => (
                       <motion.div
                         key={item.id}
