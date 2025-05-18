@@ -10,7 +10,7 @@ export default function Sidebar() {
 
   if (pathname === "/login" || pathname === '/register') return null;
   return (
-    <main className=" fixed md:relative rounded-xl z-50 md:h-[calc(100svh-6.5rem)] h-full max-h-[5rem] md:max-h-svh bottom-0 md:p-3 md:flex-col md:max-w-[5rem] md:min-w-[5rem] lg:min-w-[18rem] lg:max-w-[18rem] flex items-center justify-between px-10 w-full md:bg-background/75">
+    <main className=" fixed md:relative rounded-xl z-50 md:h-[calc(100svh-6.5rem)] h-full max-h-[5rem] md:max-h-svh bottom-0 md:p-3 md:flex-col md:max-w-[5rem] md:min-w-[5rem] lg:min-w-[18rem] lg:max-w-[18rem] bg-black flex items-center justify-between px-10 w-full md:bg-background/75">
       <div className=" w-full flex md:flex-col gap-y-3 justify-between">
         <button
           onClick={() => {

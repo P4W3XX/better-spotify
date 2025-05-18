@@ -82,7 +82,7 @@ export default function ItemCover({
   const [isHover, setIsHover] = useState(false);
   const handleClick = () => {
     router.push(
-      `/${type === "album" ? "album" : type === "song" ? "song" : "profile"
+      `/${type === "album" || type === "ep" ? "album" : type === "song" ? "song" : "profile"
       }/${id}`
     );
   };
