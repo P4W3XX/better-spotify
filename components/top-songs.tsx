@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { SongPreview } from "./song-preview"
 
-export default function TopSongs({ songs }: { songs: { id: string, feats: [], title: string, plays: number, duration: string, artist: number, is_indecent: boolean }[] }) {
+export default function TopSongs({ songs }: { songs: { id: string, feats: [], title: string, plays: number, duration: string, artist: number, is_indecent: boolean, artistName: string,cover:string }[] }) {
 
     useEffect(() => {
         console.log(songs)
@@ -13,7 +13,7 @@ export default function TopSongs({ songs }: { songs: { id: string, feats: [], ti
             </h1>
             <div>
                 {songs?.map((song, index) => (
-                    <SongPreview isIndecent={song.is_indecent} key={index} id={song.id} title={song.title} artistId={song.artist} duration={song.duration} plays={song.plays} feats={song.feats} index={index} isDuration={false} isCover isPlays={false} isIndex={false} />
+                    <SongPreview cover={song.cover} isIndecent={song.is_indecent} artist={song.artistName} key={index} id={song.id} title={song.title} artistId={song.artist} duration={song.duration} plays={song.plays} feats={song.feats} index={index} isDuration={false} isCover isPlays={false} isIndex={false} />
                 ))}
             </div>
         </div>

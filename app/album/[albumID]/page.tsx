@@ -294,6 +294,7 @@ interface AlbumInfo {
   cover: string;
   type: string;
   releaseDate: string;
+  artistName: string;
   theme: string;
   albumDuration: string;
   totalPlays: number;
@@ -312,10 +313,6 @@ interface SongInfo {
   id: string;
 }
 
-interface ArtistInfo {
-  name: string;
-  cover: string;
-}
 
 export default function Album() {
   const { albumID } = useParams();
@@ -335,6 +332,7 @@ export default function Album() {
     artist: "",
     cover: "",
     type: "",
+    artistName: "",
     releaseDate: "",
     albumDuration: "",
     theme: "",
@@ -342,10 +340,6 @@ export default function Album() {
     songs: [],
   });
 
-  const [artistInfo, setArtistInfo] = useState<ArtistInfo>({
-    name: "",
-    cover: "",
-  });
 
   const formatTimeToSeconds = (timeString: string): number => {
     if (!timeString) return 0;
@@ -382,21 +376,13 @@ export default function Album() {
           artist: resp.data.artist,
           cover: resp.data.image,
           type: resp.data.album_type,
+          artistName: resp.data.artist_username,
           theme: resp.data.theme,
           albumDuration: resp.data.album_duration,
           releaseDate: resp.data.release_date,
           totalPlays: resp.data.total_plays,
           songs: resp.data.songs,
         });
-
-        await axios
-          .get(`http://127.0.0.1:8000/api/artists/${resp.data.artist || 0}/`)
-          .then((res) => {
-            setArtistInfo({
-              name: res.data.username,
-              cover: res.data.image,
-            });
-          });
       } catch (error) {
         console.error("Error fetching album info:", error);
       }
@@ -421,7 +407,7 @@ export default function Album() {
       >
         <ArrowLeft className="size-[2rem]" />
       </button>
-      <TopBar handleRef={handleRef} setScrollY2={setScrollY} title={albumInfo.title} artist={artistInfo.name} cover={albumInfo.cover} theme={albumInfo.theme} />
+      <TopBar handleRef={handleRef} setScrollY2={setScrollY} title={albumInfo.title} artist={albumInfo.artistName} cover={albumInfo.cover} theme={albumInfo.theme} />
       <div className=" md:p-7 px-4 pt-16 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
         <div className=" w-full h-full left-0 bg-gradient-to-t from-black/40 to-black/20 top-0 absolute" />
         {albumInfo.cover ? (
@@ -455,9 +441,9 @@ export default function Album() {
           )}
           <div className=" flex md:items-center md:flex-row flex-col text-sm font-medium space-y-2 md:space-y-0 md:space-x-2">
             <div className=" flex items-center space-x-2">
-              {artistInfo.cover ? (
+              {albumInfo.cover ? (
                 <Image
-                  src={artistInfo.cover}
+                  src={albumInfo.cover}
                   unoptimized
                   alt="ArtistCover"
                   width={25}
@@ -467,12 +453,12 @@ export default function Album() {
               ) : (
                 <Skeleton className="size-[1.3rem] aspect-square rounded-full" />
               )}
-              {artistInfo.name.length > 0 ? (
+              {albumInfo.artistName.length > 0 ? (
                 <p
                   onClick={() => router.push(`/profile/${albumInfo.artist}`)}
                   className=" cursor-pointer truncate hover:underline transition-colors font-medium"
                 >
-                  {artistInfo.name}
+                  {albumInfo.artistName || ""}
                 </p>
               ) : (
                 <Skeleton className=" w-[80px] h-[20px]" />
@@ -622,13 +608,14 @@ export default function Album() {
             albumInfo.songs.map((song: SongInfo, index: number) => (
               <SongPreview
                 isIndecent={song.is_indecent}
+                cover={''}
                 key={index}
                 index={index}
                 title={song.title}
                 isIndex={true}
                 isDuration={true}
                 isPlays={true}
-                artist={artistInfo.name}
+                artist={albumInfo.artistName}
                 feats={song.featured_artists}
                 isCover={false}
                 id={song.id}

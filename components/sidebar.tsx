@@ -20,7 +20,7 @@ export default function Sidebar() {
             } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/10 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-3 md:justify-start`}
         >
           <House
-            fill={pathname === "/" ? "white" : "#0a0a0a"}
+            fill={pathname === "/" ? "white" : "#131313"}
             size={30}
             className={` transition-colors md:stroke-3 ${pathname === "/" ? "stroke-white" : "stroke-neutral-500"
               }`}

@@ -1,12 +1,13 @@
 "use client";
 import ItemCover from "@/components/item-cover";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import Chip from "@/components/chip";
 import { AnimatePresence, motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import WelcomeBack from "@/components/welcomeBack";
+
 
 interface Item {
   id: number;
@@ -36,6 +37,8 @@ export default function Home() {
   const [backgroundTheme, setBackgroundTheme] = useState<string>("");
   const [filter, setFilter] = useState<'All' | 'Artists' | 'Albums' | 'Songs' | 'Ep'>('All');
   const [isLoading, setIsLoading] = useState(true);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const mainRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,6 +71,26 @@ export default function Home() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    setIsScrolling(false);
+    const handleScroll = () => {
+      const scrollTop = mainRef?.current?.scrollTop;
+      if (scrollTop && scrollTop > 0) {
+        console.log("scrolling");
+        setIsScrolling(true);
+      } else {
+        console.log("not scrolling");
+        setIsScrolling(false);
+      }
+    };
+
+    mainRef?.current?.addEventListener("scroll", handleScroll);
+
+    return () => {
+      mainRef?.current?.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const hexToRGBA = (hex = "", alpha = 1) => {
     const cleanHex = hex.replace("#", "");
     const bigint = parseInt(cleanHex, 16);
@@ -88,17 +111,24 @@ export default function Home() {
 
   return (
     <motion.div
+      ref={mainRef}
       initial={{ opacity: 0 }}
       animate={{
         opacity: 1,
         backgroundImage: `linear-gradient(to bottom, ${hexToRGBA(backgroundTheme || "#404040", .75)} 0%, ${hexToRGBA("#171717", .75)} 30%)`,
       }}
+      style={{
+        overflow: isLoading ? "hidden" : "auto",
+      }}
       layout="position"
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className=" relative w-full p-4 sm:p-6 md:p-8 lg:p-6 md:h-[calc(100svh-6.5rem)] h-svh md:rounded-xl"
+      className=" relative w-full md:h-[calc(100svh-6.5rem)] h-svh md:rounded-xl"
     >
-      <div className="flex items-center w-full sticky gap-x-3 z-20 mb-5">
+      <div style={{
+        backdropFilter: !isScrolling ? "blur(0px)" : "blur(15px)",
+        backgroundColor: !isScrolling ? "transparent" : hexToRGBA("#404040", .4),
+      }} className="flex items-center w-full sticky p-4 z-30 sm:p-6 md:p-8 lg:p-6 top-0 gap-x-3 mb-5">
         <Chip title="All" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
         <Chip title="Albums" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
         <Chip title="Songs" onClick={(title) => { handleFilter(title) }} active={filter || ''} />
@@ -111,12 +141,9 @@ export default function Home() {
             key="MainPage"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{
-              overflow: isLoading ? "hidden" : "auto",
-            }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className=" flex flex-col w-full h-full gap-y-20 overflow-auto"
+            className=" flex flex-col w-full px-4 sm:px-6 md:px-8 lg:px-6 h-full gap-y-20"
           >
             <motion.div className=" w-full flex flex-col">
               <div className="w-full grid grid-cols-2 gap-5">
@@ -181,7 +208,7 @@ export default function Home() {
               opacity: 1,
             }} exit={{
               opacity: 1,
-            }} layoutId="Ep" className=" w-full flex flex-col pb-16">
+            }} layoutId="Ep" className=" w-full flex flex-col pb-8">
               <div className="w-full flex items-center justify-between h-min">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Ep</h1>
                 <button
@@ -240,7 +267,7 @@ export default function Home() {
 
               if (filteredItems.length > 0) {
                 return (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 space-x-4 mt-6">
+                  <div className="grid grid-cols-2 p-4 sm:p-6 md:p-8 lg:p-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 space-x-4 mt-6">
                     {filteredItems.map((item) => (
                       <motion.div
                         key={item.id}

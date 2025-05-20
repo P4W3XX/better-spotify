@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useCurrentSongStore } from "@/store/current-song";
+
 import { Pause, Play } from "lucide-react";
 
 const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
