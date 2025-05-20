@@ -110,15 +110,15 @@ export default function SearchPage() {
         }} className="w-full md:h-[calc(100svh-6.5rem)] pt-[1.5rem] md:rounded-xl px-5 bg-background/75 relative h-svh overflow-x-hidden">
             <motion.div initial={{
                 opacity: 0,
-                y: -30,
+                y: -40,
             }} animate={{
                 opacity: 1,
                 y: 0,
             }} exit={{
                 opacity: 0,
-                y: -30,
+                y: -40,
             }} transition={{
-                duration: 0.2,
+                duration: 0.3,
                 ease: "easeInOut",
             }} className="w-full h-[3rem] sticky py-10 items-center justify-center flex z-[999] top-0">
                 {mobile && (<motion.button initial={false} animate={{
@@ -172,7 +172,7 @@ export default function SearchPage() {
                 {search.length === 0 && (
                     <motion.div transition={{
                         ease: "easeInOut",
-                        duration: 0.2,
+                        duration: 0.3
                     }} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="w-full mt-6 grid  grid-cols-2 z-0 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
                         {popularCovers?.map((cover, index) => (
                             <PopularCover key={index} genre={cover.genre} cover={cover.cover} />

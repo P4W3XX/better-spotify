@@ -32,6 +32,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
+import { motion } from "framer-motion";
 
 import {
   Drawer,
@@ -395,7 +396,12 @@ export default function Album() {
   }, []);
 
   return (
-    <main
+    <motion.main
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      layoutId="album"
       style={{ backgroundColor: albumInfo.theme }}
       className={` relative w-full md:h-[calc(100svh-6.5rem)] h-[calc(100svh-4rem)] flex md:rounded-xl flex-col ${albumCover ? "overflow-hidden" : " overflow-auto"
         }`}
@@ -621,7 +627,7 @@ export default function Album() {
                 id={song.id}
                 plays={song.plays}
                 duration={song.duration}
-                
+
               />
             ))
           ) : (
@@ -632,6 +638,6 @@ export default function Album() {
           )}
         </div>
       </div>
-    </main>
+    </motion.main>
   );
 }

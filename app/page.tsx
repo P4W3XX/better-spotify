@@ -112,6 +112,7 @@ export default function Home() {
   return (
     <motion.div
       ref={mainRef}
+      layoutId="MainPage"
       initial={{ opacity: 0 }}
       animate={{
         opacity: 1,
@@ -120,9 +121,8 @@ export default function Home() {
       style={{
         overflow: isLoading ? "hidden" : "auto",
       }}
-      layout="position"
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
       className=" relative w-full md:h-[calc(100svh-6.5rem)] h-svh md:rounded-xl"
     >
       <div style={{
