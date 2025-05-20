@@ -385,12 +385,13 @@ export default function Profile() {
             {artistInfo.top_songs.length > 0 ? (
               artistInfo.top_songs.map((song: SongInfo, index: number) => (
                 <SongPreview
+                  cover={song.cover}
                   key={index}
                   index={index}
                   title={song.title}
                   artist={artistInfo.name}
                   feats={song.featured_artists}
-                  isCover={false}
+                  isCover={true}
                   id={song.id}
                   plays={song.plays}
                   duration={song.duration}

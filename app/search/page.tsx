@@ -107,7 +107,7 @@ export default function SearchPage() {
     return (
         <main style={{
             overflowY: isSearching || !popularCovers ? "hidden" : "auto",
-        }} className="w-full md:h-[calc(100svh-6.5rem)] md:rounded-xl px-5 bg-background/75 relative h-svh overflow-x-hidden">
+        }} className="w-full md:h-[calc(100svh-6.5rem)] pt-[1.5rem] md:rounded-xl px-5 bg-background/75 relative h-svh overflow-x-hidden">
             <motion.div initial={{
                 opacity: 0,
                 y: -30,
