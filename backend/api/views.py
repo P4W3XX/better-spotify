@@ -1,7 +1,7 @@
 from rest_framework import filters, viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from django.db.models import Q, F
@@ -10,6 +10,7 @@ from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
@@ -274,10 +275,14 @@ class UserPlaybackHistoryAPIView(APIView):
     )
     def get(self, request):
         user = request.user
-        playback_history = SongPlayback.objects.filter(user=user).order_by('-played_at')
-        serializer = UserPlaybackHistorySerializer(playback_history, many=True, context={'request': request})
-        return Response(serializer.data)
+        last_month = timezone.now() - timezone.timedelta(days=30)
+        playback_history = SongPlayback.objects.filter(user=user, played_at__gte=last_month).select_related('user', 'song').order_by('-played_at')
+        paginator = LimitOffsetPagination()
+        paginator.default_limit = 10
+        result_page = paginator.paginate_queryset(playback_history, request)
 
+        serializer = UserPlaybackHistorySerializer(result_page, many=True, context={'request': request})
+        return paginator.get_paginated_response(serializer.data)
 
 
 class TopSongsAPIView(APIView):
