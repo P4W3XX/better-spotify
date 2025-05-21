@@ -48,7 +48,7 @@ export default function Home() {
           console.log(err);
         })
         console.log("res", res);
-        const mappedItems = res.map((item: mappedItems) => ({
+        const mappedItems = res?.map((item: mappedItems) => ({
           id: item.id,
           title: item.title,
           artist: item.artist_username,
@@ -267,7 +267,7 @@ export default function Home() {
 
               if (filteredItems.length > 0) {
                 return (
-                  <div className="grid grid-cols-2 p-4 sm:p-6 md:p-8 lg:p-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 space-x-4 mt-6">
+                  <div className="grid grid-cols-2 px-4 sm:px-6 md:px-8 lg:px-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-6 space-x-4 mt-6">
                     {filteredItems.map((item) => (
                       <motion.div
                         key={item.id}

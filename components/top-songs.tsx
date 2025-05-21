@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { SongPreview } from "./song-preview"
 
-export default function TopSongs({ songs }: { songs: { id: string, feats: [], title: string, plays: number, duration: string, artist: number, is_indecent: boolean, artistName: string,cover:string }[] }) {
+export default function TopSongs({ songs }: { songs: { id: string, feats: [{ id: number, username: string }], title: string, plays: number, duration: string, artist: number, is_indecent: boolean, artistName: string, cover: string }[] }) {
 
     useEffect(() => {
         console.log(songs)

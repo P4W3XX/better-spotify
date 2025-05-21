@@ -14,7 +14,7 @@ import TopSongs from "@/components/top-songs";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface SearchResultsProps {
-    results: { id: string, image: string, title: string, data_type: string, artist: number, artistName: string, username: string, songs: [{ id: number }], plays: number, duration: string, feats: [], is_indecent: boolean }[];
+    results: { id: string, image: string, title: string, data_type: string, artist: number, artistName: string, username: string, songs: [{ id: number }], plays: number, duration: string, feats: [{ id: number, username: string }], is_indecent: boolean }[];
     count: number;
 }
 
@@ -74,7 +74,7 @@ export default function SearchPage() {
                             songs?: [{ id: number }];
                             plays?: number;
                             duration?: string;
-                            feats?: [];
+                            feats?: [{ id: number; username: string }];
                             is_indecent?: boolean;
                             cover?: string;
                         }) => ({

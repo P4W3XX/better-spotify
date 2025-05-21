@@ -30,7 +30,7 @@ interface SongInfo {
   cover: string;
   duration: string;
   plays: number;
-  featured_artists: string[];
+  featured_artists: [{ id: number; username: string }];
   isCover: boolean;
   id: string;
 }
@@ -93,9 +93,9 @@ export default function Profile() {
     };
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     const fetchData = async () => {
-      try{
+      try {
         const response = await axios.get(`http://127.0.0.1:8000/api/artists/${profileID}/`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -130,7 +130,7 @@ export default function Profile() {
       else if (response.data.status == "Unfollowed") {
         setFollowing(false);
       }
-    } 
+    }
     catch (err) {
       console.error("Błąd przy toggle follow:", err);
     }
@@ -218,7 +218,7 @@ export default function Profile() {
               cover: song.cover || "/slabiak2.jpg",
               duration: song.duration,
               plays: song.plays,
-              featured_artists: song.featured_artists || [],
+              featured_artists: song.featured_artists || [{ id: 0, username: "" }],
               id: song.id,
             })),
           });

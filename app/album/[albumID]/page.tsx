@@ -6,6 +6,7 @@ import {
   Clock,
   Ellipsis,
   ListMusic,
+  LoaderCircle,
   Music,
   Pause,
   Play,
@@ -295,6 +296,7 @@ interface AlbumInfo {
   cover: string;
   type: string;
   releaseDate: string;
+  artistCover: string;
   artistName: string;
   theme: string;
   albumDuration: string;
@@ -305,11 +307,11 @@ interface AlbumInfo {
 interface SongInfo {
   title: string;
   is_indecent: boolean;
-  artist: string;
+  artist: number;
   cover: string;
   duration: string;
   plays: number;
-  featured_artists: string[];
+  featured_artists: [{ id: number, username: string }];
   isCover: boolean;
   id: string;
 }
@@ -326,6 +328,7 @@ export default function Album() {
   const setCurrentSongID = useCurrentSongStore(
     (state) => state.setCurrentSongID);
   const currentSongID = useCurrentSongStore((state) => state.currentSongID);
+  const isLoading = useCurrentSongStore((state) => state.isLoading);
   const action = useCurrentSongStore((state) => state.action);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo>({
@@ -335,6 +338,7 @@ export default function Album() {
     type: "",
     artistName: "",
     releaseDate: "",
+    artistCover: "",
     albumDuration: "",
     theme: "",
     totalPlays: 0,
@@ -378,6 +382,7 @@ export default function Album() {
           cover: resp.data.image,
           type: resp.data.album_type,
           artistName: resp.data.artist_username,
+          artistCover: resp.data.artist_cover,
           theme: resp.data.theme,
           albumDuration: resp.data.album_duration,
           releaseDate: resp.data.release_date,
@@ -447,9 +452,9 @@ export default function Album() {
           )}
           <div className=" flex md:items-center md:flex-row flex-col text-sm font-medium space-y-2 md:space-y-0 md:space-x-2">
             <div className=" flex items-center space-x-2">
-              {albumInfo.cover ? (
+              {albumInfo.artistCover ? (
                 <Image
-                  src={albumInfo.cover}
+                  src={albumInfo.artistCover}
                   unoptimized
                   alt="ArtistCover"
                   width={25}
@@ -529,31 +534,37 @@ export default function Album() {
       </div>
       <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/40">
         <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
-          <button onClick={() => {
-            if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
-              if (currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID)) {
-                if (action === "Play") {
-                  setAction("Pause");
-                } else {
+          {isLoading ? (
+          <div className="w-full flex items-center justify-center md:size-[4rem] size-[3rem] bg-white rounded-full">
+            <LoaderCircle className="text-black animate-spin stroke-3 stroke-black" size={25} />
+          </div>
+          ) : (
+            <button onClick={() => {
+              if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
+                if (currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID)) {
+                  if (action === "Play") {
+                    setAction("Pause");
+                  } else {
+                    setAction("Play");
+                  }
+                }
+                else {
+                  setCurrentSongID(albumInfo.songs[0].id.toString());
                   setAction("Play");
                 }
               }
-              else {
-                setCurrentSongID(albumInfo.songs[0].id.toString());
-                setAction("Play");
-              }
-            }
-          }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center">
-            {currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID) ? (
-              action === "Play" ? (
-                <Pause className="text-black md:size-[24px] size-[20px]" fill="black" />
+            }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center">
+              {currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID) ? (
+                action === "Play" ? (
+                  <Pause className="text-black md:size-[24px] size-[20px]" fill="black" />
+                ) : (
+                  <Play className="text-black md:size-[24px] size-[20px]" fill="black" />
+                )
               ) : (
                 <Play className="text-black md:size-[24px] size-[20px]" fill="black" />
-              )
-            ) : (
-              <Play className="text-black md:size-[24px] size-[20px]" fill="black" />
-            )}
-          </button>
+              )}
+            </button>
+          )}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -619,6 +630,7 @@ export default function Album() {
                 index={index}
                 title={song.title}
                 isIndex={true}
+                artistId={song.artist}
                 isDuration={true}
                 isPlays={true}
                 artist={albumInfo.artistName}
