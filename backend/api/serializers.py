@@ -135,13 +135,13 @@ class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
     album_duration = serializers.SerializerMethodField()
     total_plays = serializers.SerializerMethodField()
-    # theme = serializers.SerializerMethodField()
     artist_username = serializers.CharField(source='artist.username', read_only=True)
+    artist_cover = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
         fields = [
-            'id', 'title', 'album_type', 'artist', 'artist_username', 'image', 
+            'id', 'title', 'album_type', 'artist', 'artist_username', 'artist_cover', 'image', 
             'release_date', 'album_duration', 'theme',
             'total_plays', 'songs'
         ]
@@ -220,6 +220,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
         return instance
     
+
+    def get_artist_cover(self, obj):
+        if obj.artist.image:
+            return BASE_URL + obj.artist.image.url
+        return None
 
 
 
