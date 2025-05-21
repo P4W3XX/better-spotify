@@ -115,6 +115,15 @@ class SongSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         # if self.playlist:
         representation['cover'] = BASE_URL + instance.album.image.url if instance.album.image else None
+        featured_artists = instance.featured_artists.all()
+        representation['featured_artists'] = []
+        for artist in featured_artists:
+            representation['featured_artists'].append({
+                'id': artist.id,
+                'username': artist.username
+            })
+
+
         return representation
 
 
