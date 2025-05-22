@@ -30,6 +30,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { SynchronizedLyrics } from "./synchronized-lyrics";
+import { useTokenStore } from "@/store/token";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -56,6 +57,7 @@ export default function PlayBar() {
   const artistsHandle = useRef<HTMLDivElement>(null);
   const [isArtistsAnimated, setIsArtistsAnimated] = useState(false);
   const [isBlended, setIsBlended] = useState(false);
+  const accessToken = useTokenStore((state) => state.accessToken);
   const router = useRouter();
 
   const [currentSongDetails, setCurrentSongDetails] = useState({
@@ -80,6 +82,10 @@ export default function PlayBar() {
   const [currentTime, setCurrentTime] = useState("0:00");
   const [volumeState, setVolumeState] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    console.log("Volume state changed:", volumeState);
+  }, [volumeState]);
 
   const noLyricTexts = [
     "We don't have lyrics for this song yet.",
@@ -106,24 +112,11 @@ export default function PlayBar() {
       const audio = audioRef.current;
       const handleLoadedMetadata = () => {
         document.title = currentSongDetails.title ? `${currentSongDetails.title} - Music` : "Music";
-        setAction("Play");
+        if (currentSongID.autoPlay) {
+          setAction("Play");
+        }
         audio.currentTime = 0;
-        axios
-          .get(`http://127.0.0.1:8000/api/songs/${currentSongID}/`)
-          .then((response) => {
-            const updatedPlays = response.data.plays + 1;
-            axios
-              .patch(`http://127.0.0.1:8000/api/songs/${currentSongID}/`, {
-                plays: updatedPlays,
-                lyrics: response.data.lyrics,
-              })
-              .then(() => {
-                console.log("Updated play count:", updatedPlays);
-              });
-          })
-          .catch((error) => {
-            console.error("Error updating song play count:", error);
-          });
+        audio.volume = volumeState / 100;
       };
 
       const handleEnded = () => {
@@ -174,9 +167,23 @@ export default function PlayBar() {
       const [minutes, seconds] = parts;
       return minutes * 60 + seconds;
     }
-
     return 0;
   };
+
+  useEffect(() => {
+    if (!accessToken) return;
+    axios.get('http://127.0.0.1:8000/api/playback/control/', {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`
+      }
+    }).then((response) => {
+      console.log("Playback control response:", response.data);
+      setCurrentSongID(response.data.data.song_id, false);
+    }).catch((error) => {
+      console.error("Error fetching playback control:", error);
+    })
+  }, []);
+
 
   useEffect(() => {
     if (!isMobile) {
@@ -217,10 +224,10 @@ export default function PlayBar() {
       console.log("Album ID:", albumID);
       axios.get(`http://127.0.0.1:8000/api/albums/${albumID}`).then((response) => {
         const songs = response.data.songs;
-        const currentSongIndex = songs.findIndex((song: { id: number }) => song.id.toString() === currentSongID);
+        const currentSongIndex = songs.findIndex((song: { id: number }) => song.id.toString() === currentSongID.url);
         const nextSongIndex = (currentSongIndex + 1) % songs.length;
         const nextSongID = songs[nextSongIndex];
-        setCurrentSongID(nextSongID.id);
+        setCurrentSongID(nextSongID.id, true);
       }).catch((error) => {
         console.error("Error fetching album songs:", error);
       });
@@ -233,7 +240,7 @@ export default function PlayBar() {
       console.log("Album ID:", albumID);
       axios.get(`http://127.0.0.1:8000/api/albums/${albumID}`).then((response) => {
         const songs = response.data.songs;
-        const currentSongIndex = songs.findIndex((song: { id: number }) => song.id.toString() === currentSongID);
+        const currentSongIndex = songs.findIndex((song: { id: number }) => song.id.toString() === currentSongID.url);
         let prevSongIndex;
         if (currentSongIndex === 0) {
           console.log("First song, going to last song");
@@ -241,7 +248,7 @@ export default function PlayBar() {
         } else {
           prevSongIndex = (currentSongIndex - 1) % songs.length;
           const prevSongID = songs[prevSongIndex];
-          setCurrentSongID(prevSongID.id);
+          setCurrentSongID(prevSongID.id, true);
         }
       }).catch((error) => {
         console.error("Error fetching album songs:", error);
@@ -302,36 +309,20 @@ export default function PlayBar() {
 
   const [lastSongID, setLastSongID] = useState<string | null>(null);
 
-  const fetchToken = async () => {
-    try {
-      const response = await axios.get("/api/get-cookie?key=token");
-      console.log("Token fetched:", response.data.value);
-      return response.data
-    } catch (error) {
-      console.error("Error fetching token:", error);
-      return null;
-    }
-  };
-
   useEffect(() => {
-    if (currentSongID) {
+    if (currentSongID.url && currentSongID.autoPlay) {
       const handlePlaybackControl = async () => {
         try {
-          const tokenResponse = await fetchToken();
-          const token = tokenResponse?.value;
-
-          if (!token) {
-            console.error("No token available for authorization");
+          if (!accessToken) {
             return;
           }
-
           let payload = {};
-          if (action === "Play" && currentSongID !== lastSongID) {
+          if (action === "Play" && currentSongID.url !== lastSongID) {
             payload = {
               action: "play",
-              song_id: currentSongID,
+              song_id: currentSongID.url,
             };
-          } else if (action === "Play" && currentSongID === lastSongID) {
+          } else if (action === "Play" && currentSongID.url === lastSongID) {
             payload = {
               action: "resume"
             };
@@ -343,7 +334,7 @@ export default function PlayBar() {
 
           await axios.post('http://127.0.0.1:8000/api/playback/control/', payload, {
             headers: {
-              "Authorization": `Bearer ${token}`
+              "Authorization": `Bearer ${accessToken}`
             }
           });
 
@@ -357,12 +348,11 @@ export default function PlayBar() {
           console.error("Playback control error:", error);
         }
 
-        setLastSongID(currentSongID);
+        setLastSongID(currentSongID.url);
       };
       handlePlaybackControl();
     }
-  }, [action, currentSongID]);
-  //todo save song before quitting app
+  }, [action, currentSongID.url, accessToken],);
 
   useEffect(() => {
     const handleResize = () => {
@@ -401,10 +391,10 @@ export default function PlayBar() {
   useEffect(() => {
     const fetchSongDetails = async () => {
       console.log("Current song ID changed:", currentSongID);
-      if (currentSongID) {
+      if (currentSongID.url) {
         setIsLoading(true);
         axios
-          .get(`http://127.0.0.1:8000/api/songs/${currentSongID}`)
+          .get(`http://127.0.0.1:8000/api/songs/${currentSongID.url}`)
           .then(async (response) => {
             const { title, duration, album, file, lyrics, is_indecent } = response.data;
             console.log("Fetched song details:", response.data);
@@ -440,7 +430,7 @@ export default function PlayBar() {
       }
     }
     fetchSongDetails();
-  }, [currentSongID]);
+  }, [currentSongID.url]);
 
   if (!isMounted) {
     return null;
@@ -804,7 +794,7 @@ export default function PlayBar() {
               className=" flex items-center justify-center w-full gap-x-5"
             >
               <button onClick={() => prevSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigLeft fill="white" className={` text-white size-[60px] ${!currentSongID || isLoading && ' pointer-events-none opacity-40'}`} />
+                <ArrowBigLeft fill="white" className={` text-white size-[60px] ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'}`} />
               </button>
               {!isLoading ? (
                 <button
@@ -814,9 +804,9 @@ export default function PlayBar() {
                   className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
                 >
                   {action === "Play" ? (
-                    <Pause fill="white" className={` text-white ${!currentSongID && ' pointer-events-none opacity-40'} size-[70px]`} />
+                    <Pause fill="white" className={` text-white ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[70px]`} />
                   ) : (
-                    <Play fill="white" className={` text-white size-[70px] ${!currentSongID && ' pointer-events-none opacity-40'}`} />
+                    <Play fill="white" className={` text-white size-[70px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
                   )}
                 </button>
               ) : (
@@ -1042,9 +1032,9 @@ export default function PlayBar() {
                   className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
                 >
                   {action === "Play" ? (
-                    <Pause fill="white" className={` text-white ${!currentSongID && ' pointer-events-none opacity-40'} size-[30px]`} />
+                    <Pause fill="white" className={` text-white ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[30px]`} />
                   ) : (
-                    <Play fill="white" className={` text-white size-[30px] ${!currentSongID && ' pointer-events-none opacity-40'}`} />
+                    <Play fill="white" className={` text-white size-[30px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
                   )}
                 </button>
               ) : (
@@ -1056,7 +1046,7 @@ export default function PlayBar() {
                 nextSong();
                 e.stopPropagation();
               }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigRight fill="white" className={` text-white ${!currentSongID || isLoading && ' pointer-events-none opacity-40'} size-[30px]`} />
+                <ArrowBigRight fill="white" className={` text-white ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'} size-[30px]`} />
               </button>
             </div>
           </div>
@@ -1277,7 +1267,7 @@ export default function PlayBar() {
                 )}
               </button>
               <button onClick={() => prevSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigLeft fill="white" className={` text-white size-[60px] ${!currentSongID || isLoading && ' pointer-events-none opacity-40'}`} />
+                <ArrowBigLeft fill="white" className={` text-white size-[60px] ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'}`} />
               </button>
               {!isLoading ? (
                 <button
@@ -1287,9 +1277,9 @@ export default function PlayBar() {
                   className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
                 >
                   {action === "Play" ? (
-                    <Pause fill="white" className={` text-white  ${!currentSongID && ' pointer-events-none opacity-40'} size-[80px]`} />
+                    <Pause fill="white" className={` text-white  ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[80px]`} />
                   ) : (
-                    <Play fill="white" className={` text-white size-[80px] ${!currentSongID && ' pointer-events-none opacity-40'}`} />
+                    <Play fill="white" className={` text-white size-[80px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
                   )}
                 </button>
               ) : (
@@ -1298,7 +1288,7 @@ export default function PlayBar() {
                 </div>
               )}
               <button onClick={() => nextSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigRight fill="white" className={` text-white ${!currentSongID || isLoading && ' pointer-events-none opacity-40'} size-[60px]`} />
+                <ArrowBigRight fill="white" className={` text-white ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'} size-[60px]`} />
               </button>
               <button onClick={() => {
                 if (isLooped === "false") {
@@ -1477,7 +1467,7 @@ export default function PlayBar() {
                     >
                       {currentSongDetails.artistName || ""}
                     </span>
-                    {currentSongDetails.feats && currentSongDetails.feats.length > 0 &&
+                    {currentSongDetails.feats && currentSongDetails.feats.length > 0 && currentSongID.url &&
                       currentSongDetails.feats.map((feat, index) => (
                         <span
                           key={index}
@@ -1487,7 +1477,7 @@ export default function PlayBar() {
                           }}
                           className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                         >
-                          {" ,"}
+                          {","}
                           {feat.username}
                         </span>
                       ))}
@@ -1514,7 +1504,7 @@ export default function PlayBar() {
                 </TooltipProvider>
               </button>
               <button onClick={() => prevSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigLeft fill="white" className={` text-white md:size-[28px] size-[24px] ${!currentSongID || isLoading && ' pointer-events-none opacity-40'}`} />
+                <ArrowBigLeft fill="white" className={` text-white md:size-[28px] size-[24px] ${(!currentSongID || isLoading) && ' pointer-events-none opacity-40'}`} />
               </button>
               {!isLoading ? (
                 <button
@@ -1524,9 +1514,9 @@ export default function PlayBar() {
                   className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
                 >
                   {action === "Play" ? (
-                    <Pause fill="white" className={` text-white md:size-[36px] ${!currentSongID && ' pointer-events-none opacity-40'} size-[24px]`} />
+                    <Pause fill="white" className={` text-white md:size-[36px] ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[24px]`} />
                   ) : (
-                    <Play fill="white" className={` text-white md:size-[36px] size-[24px] ${!currentSongID && ' pointer-events-none opacity-40'}`} />
+                    <Play fill="white" className={` text-white md:size-[36px] size-[24px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
                   )}
                 </button>
               ) : (
@@ -1535,7 +1525,7 @@ export default function PlayBar() {
                 </div>
               )}
               <button onClick={() => nextSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigRight fill="white" className={` text-white md:size-[28px] ${!currentSongID || isLoading && ' pointer-events-none opacity-40'} size-[24px]`} />
+                <ArrowBigRight fill="white" className={` text-white md:size-[28px] ${(!currentSongID.url || isLoading) && ' pointer-events-none opacity-40'} size-[24px]`} />
               </button>
               <TooltipProvider>
                 <Tooltip>

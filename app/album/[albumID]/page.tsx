@@ -541,7 +541,7 @@ export default function Album() {
           ) : (
             <button onClick={() => {
               if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
-                if (currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID)) {
+                if (currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID.url)) {
                   if (action === "Play") {
                     setAction("Pause");
                   } else {
@@ -549,12 +549,12 @@ export default function Album() {
                   }
                 }
                 else {
-                  setCurrentSongID(albumInfo.songs[0].id.toString());
+                  setCurrentSongID(albumInfo.songs[0].id.toString(),true);
                   setAction("Play");
                 }
               }
             }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center">
-              {currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID) ? (
+              {currentSongID && albumInfo.songs.some(song => song.id.toString() === currentSongID.url) ? (
                 action === "Play" ? (
                   <Pause className="text-black md:size-[24px] size-[20px]" fill="black" />
                 ) : (

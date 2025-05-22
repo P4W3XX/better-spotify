@@ -128,7 +128,7 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                 <button onClick={(e) => {
                     e.stopPropagation();
                     if (type !== "profile") {
-                        if (songs?.some((song) => song.id.toString() === currentSongID)) {
+                        if (songs?.some((song) => song.id.toString() === currentSongID.url)) {
                             if (action === "Play") {
                                 setAction("Pause");
                             } else {
@@ -137,12 +137,12 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                         } else {
                             setAction("Play");
                             if (songs && songs.length > 0) {
-                                setCurrentSongID(songs[0].id.toString());
+                                setCurrentSongID(songs[0].id.toString(),true);
                             }
                         }
                     }
-                }} className={`bg-white rounded-full cursor-pointer shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/50 size-[3rem] absolute bottom-6 right-6 transition-all flex items-center justify-center ${songs?.some((song) => song.id.toString() === currentSongID) ? ' translate-y-0 ' : 'group-hover:translate-y-0 translate-y-4 opacity-0 group-hover:opacity-100'}`}>
-                    {songs?.some((song) => song.id.toString() === currentSongID) ? (
+                }} className={`bg-white rounded-full cursor-pointer shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/50 size-[3rem] absolute bottom-6 right-6 transition-all flex items-center justify-center ${songs?.some((song) => song.id.toString() === currentSongID.url) ? ' translate-y-0 ' : 'group-hover:translate-y-0 translate-y-4 opacity-0 group-hover:opacity-100'}`}>
+                    {songs?.some((song) => song.id.toString() === currentSongID.url) ? (
                         action === "Play" ? (
                             isHover ?
                                 <Pause className="text-black" fill="black" size={20} />

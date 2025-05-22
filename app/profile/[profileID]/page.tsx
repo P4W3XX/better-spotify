@@ -333,7 +333,7 @@ export default function Profile() {
                   if (
                     currentSongID &&
                     albumInfo.songs.some(
-                      (song) => song.id.toString() === currentSongID
+                      (song) => song.id.toString() === currentSongID.url
                     )
                   ) {
                     if (action === "Play") {
@@ -342,7 +342,7 @@ export default function Profile() {
                       setAction("Play");
                     }
                   } else {
-                    setCurrentSongID(albumInfo.songs[0].id.toString());
+                    setCurrentSongID(albumInfo.songs[0].id.toString(),true);
                     setAction("Play");
                   }
                 }
@@ -351,7 +351,7 @@ export default function Profile() {
             >
               {currentSongID &&
                 albumInfo.songs.some(
-                  (song) => song.id.toString() === currentSongID
+                  (song) => song.id.toString() === currentSongID.url
                 ) ? (
                 action === "Play" ? (
                   <Pause
