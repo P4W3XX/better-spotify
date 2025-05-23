@@ -172,7 +172,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.IntegerField)
     def get_total_plays(self, obj):
-        return sum(song.plays for song in obj.songs.all())
+        def get_plays(obj):
+            song_plays = SongPlayback.objects.filter(song=obj).count()
+            return song_plays
+        
+        return sum(get_plays(song) for song in obj.songs.all())
 
 
     def create(self, validated_data):
