@@ -4,6 +4,7 @@ import {
   ArrowBigLeft,
   ArrowBigRight,
   Blend,
+  LoaderCircle,
   Maximize2,
   MicVocal,
   Minimize2,
@@ -29,6 +30,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { SynchronizedLyrics } from "./synchronized-lyrics";
+import { useTokenStore } from "@/store/token";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -36,16 +38,17 @@ export default function PlayBar() {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [isMounted, setIsMounted] = useState(false);
   const currentSongID = useCurrentSongStore((state) => state.currentSongID);
+  const setCurrentSongID = useCurrentSongStore((state) => state.setCurrentSongID);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const action = useCurrentSongStore((state) => state.action);
   const isLooped = useCurrentSongStore((state) => state.isLooped);
   const setIsLooped = useCurrentSongStore((state) => state.setIsLooped);
   const isShuffled = useCurrentSongStore((state) => state.isShuffle);
   const setIsShuffled = useCurrentSongStore((state) => state.setIsShuffle);
-  const [artistName, setArtistName] = useState<string | null>(null);
   const setIsLyric = useCurrentSongStore((state) => state.setIsLyric);
   const isLyric = useCurrentSongStore((state) => state.isLyric);
-  const [feats, setFeats] = useState<string[]>([]);
+  const isLoading = useCurrentSongStore((state) => state.isLoading);
+  const setIsLoading = useCurrentSongStore((state) => state.setIsLoading);
   const pathname = usePathname();
   const titleRef = useRef<HTMLDivElement>(null);
   const titleHandle = useRef<HTMLDivElement>(null);
@@ -54,16 +57,21 @@ export default function PlayBar() {
   const artistsHandle = useRef<HTMLDivElement>(null);
   const [isArtistsAnimated, setIsArtistsAnimated] = useState(false);
   const [isBlended, setIsBlended] = useState(false);
+  const accessToken = useTokenStore((state) => state.accessToken);
   const router = useRouter();
 
   const [currentSongDetails, setCurrentSongDetails] = useState({
     title: "",
-    artist: "",
+    artistId: "",
+    artistName: "",
     duration: "",
     albumID: "",
     url: "",
     cover: "",
-    feats: [],
+    feats: [{
+      id: "",
+      username: "",
+    }],
     theme: "",
     lyric: { lyric: [] },
     explicit: false,
@@ -74,6 +82,10 @@ export default function PlayBar() {
   const [currentTime, setCurrentTime] = useState("0:00");
   const [volumeState, setVolumeState] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    console.log("Volume state changed:", volumeState);
+  }, [volumeState]);
 
   const noLyricTexts = [
     "We don't have lyrics for this song yet.",
@@ -87,34 +99,24 @@ export default function PlayBar() {
 
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isLyricText, setIsLyricText] = useState<string>("");
+  const [isMoved, setIsMoved] = useState(false);
+
 
   useEffect(() => {
     setIsLyricText(noLyricTexts[Math.floor(Math.random() * noLyricTexts.length)]);
   }, [currentSongID]);
+
 
   useEffect(() => {
     if (audioRef.current) {
       const audio = audioRef.current;
       const handleLoadedMetadata = () => {
         document.title = currentSongDetails.title ? `${currentSongDetails.title} - Music` : "Music";
-        setAction("Play");
+        if (currentSongID.autoPlay) {
+          setAction("Play");
+        }
         audio.currentTime = 0;
-        axios
-          .get(`http://127.0.0.1:8000/api/songs/${currentSongID}/`)
-          .then((response) => {
-            const updatedPlays = response.data.plays + 1;
-            axios
-              .patch(`http://127.0.0.1:8000/api/songs/${currentSongID}/`, {
-                plays: updatedPlays,
-                lyrics: response.data.lyrics,
-              })
-              .then(() => {
-                console.log("Updated play count:", updatedPlays);
-              });
-          })
-          .catch((error) => {
-            console.error("Error updating song play count:", error);
-          });
+        audio.volume = volumeState / 100;
       };
 
       const handleEnded = () => {
@@ -165,9 +167,23 @@ export default function PlayBar() {
       const [minutes, seconds] = parts;
       return minutes * 60 + seconds;
     }
-
     return 0;
   };
+
+  useEffect(() => {
+    if (!accessToken) return;
+    axios.get('http://127.0.0.1:8000/api/playback/control/', {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`
+      }
+    }).then((response) => {
+      console.log("Playback control response:", response.data);
+      setCurrentSongID(response.data.data.song_id, false);
+    }).catch((error) => {
+      console.error("Error fetching playback control:", error);
+    })
+  }, []);
+
 
   useEffect(() => {
     if (!isMobile) {
@@ -202,6 +218,73 @@ export default function PlayBar() {
     return `${hours > 0 ? `${hours}:` : ""}${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const nextSong = () => {
+    const albumID = currentSongDetails.albumID;
+    if (albumID) {
+      console.log("Album ID:", albumID);
+      axios.get(`http://127.0.0.1:8000/api/albums/${albumID}`).then((response) => {
+        const songs = response.data.songs;
+        const currentSongIndex = songs.findIndex((song: { id: number }) => song.id.toString() === currentSongID.url);
+        const nextSongIndex = (currentSongIndex + 1) % songs.length;
+        const nextSongID = songs[nextSongIndex];
+        setCurrentSongID(nextSongID.id, true);
+      }).catch((error) => {
+        console.error("Error fetching album songs:", error);
+      });
+    }
+  };
+
+  const prevSong = () => {
+    const albumID = currentSongDetails.albumID;
+    if (albumID) {
+      console.log("Album ID:", albumID);
+      axios.get(`http://127.0.0.1:8000/api/albums/${albumID}`).then((response) => {
+        const songs = response.data.songs;
+        const currentSongIndex = songs.findIndex((song: { id: number }) => song.id.toString() === currentSongID.url);
+        let prevSongIndex;
+        if (currentSongIndex === 0) {
+          console.log("First song, going to last song");
+          audioRef.current!.currentTime = 0;
+        } else {
+          prevSongIndex = (currentSongIndex - 1) % songs.length;
+          const prevSongID = songs[prevSongIndex];
+          setCurrentSongID(prevSongID.id, true);
+        }
+      }).catch((error) => {
+        console.error("Error fetching album songs:", error);
+      });
+    }
+  };
+
+
+
+  useEffect(() => {
+    if (isFullScreen && !isMobile && action === "Play") {
+      let inactivityTimeout: NodeJS.Timeout;
+
+      const resetTimer = () => {
+        clearTimeout(inactivityTimeout);
+        setIsMoved(false);
+        console.log("Mouse moved, resetting timer");
+
+        inactivityTimeout = setTimeout(() => {
+          setIsMoved(true);
+          console.log("Mouse inactive for 3 seconds, hiding controls");
+        }, 3000);
+      };
+
+      resetTimer();
+
+      window.addEventListener('mousemove', resetTimer);
+
+      return () => {
+        window.removeEventListener('mousemove', resetTimer);
+        clearTimeout(inactivityTimeout);
+        setIsMoved(false);
+      };
+    }
+  }, [isFullScreen, action]);
+
   const handlePlay = () => {
     if (audioRef.current) {
       if (audioRef.current.paused) {
@@ -226,36 +309,20 @@ export default function PlayBar() {
 
   const [lastSongID, setLastSongID] = useState<string | null>(null);
 
-  const fetchToken = async () => {
-    try {
-      const response = await axios.get("/api/get-cookie?key=token");
-      console.log("Token fetched:", response.data.value);
-      return response.data
-    } catch (error) {
-      console.error("Error fetching token:", error);
-      return null;
-    }
-  };
-
   useEffect(() => {
-    if (currentSongID) {
+    if (currentSongID.url && currentSongID.autoPlay) {
       const handlePlaybackControl = async () => {
         try {
-          const tokenResponse = await fetchToken();
-          const token = tokenResponse?.value;
-
-          if (!token) {
-            console.error("No token available for authorization");
+          if (!accessToken) {
             return;
           }
-
           let payload = {};
-          if (action === "Play" && currentSongID !== lastSongID) {
+          if (action === "Play" && currentSongID.url !== lastSongID) {
             payload = {
               action: "play",
-              song_id: currentSongID,
+              song_id: currentSongID.url,
             };
-          } else if (action === "Play" && currentSongID === lastSongID) {
+          } else if (action === "Play" && currentSongID.url === lastSongID) {
             payload = {
               action: "resume"
             };
@@ -267,7 +334,7 @@ export default function PlayBar() {
 
           await axios.post('http://127.0.0.1:8000/api/playback/control/', payload, {
             headers: {
-              "Authorization": `Bearer ${token}`
+              "Authorization": `Bearer ${accessToken}`
             }
           });
 
@@ -281,12 +348,11 @@ export default function PlayBar() {
           console.error("Playback control error:", error);
         }
 
-        setLastSongID(currentSongID);
+        setLastSongID(currentSongID.url);
       };
       handlePlaybackControl();
     }
-  }, [action, currentSongID]);
-  //todo save song before quitting app
+  }, [action, currentSongID.url, accessToken],);
 
   useEffect(() => {
     const handleResize = () => {
@@ -320,72 +386,51 @@ export default function PlayBar() {
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [currentSongDetails.artist, currentSongDetails.title, feats]);
+  }, [currentSongDetails.artistName, currentSongDetails.title]);
 
   useEffect(() => {
-    console.log("Current song ID changed:", currentSongID);
-    if (currentSongID) {
-      axios
-        .get(`http://127.0.0.1:8000/api/songs/${currentSongID}`)
-        .then((response) => {
-          const { title, artist, duration, album, file, lyrics, is_indecent } = response.data;
-          console.log("Fetched song details:", response.data);
-
-          if (album) {
-            axios
-              .get(`http://127.0.0.1:8000/api/albums/${album}`)
-              .then((albumResponse) => {
-                setCurrentSongDetails({
-                  title,
-                  artist,
-                  duration,
-                  cover: albumResponse.data.image,
-                  albumID: album,
-                  theme: albumResponse.data.theme,
-                  url: file,
-                  feats: response.data.featured_artists,
-                  lyric: lyrics,
-                  explicit: is_indecent,
+    const fetchSongDetails = async () => {
+      console.log("Current song ID changed:", currentSongID);
+      if (currentSongID.url) {
+        setIsLoading(true);
+        axios
+          .get(`http://127.0.0.1:8000/api/songs/${currentSongID.url}`)
+          .then(async (response) => {
+            const { title, duration, album, file, lyrics, is_indecent } = response.data;
+            console.log("Fetched song details:", response.data);
+            if (album) {
+              await axios
+                .get(`http://127.0.0.1:8000/api/albums/${album}`)
+                .then((albumResponse) => {
+                  setCurrentSongDetails({
+                    title,
+                    artistId: albumResponse.data.artist,
+                    artistName: albumResponse.data.artist_username,
+                    duration,
+                    cover: albumResponse.data.image,
+                    albumID: album,
+                    theme: albumResponse.data.theme,
+                    url: file,
+                    feats: response.data.featured_artists,
+                    lyric: lyrics,
+                    explicit: is_indecent,
+                  });
+                })
+                .catch((error) => {
+                  console.error("Error fetching album cover:", error);
                 });
-              })
-              .catch((error) => {
-                console.error("Error fetching album cover:", error);
-              });
-            axios
-              .get(`http://127.0.0.1:8000/api/artists/${artist}`)
-              .then((artistResponse) => {
-                setArtistName(artistResponse.data.username);
-              })
-              .catch((error) => {
-                console.error("Error fetching artist name:", error);
-              });
-          }
-
-          if (response.data.featured_artists) {
-            console.log("Featured artists:", response.data.featured_artists);
-            const fetchFeaturedArtists = async () => {
-              const featuredArtists = await Promise.all(
-                response.data.featured_artists.map((artistID: string) =>
-                  axios
-                    .get(`http://127.0.0.1:8000/api/artists/${artistID}`)
-                    .then((res) => res.data.username)
-                    .catch((error) => {
-                      console.error("Error fetching featured artist:", error);
-                      return null; // Handle error case
-                    })
-                )
-              );
-              console.log("Featured artists:", featuredArtists);
-              setFeats(featuredArtists);
-            };
-            fetchFeaturedArtists();
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching song details:", error);
-        });
+              setIsLoading(false);
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching song details:", error);
+          }).finally(() => {
+            setIsLoading(false);
+          });
+      }
     }
-  }, [currentSongID]);
+    fetchSongDetails();
+  }, [currentSongID.url]);
 
   if (!isMounted) {
     return null;
@@ -436,7 +481,7 @@ export default function PlayBar() {
           }}
           className=" absolute w-full z-[9999] flex-col flex items-center justify-end h-full"
         >
-          <div className=" h-1 bg-white/20 w-1/3 rounded-full absolute z-20 top-2" />
+          <div className=" h-1 bg-white/20 w-1/3 rounded-full absolute z-[9999] top-2" />
           <motion.div
             animate={{
               opacity: isLyric ? 1 : 0,
@@ -450,11 +495,13 @@ export default function PlayBar() {
           >
             {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
               <SynchronizedLyrics
+                className=" !pt-[6rem] !pb-[8rem]"
                 lyrics={currentSongDetails.lyric.lyric}
                 currentTime={formatTimeToSeconds(currentTime)}
+                audioRef={audioRef as React.RefObject<HTMLAudioElement>}
                 setCurrentTime={(time: number) => {
                   console.log("Setting current time:", time);
-                  if (audioRef.current) {
+                  if (audioRef.current && !audioRef.current.paused) {
                     audioRef.current.currentTime = time;
                   }
                   setCurrentTime(formatSecondsToTime(time));
@@ -464,7 +511,9 @@ export default function PlayBar() {
               <p className=" text-white/50 h-svh w-full flex items-center justify-center text-center text-xl font-medium">{isLyricText}</p>
             )}
           </motion.div>
-          <motion.div className=" w-full absolute flex backdrop-blur-3xl z-[9999] items-center top-0 py-4 left-0 right-0 px-4 gap-x-4">
+          <motion.div style={{
+            backdropFilter: !isLyric ? "blur(0px)" : "blur(16px)",
+          }} className=" w-full absolute flex z-[999] items-center top-0 py-4 left-0 right-0 px-4 gap-x-4">
             {isLyric && (
               <>
                 <motion.img
@@ -522,26 +571,25 @@ export default function PlayBar() {
                       >
                         <span
                           onClick={(e) => {
-                            router.push(`/artist/${currentSongDetails.artist}`);
+                            router.push(`/artist/${currentSongDetails.artistId}`);
                             e.stopPropagation();
                           }}
                           className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                         >
-                          {artistName || ""}
+                          {currentSongDetails.artistName || ""}
                         </span>
-                        {feats &&
-                          feats.length > 0 &&
-                          feats.map((feat, index) => (
+                        {currentSongDetails.feats && currentSongDetails.feats.length > 0 &&
+                          currentSongDetails.feats.map((feat, index) => (
                             <span
                               key={index}
                               onClick={(e) => {
-                                router.push(`/artist/${currentSongDetails.feats[index]}`);
+                                router.push(`/artist/${feat.id}`);
                                 e.stopPropagation();
                               }}
                               className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                             >
                               {","}
-                              {feat}
+                              {feat.username}
                             </span>
                           ))}
                       </motion.div>
@@ -575,7 +623,7 @@ export default function PlayBar() {
                   opacity: isBlended ? 1 : 0,
                 }}
                 key={"BlendedCover"}
-                className=" absolute h-full w-full object-center object-cover z-10 left-0 top-0 bg-gradient-to-t from-black/70 to-90%"
+                className=" absolute h-full w-full object-center object-cover z-10 left-0 top-0 bg-black/40"
               />
               <motion.img
                 key={"BlendedImage"}
@@ -608,7 +656,7 @@ export default function PlayBar() {
             />
           </div>
           <div className=" w-full h-full absolute top-0 left-0 bg-gradient-to-t from-black/70 to-70%" />
-          <div className={` pb-10 transition-all flex h-[40%] ${isLyric ? 'backdrop-blur-none pointer-events-none' : ' pointer-events-auto backdrop-blur-lg'} justify-between w-full flex-col z-50 px-5 relative`}>
+          <div className={` pb-10 transition-all flex h-[40%] ${isLyric ? 'backdrop-blur-none pointer-events-none' : ' pointer-events-auto'} justify-between w-full flex-col z-50 px-5 relative`}>
             <AnimatePresence mode="wait">
               <motion.div className=" w-full items-center justify-center flex flex-col">
                 <motion.div
@@ -665,26 +713,25 @@ export default function PlayBar() {
                         >
                           <span
                             onClick={(e) => {
-                              router.push(`/artist/${currentSongDetails.artist}`);
+                              router.push(`/artist/${currentSongDetails.artistId}`);
                               e.stopPropagation();
                             }}
                             className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                           >
-                            {artistName || ""}
+                            {currentSongDetails.artistName || ""}
                           </span>
-                          {feats &&
-                            feats.length > 0 &&
-                            feats.map((feat, index) => (
+                          {currentSongDetails.feats && currentSongDetails.feats.length > 0 &&
+                            currentSongDetails.feats.map((feat, index) => (
                               <span
                                 key={index}
                                 onClick={(e) => {
-                                  router.push(`/artist/${currentSongDetails.feats[index]}`);
+                                  router.push(`/artist/${feat.id}`);
                                   e.stopPropagation();
                                 }}
                                 className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                               >
                                 {","}
-                                {feat}
+                                {feat.username}
                               </span>
                             ))}
                         </motion.div>
@@ -715,7 +762,14 @@ export default function PlayBar() {
                 min={0}
                 onValueChange={(value) => {
                   if (audioRef.current) {
+                    const wasPlaying = !audioRef.current.paused;
+                    if (wasPlaying) {
+                      audioRef.current.pause();
+                    }
                     audioRef.current.currentTime = value[0];
+                    if (wasPlaying) {
+                      audioRef.current.play();
+                    }
                   }
                   setCurrentTime(formatSecondsToTime(value[0]));
                 }}
@@ -739,23 +793,29 @@ export default function PlayBar() {
               }}
               className=" flex items-center justify-center w-full gap-x-5"
             >
-              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigLeft fill="white" className=" text-white md:size-[28px] opacity-40 size-[60px]" />
+              <button onClick={() => prevSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigLeft fill="white" className={` text-white size-[60px] ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'}`} />
               </button>
-              <button
-                onClick={() => {
-                  handlePlay();
-                }}
-                className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
-              >
-                {action === "Play" ? (
-                  <Pause fill="white" className=" text-white md:size-[36px] size-[70px]" />
-                ) : (
-                  <Play fill="white" className=" text-white md:size-[36px] size-[70px]" />
-                )}
-              </button>
-              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigRight fill="white" className=" text-white md:size-[40px] opacity-40 size-[60px]" />
+              {!isLoading ? (
+                <button
+                  onClick={() => {
+                    handlePlay();
+                  }}
+                  className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
+                >
+                  {action === "Play" ? (
+                    <Pause fill="white" className={` text-white ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[70px]`} />
+                  ) : (
+                    <Play fill="white" className={` text-white size-[70px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
+                  )}
+                </button>
+              ) : (
+                <div className=" rounded-full flex items-center justify-center">
+                  <LoaderCircle className=" text-white stroke-3 stroke-white size-[70px] animate-spin" />
+                </div>
+              )}
+              <button onClick={() => nextSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigRight fill="white" className={` text-white ${!currentSongID || isLoading && ' pointer-events-none opacity-40'} size-[60px]`} />
               </button>
             </motion.div>
             <motion.div
@@ -787,7 +847,9 @@ export default function PlayBar() {
             </motion.div>
 
           </div>
-          <div className=" w-full backdrop-blur-lg pt-5 flex items-center justify-between z-[999] px-5 pb-5">
+          <div style={{
+            backdropFilter: !isLyric ? "blur(0px)" : "blur(16px)",
+          }} className=" w-full pt-5 flex items-center justify-between z-[999] px-5 pb-5">
             <button
               onClick={() => {
                 setIsLyric(!isLyric);
@@ -934,26 +996,25 @@ export default function PlayBar() {
                     >
                       <span
                         onClick={(e) => {
-                          router.push(`/artist/${currentSongDetails.artist}`);
+                          router.push(`/artist/${currentSongDetails.artistId}`);
                           e.stopPropagation();
                         }}
                         className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                       >
-                        {artistName || ""}
+                        {currentSongDetails.artistName || ""}
                       </span>
-                      {feats &&
-                        feats.length > 0 &&
-                        feats.map((feat, index) => (
+                      {currentSongDetails.feats && currentSongDetails.feats.length > 0 &&
+                        currentSongDetails.feats.map((feat, index) => (
                           <span
                             key={index}
                             onClick={(e) => {
-                              router.push(`/artist/${currentSongDetails.feats[index]}`);
+                              router.push(`/artist/${feat.id}`);
                               e.stopPropagation();
                             }}
                             className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                           >
                             {","}
-                            {feat}
+                            {feat.username}
                           </span>
                         ))}
                     </motion.div>
@@ -962,27 +1023,30 @@ export default function PlayBar() {
               </div>
             </div>
             <div className=" flex items-center z-20 justify-end w-[20%] h-full">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlay();
-                }}
-                className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
-              >
-                {action === "Play" ? (
-                  <Pause fill="white" size={30} className=" text-white" />
-                ) : (
-                  <Play size={30} className={` ${currentSongDetails.url ? " opacity-100 cursor-pointer" : " opacity-50 cursor-default"} text-white fill-white`} />
-                )}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlay();
-                }}
-                className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
-              >
-                <ArrowBigRight size={30} fill="white" className=" text-white" />
+              {!isLoading ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePlay();
+                  }}
+                  className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
+                >
+                  {action === "Play" ? (
+                    <Pause fill="white" className={` text-white ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[30px]`} />
+                  ) : (
+                    <Play fill="white" className={` text-white size-[30px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
+                  )}
+                </button>
+              ) : (
+                <div className=" rounded-full flex items-center justify-center">
+                  <LoaderCircle className=" text-white  size-[30px] stroke-3 stroke-white animate-spin" />
+                </div>
+              )}
+              <button onClick={(e) => {
+                nextSong();
+                e.stopPropagation();
+              }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigRight fill="white" className={` text-white ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'} size-[30px]`} />
               </button>
             </div>
           </div>
@@ -1017,6 +1081,12 @@ export default function PlayBar() {
               <AnimatePresence mode="wait">
                 <motion.img
                   key={"LyricCover"}
+                  animate={{
+                    scale: action === "Play" ? isMoved ? 1.2 : 1 : 0.8,
+                  }}
+                  transition={{
+                    ease: "easeInOut",
+                  }}
                   layoutId={"cover"}
                   className="rounded-lg bg-transparent size-auto max-h-[30rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
                   src={currentSongDetails.cover || "/albumPlaceholder.svg"}
@@ -1028,18 +1098,21 @@ export default function PlayBar() {
                   opacity: 0,
                 }} animate={{
                   opacity: 1,
+                  scale: action === "Play" ? isMoved ? 1.2 : 1 : 0.8,
+                  marginLeft: isMoved ? action === "Play" ? '7rem' : '-7rem' : action === "Play" ? 0 : "-7rem",
                 }} exit={{
                   opacity: 0,
                 }} transition={{
-                  delay: 0.2,
-                }} className=" max-w-[40rem] w-full max-h-[30rem] h-full overflow-auto">
+                  ease: "easeInOut",
+                }} className=" max-w-[40rem] w-full max-h-[30rem] relative h-full overflow-auto">
                   {currentSongDetails.lyric.lyric && currentSongDetails.lyric.lyric.length > 0 ? (
                     <SynchronizedLyrics
+                      audioRef={audioRef as React.RefObject<HTMLAudioElement>}
                       lyrics={currentSongDetails.lyric.lyric}
                       currentTime={formatTimeToSeconds(currentTime)}
                       setCurrentTime={(time: number) => {
                         console.log("Setting current time:", time);
-                        if (audioRef.current) {
+                        if (audioRef.current && !audioRef.current.paused) {
                           audioRef.current.currentTime = time;
                         }
                         setCurrentTime(formatSecondsToTime(time));
@@ -1094,7 +1167,10 @@ export default function PlayBar() {
             layoutId={"cover"}
             animate={{
               opacity: isLyric || isBlended ? 0 : 1,
-              scale: action === "Play" ? 1 : 0.8,
+              scale: action === "Play" ? isMoved ? 1.5 : 1 : 0.8,
+            }}
+            transition={{
+              ease: "easeInOut",
             }}
             className="rounded-lg bg-transparent size-auto absolute top-0 bottom-0 my-[13rem] left-0 right-0 mx-auto max-h-[30rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/80"
             src={currentSongDetails.cover || "/albumPlaceholder.svg"}
@@ -1102,8 +1178,12 @@ export default function PlayBar() {
             width={600}
             height={600}
           />
-          <div className=" z-10 w-full h-max backdrop-blur-lg flex flex-col space-y-8 px-10 pb-10">
-            <div>
+          <div className=" z-10 w-full h-max  flex flex-col space-y-8 p-10">
+            <motion.div animate={{
+              y: !isMoved ? 0 : 170,
+            }} transition={{
+              ease: "easeInOut",
+            }}>
               <h1 className=" text-7xl font-semibold">
                 {currentSongDetails.title || ""}
               </h1>
@@ -1113,31 +1193,35 @@ export default function PlayBar() {
                 )}
                 <span
                   onClick={(e) => {
-                    router.push(`/artist/${currentSongDetails.artist}`);
+                    router.push(`/artist/${currentSongDetails.artistId}`);
                     e.stopPropagation();
                   }}
                   className="text-white/50 hover:underline cursor-pointer hover:text-white transition-colors"
                 >
-                  {artistName || ""}
+                  {currentSongDetails.artistName || ""}
                 </span>
-                {feats &&
-                  feats.length > 0 &&
-                  feats.map((feat, index) => (
+                {currentSongDetails.feats && currentSongDetails.feats.length > 0 &&
+                  currentSongDetails.feats.map((feat, index) => (
                     <span
                       key={index}
                       onClick={(e) => {
-                        router.push(`/artist/${currentSongDetails.feats[index]}`);
+                        router.push(`/artist/${feat.id}`);
                         e.stopPropagation();
                       }}
-                      className="text-white/50 hover:underline cursor-pointer hover:text-white transition-colors"
+                      className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                     >
                       {","}
-                      {feat}
+                      {feat.username}
                     </span>
                   ))}
               </div>
-            </div>
-            <div>
+            </motion.div>
+            <motion.div animate={{
+              opacity: !isMoved ? 1 : 0,
+              y: !isMoved ? 0 : 200,
+            }} transition={{
+              ease: "easeInOut",
+            }}>
               <Slider
                 className=" w-full "
                 isThumb={false}
@@ -1146,7 +1230,14 @@ export default function PlayBar() {
                 min={0}
                 onValueChange={(value) => {
                   if (audioRef.current) {
+                    const wasPlaying = !audioRef.current.paused;
+                    if (wasPlaying) {
+                      audioRef.current.pause();
+                    }
                     audioRef.current.currentTime = value[0];
+                    if (wasPlaying) {
+                      audioRef.current.play();
+                    }
                   }
                   setCurrentTime(formatSecondsToTime(value[0]));
                 }}
@@ -1159,8 +1250,13 @@ export default function PlayBar() {
                 </p>
                 <p className=" text-xs text-white/50 font-medium">{formatSecondsToTime(formatTimeToSeconds(currentSongDetails.duration))}</p>
               </div>
-            </div>
-            <div className=" flex items-center justify-center w-full gap-x-5">
+            </motion.div>
+            <motion.div animate={{
+              opacity: !isMoved ? 1 : 0,
+              y: !isMoved ? 0 : 200,
+            }} transition={{
+              ease: "easeInOut",
+            }} className=" flex items-center justify-center w-full gap-x-5">
               <button onClick={() => {
                 setIsShuffled(!isShuffled);
               }} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
@@ -1170,23 +1266,29 @@ export default function PlayBar() {
                   <Shuffle size={40} className=" text-white opacity-40" />
                 )}
               </button>
-              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigLeft fill="white" size={60} className=" text-white opacity-40" />
+              <button onClick={() => prevSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigLeft fill="white" className={` text-white size-[60px] ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'}`} />
               </button>
-              <button
-                onClick={() => {
-                  handlePlay();
-                }}
-                className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
-              >
-                {action === "Play" ? (
-                  <Pause fill="white" size={80} className=" text-white" />
-                ) : (
-                  <Play fill="white" size={80} className=" text-white" />
-                )}
-              </button>
-              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigRight fill="white" size={60} className=" text-whiteopacity-40" />
+              {!isLoading ? (
+                <button
+                  onClick={() => {
+                    handlePlay();
+                  }}
+                  className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
+                >
+                  {action === "Play" ? (
+                    <Pause fill="white" className={` text-white  ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[80px]`} />
+                  ) : (
+                    <Play fill="white" className={` text-white size-[80px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
+                  )}
+                </button>
+              ) : (
+                <div className=" rounded-full flex items-center justify-center">
+                  <LoaderCircle className=" text-white size-[80px] stroke-3 stroke-white animate-spin" />
+                </div>
+              )}
+              <button onClick={() => nextSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigRight fill="white" className={` text-white ${!currentSongID.url || isLoading && ' pointer-events-none opacity-40'} size-[60px]`} />
               </button>
               <button onClick={() => {
                 if (isLooped === "false") {
@@ -1205,9 +1307,14 @@ export default function PlayBar() {
                   <Repeat1 size={40} className={` text-white`} />
                 )}
               </button>
-            </div>
+            </motion.div>
           </div>
-          <div className=" w-full h-max absolute z-[100] space-x-4 top-4 flex items-center justify-center">
+          <motion.div animate={{
+            opacity: !isMoved ? 1 : 0,
+            y: !isMoved ? 0 : -200,
+          }} transition={{
+            ease: "easeInOut",
+          }} className=" w-full h-max absolute z-[100] space-x-4 top-4 flex items-center justify-center">
             <button
               onClick={() => {
                 setIsLyric(!isLyric);
@@ -1282,15 +1389,15 @@ export default function PlayBar() {
             >
               <Minimize2 size={25} className={` transition-opacity `} />
             </button>
-          </div>
+          </motion.div>
         </motion.main >
-        <main className=" w-full fixed bottom-0 p-2 space-x-[5%] justify-between z-[51] border-t border-zinc-800 items-center flex h-[6rem] bg-black">
+        <main className=" w-full fixed bottom-0 p-2 left-0 pl-2 space-x-[5%] justify-between z-[51] items-center flex h-[6rem] bg-black">
           {currentSongDetails.url && <audio src={currentSongDetails.url} autoPlay ref={audioRef}></audio>}
           <div className=" flex items-center w-[70%] max-w-[25rem] relative gap-x-2">
             <div className=" h-full w-5 absolute right-0 top-0 bg-gradient-to-l from-black z-50" />
             {currentSongDetails.cover ? (
               <Image
-                className=" rounded-md size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+                className=" rounded-xl size-[4.5rem] shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
                 src={currentSongDetails.cover}
                 alt="cover"
                 unoptimized
@@ -1354,24 +1461,24 @@ export default function PlayBar() {
                   >
                     <span
                       onClick={() => {
-                        router.push(`/profile/${currentSongDetails.artist}`);
+                        router.push(`/profile/${currentSongDetails.artistId}`);
                       }}
                       className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                     >
-                      {artistName || ""}
+                      {currentSongDetails.artistName || ""}
                     </span>
-                    {feats &&
-                      feats.length > 0 &&
-                      feats.map((feat, index) => (
+                    {currentSongDetails.feats && currentSongDetails.feats.length > 0 && currentSongID.url &&
+                      currentSongDetails.feats.map((feat, index) => (
                         <span
                           key={index}
-                          onClick={() => {
-                            router.push(`/profile/${currentSongDetails.feats[index]}`);
+                          onClick={(e) => {
+                            router.push(`/artist/${feat.id}`);
+                            e.stopPropagation();
                           }}
                           className="text-white/50 hover:underline hover:text-white transition-colors text-xs"
                         >
                           {","}
-                          {feat}
+                          {feat.username}
                         </span>
                       ))}
                   </motion.div>
@@ -1396,23 +1503,29 @@ export default function PlayBar() {
                   </Tooltip>
                 </TooltipProvider>
               </button>
-              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigLeft fill="white" className=" text-white md:size-[28px] opacity-40 size-[24px]" />
+              <button onClick={() => prevSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigLeft fill="white" className={` text-white md:size-[28px] size-[24px] ${(!currentSongID || isLoading) && ' pointer-events-none opacity-40'}`} />
               </button>
-              <button
-                onClick={() => {
-                  handlePlay();
-                }}
-                className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
-              >
-                {action === "Play" ? (
-                  <Pause fill="white" className=" text-white md:size-[36px] size-[24px]" />
-                ) : (
-                  <Play fill="white" className=" text-white md:size-[36px] size-[24px]" />
-                )}
-              </button>
-              <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                <ArrowBigRight fill="white" className=" text-white md:size-[28px] opacity-40 size-[24px]" />
+              {!isLoading ? (
+                <button
+                  onClick={() => {
+                    handlePlay();
+                  }}
+                  className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center"
+                >
+                  {action === "Play" ? (
+                    <Pause fill="white" className={` text-white md:size-[36px] ${!currentSongID.url && ' pointer-events-none opacity-40'} size-[24px]`} />
+                  ) : (
+                    <Play fill="white" className={` text-white md:size-[36px] size-[24px] ${!currentSongID.url && ' pointer-events-none opacity-40'}`} />
+                  )}
+                </button>
+              ) : (
+                <div className=" rounded-full flex items-center justify-center">
+                  <LoaderCircle className=" text-white  md:size-[36px] stroke-3 stroke-white size-[24px] animate-spin" />
+                </div>
+              )}
+              <button onClick={() => nextSong()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                <ArrowBigRight fill="white" className={` text-white md:size-[28px] ${(!currentSongID.url || isLoading) && ' pointer-events-none opacity-40'} size-[24px]`} />
               </button>
               <TooltipProvider>
                 <Tooltip>
@@ -1459,7 +1572,14 @@ export default function PlayBar() {
                 min={0}
                 onValueChange={(value) => {
                   if (audioRef.current) {
+                    const wasPlaying = !audioRef.current.paused;
+                    if (wasPlaying) {
+                      audioRef.current.pause();
+                    }
                     audioRef.current.currentTime = value[0];
+                    if (wasPlaying) {
+                      audioRef.current.play();
+                    }
                   }
                   setCurrentTime(formatSecondsToTime(value[0]));
                 }}

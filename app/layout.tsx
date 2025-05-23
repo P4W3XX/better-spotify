@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
 
-      <body className={`${poppins.className}  w-full flex h-full overflow-hidden`}>
+      <body className={`${poppins.className}  w-full md:bg-black bg-background flex h-full overflow-hidden`}>
         <UseLoginToken>
           <Toaster />
           <AlbumCoverShow />

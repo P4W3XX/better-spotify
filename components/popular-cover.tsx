@@ -1,3 +1,4 @@
+
 export default function PopularCover({
     genre,
     cover,
@@ -5,7 +6,7 @@ export default function PopularCover({
     genre: string
     cover?: string
 }) {
-    return (
+    return  (
         <div className="
           flex flex-col w-full
           relative group cursor-pointer

@@ -9,17 +9,20 @@ from django.utils import timezone
 from django.db.models import Count, Sum, F
 from django.conf import settings
 from .utils import get_dominant_color, create_collage
-from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem
+from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem, PlaybackHistory
+from django.contrib.contenttypes.models import ContentType
 
 BASE_URL = "http://127.0.0.1:8000"
 
 class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
+    artist_username = serializers.CharField(source='album.artist.username', read_only=True)
+
     plays_test = serializers.SerializerMethodField()
     class Meta:
         model = Song
         fields = [
-            'id', 'album', 'artist', 'title', 'duration', 
+            'id', 'album', 'artist', 'artist_username', 'title', 'duration', 
             'file', 'lyrics', 'track_number', 'plays', 'genre',
             'is_indecent', 'featured_artists', 'plays_test'
         ]
@@ -112,6 +115,15 @@ class SongSerializer(serializers.ModelSerializer):
         representation = super().to_representation(instance)
         # if self.playlist:
         representation['cover'] = BASE_URL + instance.album.image.url if instance.album.image else None
+        featured_artists = instance.featured_artists.all()
+        representation['featured_artists'] = []
+        for artist in featured_artists:
+            representation['featured_artists'].append({
+                'id': artist.id,
+                'username': artist.username
+            })
+
+
         return representation
 
 
@@ -123,12 +135,13 @@ class AlbumSerializer(serializers.ModelSerializer):
     songs = serializers.SerializerMethodField()
     album_duration = serializers.SerializerMethodField()
     total_plays = serializers.SerializerMethodField()
-    # theme = serializers.SerializerMethodField()
+    artist_username = serializers.CharField(source='artist.username', read_only=True)
+    artist_cover = serializers.SerializerMethodField()
 
     class Meta:
         model = Album
         fields = [
-            'id', 'title', 'album_type', 'artist', 'image', 
+            'id', 'title', 'album_type', 'artist', 'artist_username', 'artist_cover', 'image', 
             'release_date', 'album_duration', 'theme',
             'total_plays', 'songs'
         ]
@@ -143,15 +156,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         if nested:
             self.fields.pop('artist')
             self.fields.pop('songs')
-
-    # @extend_schema_field(serializers.CharField)
-    # def get_theme(self, obj):
-    #     if obj.image:
-    #         image_path = obj.image.path
-    #         if os.path.exists(image_path):
-    #             dominant_color = get_dominant_color(image_path)
-    #             return dominant_color
-    #     return None
     
 
     @extend_schema_field(serializers.ListField)
@@ -164,13 +168,6 @@ class AlbumSerializer(serializers.ModelSerializer):
         total_time = datetime.timedelta(0)
         for song in obj.songs.all():
             total_time += song.duration
-
-        # total_seconds = total_time.total_seconds()
-        # hours = total_seconds // 3600
-        # minutes = (total_seconds % 3600) // 60
-        # seconds = total_seconds % 60
-
-        # return f"{int(hours)}:{int(minutes)}:{int(seconds)}"
         return str(total_time)
 
     @extend_schema_field(serializers.IntegerField)
@@ -224,26 +221,42 @@ class AlbumSerializer(serializers.ModelSerializer):
         return instance
     
 
+    def get_artist_cover(self, obj):
+        if obj.artist.image:
+            return BASE_URL + obj.artist.image.url
+        return None
+
 
 
 
 
 
 class ArtistSerializer(serializers.ModelSerializer):
-    albums = serializers.SerializerMethodField()
     top_songs = serializers.SerializerMethodField()
     number_of_listeners = serializers.SerializerMethodField()
     number_of_popularity = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'albums', 'top_songs']
+        fields = ['id', 'username', 'image', 'type', 'number_of_listeners', 'number_of_popularity', 'number_of_followers', 'albums', 'top_songs']
 
     def __init__(self, *args, **kwargs):
+        self.nested = kwargs.pop('nested', False)
         super().__init__(*args, **kwargs)
 
         if self.context.get('many', False):
             self.fields.pop('top_songs')
+
+        if self.nested:
+            self.fields.pop('albums')
+            self.fields.pop('number_of_listeners')
+            self.fields.pop('number_of_popularity')
+            self.fields.pop('number_of_followers')
+            self.fields.pop('type')
+            self.fields.pop('top_songs')
+
+        
+
 
     @extend_schema_field(serializers.IntegerField)
     def get_number_of_listeners(self, obj):
@@ -271,12 +284,6 @@ class ArtistSerializer(serializers.ModelSerializer):
                 break
         
         return number_popularity
-    
-
-    @extend_schema_field(serializers.ListField)
-    def get_albums(self, obj):
-        return AlbumSerializer(obj.albums, many=True, nested=True, context=self.context).data
-    
     
     @extend_schema_field(serializers.ListField)
     def get_top_songs(self, obj):
@@ -312,8 +319,7 @@ class ArtistSerializer(serializers.ModelSerializer):
             albums = instance.albums.all().order_by('-release_date')
 
         representation = super().to_representation(instance)
-        representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
-
+        
         if instance.type != 'artist':# or self.context.get('many', False):
             representation.pop('albums', None)
 
@@ -328,6 +334,29 @@ class ArtistSerializer(serializers.ModelSerializer):
         if instance.type == 'listener':
             representation.pop('number_of_listeners')
             representation.pop('number_of_popularity')
+
+
+        if request := self.context.get('request'):
+            try:
+                if instance in request.user.followed_artists.all():
+                    representation['is_followed'] = True
+                else:
+                    representation['is_followed'] = False
+
+                if instance == request.user:
+                    representation.pop('is_followed', None)
+            except AttributeError:
+                representation['is_followed'] = False    
+
+
+        view = self.context.get('view')
+        if view and getattr(view, 'action', None) == 'list':
+            pass
+        elif view and getattr(view, 'action', None) == 'retrieve':
+            representation['albums'] = AlbumSerializer(albums, many=True, nested=True, context=self.context).data
+        
+        if self.nested:
+            representation.pop('albums', None)
         
         return representation
     
@@ -345,6 +374,7 @@ class PlaybackActionSerializer(serializers.Serializer):
 
 
 class CurrentPlaybackSerializer(serializers.ModelSerializer):
+    song = SongSerializer(nested=True)
     class Meta:
         model = CurrentPlayback
         fields = [
@@ -532,3 +562,47 @@ class LibrarySerializer(serializers.ModelSerializer):
     class Meta:
         model = Library
         fields = ['id', 'user', 'items']
+
+
+class PlaybackHistorySerializer(serializers.ModelSerializer):
+    content_object = serializers.SerializerMethodField()
+    content_type = serializers.CharField()
+
+    class Meta:
+        model = PlaybackHistory
+        fields = ['id', 'played_at', 'content_type', 'object_id', 'content_object']
+
+    def get_content_object(self, obj):
+        if isinstance(obj.content_object, Album):
+            return AlbumSerializer(obj.content_object, nested=True, context=self.context).data
+        elif isinstance(obj.content_object, Playlist):
+            return PlaylistSerializer(obj.content_object, nested=True, context=self.context).data
+        return None
+    
+
+    def create(self, validated_data):
+        content_type = validated_data.pop('content_type', None)
+
+        if content_type.lower() == 'album':
+            content_type = ContentType.objects.get_for_model(Album)
+        elif content_type.lower() == 'playlist':
+            content_type = ContentType.objects.get_for_model(Playlist)
+        elif content_type.lower() == 'profile':
+            content_type = ContentType.objects.get_for_model(CustomUser)
+        else:
+            raise serializers.ValidationError("Invalid content type")
+
+        if not content_type:
+            raise serializers.ValidationError("Missing content_type")
+
+        return PlaybackHistory.objects.create(
+            user=self.context.get('request').user,
+            content_type=content_type,
+            object_id=validated_data['object_id']
+        )
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['content_type'] = instance.content_type.model
+
+        return representation

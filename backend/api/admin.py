@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Album, Song, CustomUser, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem
+from .models import Album, Song, CustomUser, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem, PlaybackHistory
 
 from accounts.forms import CustomUserCreationForm, CustomUserChangeForm
 from django.contrib.auth.admin import UserAdmin
@@ -13,6 +13,7 @@ admin.site.register(Playlist)
 admin.site.register(PlaylistSong)
 admin.site.register(Library)
 admin.site.register(LibraryItem)
+admin.site.register(PlaybackHistory)
 
 # admin.site.register(CustomUser)
 
@@ -23,7 +24,7 @@ class CustomAdminUser(UserAdmin):
 
     model = CustomUser
 
-    list_display = ('email', 'username', 'type', 'is_staff', 'is_active')
+    list_display = ('email', 'username', 'type', 'is_staff', 'is_active',)
     list_filter = ('is_staff', 'is_active', 'type')
     ordering = ('email',)
 
