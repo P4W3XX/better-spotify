@@ -227,8 +227,9 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
             featsState && featsState.length > 0 && (
               <span onClick={(e) => {
                 e.stopPropagation();
-                if (artistId) {
-                  router.push(`/profile/${artistId}`);
+                if (artistId && featsState && featsState.length > 0) {
+                  // Navigate to the first feat artist's profile (adjust as needed)
+                  router.push(`/profile/${feats && feats.length > 0 ? feats[0] : ''}`);
                 } else {
                   router.push(`/profile/${artist}`);
                 }

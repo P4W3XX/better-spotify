@@ -2,7 +2,6 @@
 import ItemCover from "@/components/item-cover";
 import { useEffect, useState } from "react";
 import axios from "axios";
-
 interface Item {
   id: number;
   title: string;
