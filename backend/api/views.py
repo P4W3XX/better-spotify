@@ -322,17 +322,18 @@ class TopSongsAPIView(APIView):
         result = defaultdict(list)
 
         for entry in top_songs:
-            genre = entry['genre_label']
-            result[genre].append({
+            genre_label = entry['genre_label']
+            result[genre_label].append({
                 'song': entry['song__id'],
                 'play_count': entry['play_count']
             })
 
         grouped_result = dict(result)
+        print('Grouped Result: ', grouped_result)
 
 
         data = []
-        for genre, value in grouped_result.items():
+        for genre_items, value in grouped_result.items():
             songs_data = []
             for song in value:
                 song_obj = SongSerializer(Song.objects.get(id=song['song']), context={'request': request}).data
@@ -341,26 +342,17 @@ class TopSongsAPIView(APIView):
 
                 # song_obj.pop('plays')
 
-                # song_obj['play_count'] = song.pop('play_count')
                 songs_data.append(song_obj)
-            data1 = {}
+
+            detail_data = {}
             
-            data1['genre'] = genre
-            data1['cover'] = BASE_URL + CustomUser.objects.get(id=songs_data[0]['artist']).get_image_url if songs_data[0]['artist'] else ""
-            data1['songs'] = songs_data
-            data.append(data1)
+            detail_data['genre'] = genre_items
+            detail_data['cover'] = BASE_URL + CustomUser.objects.get(id=songs_data[0]['artist']).get_image_url if songs_data[0]['artist'] else ""
+            if genre:
+                detail_data['songs'] = songs_data
+            data.append(detail_data)
 
         return Response(data)
-    
-    def get_permissions(self):
-        genre = self.kwargs.get('genre', None)
-
-        if genre:
-            # If genre is provided allow any user to access
-            return [AllowAny()]
-        else:
-            # If genre is not provided restrict access to admin users
-            return [IsAdminUser()]
     
 
 class UserPlaylistViewSet(viewsets.ModelViewSet):
