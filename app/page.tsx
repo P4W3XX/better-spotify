@@ -2,12 +2,12 @@
 import ItemCover from "@/components/item-cover";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+
 import Chip from "@/components/chip";
 import { AnimatePresence, motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import WelcomeBack from "@/components/welcomeBack";
-
 
 interface Item {
   id: number;
