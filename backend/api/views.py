@@ -2,7 +2,7 @@ from rest_framework import filters, viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 
 from django.db.models import Q, F
 from django_filters.rest_framework import DjangoFilterBackend
@@ -317,8 +317,8 @@ class TopSongsAPIView(APIView):
             }
         }
     )
-    def get(self, request):
-        top_songs = list(get_top_songs_last_month())
+    def get(self, request, genre=None):
+        top_songs = list(get_top_songs_last_month(10, genre))
         result = defaultdict(list)
 
         for entry in top_songs:
@@ -339,8 +339,9 @@ class TopSongsAPIView(APIView):
                 song_obj.pop('lyrics')
                 song_obj.pop('genre')
 
-                song_obj.pop('plays')
-                #song_obj['play_count'] = song.pop('play_count')
+                # song_obj.pop('plays')
+
+                # song_obj['play_count'] = song.pop('play_count')
                 songs_data.append(song_obj)
             data1 = {}
             
@@ -350,6 +351,16 @@ class TopSongsAPIView(APIView):
             data.append(data1)
 
         return Response(data)
+    
+    def get_permissions(self):
+        genre = self.kwargs.get('genre', None)
+
+        if genre:
+            # If genre is provided allow any user to access
+            return [AllowAny()]
+        else:
+            # If genre is not provided restrict access to admin users
+            return [IsAdminUser()]
     
 
 class UserPlaylistViewSet(viewsets.ModelViewSet):

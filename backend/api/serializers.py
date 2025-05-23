@@ -18,20 +18,20 @@ class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
     artist_username = serializers.CharField(source='album.artist.username', read_only=True)
 
-    plays_test = serializers.SerializerMethodField()
+    plays = serializers.SerializerMethodField()
     class Meta:
         model = Song
         fields = [
             'id', 'album', 'artist', 'artist_username', 'title', 'duration', 
             'file', 'lyrics', 'track_number', 'plays', 'genre',
-            'is_indecent', 'featured_artists', 'plays_test'
+            'is_indecent', 'featured_artists'
         ]
         extra_kwargs = {
             'duration': {'read_only': True},
         }
 
     @extend_schema_field(serializers.IntegerField)
-    def get_plays_test(self, obj):
+    def get_plays(self, obj):
         songs = SongPlayback.objects.filter(song=obj).count()
         return songs
 
