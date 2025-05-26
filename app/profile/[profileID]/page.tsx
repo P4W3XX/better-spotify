@@ -2,7 +2,7 @@
 import ItemCover from "@/components/item-cover";
 import { SongPreview } from "@/components/song-preview";
 import axios from "axios";
-import { Ellipsis, Music, CirclePlus, Share, Plus, ListMusic } from "lucide-react";
+import { Ellipsis, Music } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -41,6 +41,7 @@ interface ArtistInfo {
   cover: string;
   type: string;
   albums: AlbumInfo[];
+  numerOfListeners?: number;
   top_songs: SongInfo[];
   number_of_listeners: number;
 }
@@ -67,8 +68,6 @@ export default function Profile() {
   const action = useCurrentSongStore((state) => state.action);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const [width, setWidth] = useState(0);
-  const [following, setFollowing] = useState(false);
-  const accessToken = useTokenStore((state) => state.accessToken);
 
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo>({
     id: "",
@@ -94,6 +93,9 @@ export default function Profile() {
     };
   }, []);
 
+  {
+    /*   useEffect(() => {
+=======
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -183,7 +185,6 @@ export default function Profile() {
           type: artistResponse.data.type,
           numerOfListeners: artistResponse?.data.number_of_listeners,
           albums: artistResponse.data.albums?.map((album: AlbumInfo) => ({
-          albums: artistResponse.data.albums?.map((album: AlbumInfo) => ({
             title: album.title,
             cover: album.cover,
             id: album.id,
@@ -201,7 +202,7 @@ export default function Profile() {
           number_of_listeners: artistResponse.data.number_of_listeners,
         });
 
-        if (artistResponse?.data?.albums) {
+        if (artistResponse.data.albums) {
           const albumResponse = await axios.get(
             `http://127.0.0.1:8000/api/albums/${artistResponse?.data?.albums[0].id}/`
           );
@@ -216,7 +217,7 @@ export default function Profile() {
             albumDuration: albumResponse?.data.album_duration,
             theme: albumResponse?.data.theme,
             totalPlays: albumResponse?.data.total_plays,
-            songs: albumResponse?.data.songs?.map((song: SongInfo) => ({
+            songs: albumResponse?.data?.songs?.map((song: SongInfo) => ({
               title: song.title,
               artist: song.artist,
               cover: song.cover || "/slabiak2.jpg",
@@ -247,6 +248,16 @@ export default function Profile() {
         </div>
         <div className="w-[40rem] h-[7rem] bg-gray-300 rounded-lg mt-4 animate-pulse"></div>
         <div className="w-[20rem] h-[1.5rem] bg-gray-300 rounded-lg mt-4 animate-pulse"></div>
+        <div className="w-full flex flex-row pt-10 items-center justify-start gap-x-3">
+          <div className="w-[5rem] h-[5rem] rounded-full bg-gray-300 animate-pulse"></div>
+          <div className="w-[4rem] h-[3rem] rounded-full bg-gray-300 animate-pulse"></div>
+          <div className="w-[7rem] h-[2rem] rounded-full bg-gray-300 animate-pulse"></div>
+          <div className="flex flex-row gap-x-1">
+            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
+            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
+            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
+          </div>
+        </div>
       </main>
     );
   }
@@ -258,7 +269,6 @@ export default function Profile() {
   console.log("Artist Info:", artistInfo);
 
   console.log("Album Info:", artistInfo.albums);
-
 
   return (
     <>
@@ -315,6 +325,13 @@ export default function Profile() {
             style={{ backgroundImage: `url(${artistInfo.cover})` }}
             className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-cover bg-top"
           >
+            <div className="flex flex-row pt-8 w-full justify-start items-center gap-x-3 md:pt-30 pt-65">
+              <VscVerifiedFilled
+                className={`w-[2rem] h-[2rem] ${
+                  width > 920 ? "block" : "hidden"
+                }`}
+              />
+            </div>
             <div className="flex flex-row w-full justify-start items-center gap-x-3 md:pt-30 pt-8">
               <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width > 920 ? "block" : "hidden"}`} />
               <h3 className={`text-md ${width > 920 ? "block" : "hidden"}`}>
@@ -332,7 +349,7 @@ export default function Profile() {
               {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
           </div>
-          <div className="sticky pt-10 flex flex-row gap-x-6 items-center justify-start bg-cyan-950 w-full px-4 py-4">
+          <div className="sticky top-0 flex flex-row gap-x-6 items-center justify-start bg-cyan-950 w-full px-4 py-4">
             <button
               onClick={() => {
                 if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
@@ -379,13 +396,11 @@ export default function Profile() {
             </button>
             <Shuffle className=" text-gray-500 w-[2rem] h-[2rem] hover:brightness-150  hover:scale-105 cursor-pointer" />
             <button className="border-1 text-gray-300 border-gray-500 rounded-xl text-sm font-medium py-1 px-4 hover:brightness-150  hover:scale-105 cursor-pointer"
-              onClick={toggleFollow}
             >
               {/* Obserwuj */}
-              {following ? "Obserwujesz" : "Obserwuj"}
+              { "Obserwuj"}
             </button>
-            <MoreInfo />
-
+            <Ellipsis className="w-[2rem] h-[2rem] text-gray-500 hover:brightness-150  hover:scale-105 cursor-pointer" />
           </div>
           <aside className="bg-gradient-to-t from-black to-cyan-950 flex flex-col w-full h-[20rem] gap-y-3 px-4">
             <h2 className="text-3xl font-semibold mt-6">Popularne</h2>
