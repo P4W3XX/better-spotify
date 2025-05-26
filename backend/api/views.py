@@ -1,7 +1,7 @@
 from rest_framework import filters, viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from django.db.models import Q, F
@@ -10,15 +10,18 @@ from django.contrib.postgres.search import TrigramSimilarity
 from django.db.models.functions import Greatest
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
 
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
 from .utils import get_top_songs_last_month, create_collage
-from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library
+from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library, PlaybackHistory
+
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
                           CurrentPlaybackSerializer, PlaybackActionSerializer, UserPlaybackHistorySerializer, 
                           PlaylistSerializer,
-                          LibraryItemSerializer, LibrarySerializer
+                          LibraryItemSerializer, LibrarySerializer,
+                          PlaybackHistorySerializer
                           )
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -253,8 +256,11 @@ class PlaybackControlAPIView(APIView):
         current_playback = CurrentPlayback.objects.get(user=request.user)
         if current_playback.song:
             data = CurrentPlaybackSerializer(current_playback).data
-            return Response({"data": data, "status": "Playing"})
-        return Response({"status": "Stopped / Not playing any song"})
+            if current_playback.is_paused:
+                return Response({"data": data, "status": "Paused"})
+            else:
+                return Response({"data": data, "status": "Playing"})
+        return Response({"status": "Not playing any song"})
     
 
 
@@ -269,10 +275,14 @@ class UserPlaybackHistoryAPIView(APIView):
     )
     def get(self, request):
         user = request.user
-        playback_history = SongPlayback.objects.filter(user=user).order_by('-played_at')
-        serializer = UserPlaybackHistorySerializer(playback_history, many=True, context={'request': request})
-        return Response(serializer.data)
+        last_month = timezone.now() - timezone.timedelta(days=30)
+        playback_history = SongPlayback.objects.filter(user=user, played_at__gte=last_month).select_related('user', 'song').order_by('-played_at')
+        paginator = LimitOffsetPagination()
+        paginator.default_limit = 10
+        result_page = paginator.paginate_queryset(playback_history, request)
 
+        serializer = UserPlaybackHistorySerializer(result_page, many=True, context={'request': request})
+        return paginator.get_paginated_response(serializer.data)
 
 
 class TopSongsAPIView(APIView):
@@ -511,3 +521,47 @@ class ModifyLibraryAPIView(APIView):
                 pass
 
         return Response({"status": "success"})
+    
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter('user_id', type=int, description='ID of the artist to follow/unfollow'),
+    ],
+    request=None,
+    responses={
+        200: {
+            'status': {'type': 'string'},
+        },
+    }
+)
+class ToggleFollowAPIView(APIView):
+    permission_classes = [IsAuthenticated,]
+
+    def post(self, request):
+        user_id = request.data.get('user_id', None)
+
+        if not user_id:
+            return Response({"error": "user_id are required"}, status=400)
+
+        try:
+            artist = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "Artist not found"}, status=404)
+
+        request.user.follow(artist)
+        if artist in request.user.followed_artists.all():
+            return Response({"status": "Following"})
+        else:
+            return Response({"status": "Unfollowed"})
+        
+
+
+class PlaybackHistoryViewSet(viewsets.ModelViewSet):
+    queryset = PlaybackHistory.objects.all()
+    serializer_class = PlaybackHistorySerializer
+    permission_classes = [IsAuthenticated,]
+
+    def get_queryset(self):
+        user = self.request.user
+        return PlaybackHistory.objects.filter(user=user)

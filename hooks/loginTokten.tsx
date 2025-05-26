@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { useTokenStore } from '@/store/token';
 
@@ -56,6 +56,11 @@ export default function UseLoginToken({ children }: { children: React.ReactNode 
     </>
     )
     return (
-        children
+        <AnimatePresence mode='wait'>
+            <motion.div layout className=' w-full h-full flex md:pt-2 md:gap-x-2 md:pr-2'>
+                {children}
+            </motion.div >
+        </AnimatePresence>
+
     )
 }

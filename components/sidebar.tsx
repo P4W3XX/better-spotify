@@ -14,7 +14,7 @@ export default function Sidebar() {
 
   if (pathname === "/login" || pathname === '/register') return null;
   return (
-    <main className=" fixed md:relative z-50 bottom-0 md:p-3 md:flex-col md:max-w-[5rem] md:min-w-[5rem] lg:min-w-[18rem] lg:max-w-[18rem] md:border-r md:h-svh flex items-center justify-between px-10 w-full h-[4rem] bg-black">
+    <main className=" fixed md:relative rounded-xl z-50 md:h-[calc(100svh-6.5rem)] h-full max-h-[5rem] md:max-h-svh bottom-0 md:p-3 md:flex-col md:max-w-[5rem] md:min-w-[5rem] lg:min-w-[18rem] lg:max-w-[18rem] bg-black flex items-center justify-between px-10 w-full md:bg-background/75">
       <div className=" w-full flex md:flex-col gap-y-3 justify-between">
         <button
           onClick={() => {
@@ -24,7 +24,7 @@ export default function Sidebar() {
             } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/10 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-3 md:justify-start`}
         >
           <House
-            fill={pathname === "/" ? "white" : "#0a0a0a"}
+            fill={pathname === "/" ? "white" : "#131313"}
             size={30}
             className={` transition-colors md:stroke-3 ${pathname === "/" ? "stroke-white" : "stroke-neutral-500"
               }`}

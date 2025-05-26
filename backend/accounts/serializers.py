@@ -2,11 +2,21 @@ from rest_framework import serializers
 from api.models import CustomUser
 from django.contrib.auth import authenticate
 from django.templatetags.static import static
+from datetime import timedelta
+from django.utils import timezone
+from api.models import SongPlayback, Song
+from django.db.models import Count
+from api.serializers import SongSerializer, ArtistSerializer
 
 class CustomUserSerializer(serializers.ModelSerializer):
+    top_listened_songs = serializers.SerializerMethodField()
+    followed_artists = ArtistSerializer(many=True, read_only=True, nested=True)
+
+    #get followed artists
+
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'type', 'image']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'number_of_followed_artists', 'number_of_followers', 'type', 'image', 'followed_artists', 'top_listened_songs']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -19,6 +29,24 @@ class CustomUserSerializer(serializers.ModelSerializer):
                 representation['image'] = static('default.jpg')
 
         return representation
+    
+
+    def get_top_listened_songs(self, obj):
+        last_month = timezone.now() - timedelta(days=30)
+        songs_ids = SongPlayback.objects.filter(
+            user=obj,
+            played_at__gte=last_month
+        ).values(
+            'song__id'
+        ).annotate(
+            play_count=Count('id')
+        ).order_by('-play_count')[:10]
+
+        songs = Song.objects.filter(id__in=[song['song__id'] for song in songs_ids])
+        serializer = SongSerializer(songs, many=True, context=self.context, nested=True)
+        return serializer.data
+
+
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

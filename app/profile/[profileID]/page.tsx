@@ -2,13 +2,14 @@
 import ItemCover from "@/components/item-cover";
 import { SongPreview } from "@/components/song-preview";
 import axios from "axios";
-import { Ellipsis, Music } from "lucide-react";
+import { Ellipsis, Music, CirclePlus, Share, Plus, ListMusic } from "lucide-react";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { VscVerifiedFilled } from "react-icons/vsc";
 import { Pause, Play, Shuffle } from "lucide-react";
 import { useCurrentSongStore } from "@/store/current-song";
+import { useTokenStore } from "@/store/token";
 
 interface AlbumInfo {
   title: string;
@@ -29,7 +30,7 @@ interface SongInfo {
   cover: string;
   duration: string;
   plays: number;
-  featured_artists: string[];
+  featured_artists: [{ id: number; username: string }];
   isCover: boolean;
   id: string;
 }
@@ -40,7 +41,8 @@ interface ArtistInfo {
   cover: string;
   type: string;
   albums: AlbumInfo[];
-  numerOfListeners?: number;
+  top_songs: SongInfo[];
+  number_of_listeners: number;
 }
 
 export default function Profile() {
@@ -53,6 +55,8 @@ export default function Profile() {
     type: "",
     albums: [] as AlbumInfo[],
     numerOfListeners: 0,
+    top_songs: [] as SongInfo[],
+    number_of_listeners: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +67,8 @@ export default function Profile() {
   const action = useCurrentSongStore((state) => state.action);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const [width, setWidth] = useState(0);
+  const [following, setFollowing] = useState(false);
+  const accessToken = useTokenStore((state) => state.accessToken);
 
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo>({
     id: "",
@@ -88,8 +94,51 @@ export default function Profile() {
     };
   }, []);
 
-  {
-    /*   useEffect(() => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(`http://127.0.0.1:8000/api/artists/${profileID}/`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+        setFollowing(response.data.is_followed)
+      }
+      catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    }
+
+    if (!accessToken) return
+    fetchData();
+  }, [profileID, accessToken])
+
+  const toggleFollow = async () => {
+    try {
+      const response = await axios.post(
+        `http://127.0.0.1:8000/api/toggle-follow/`,
+        { user_id: profileID },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      console.log("Response:", response.data.status);
+      if (response.data.status == "Following") {
+        setFollowing(true);
+      }
+      else if (response.data.status == "Unfollowed") {
+        setFollowing(false);
+      }
+    }
+    catch (err) {
+      console.error("Błąd przy toggle follow:", err);
+    }
+    // setFollowing(!following);
+  };
+
+  {/*   useEffect(() => {
     const box = handleRef.current;
     if (!box) {
       console.warn("handleRef is not attached to any element.");
@@ -134,13 +183,25 @@ export default function Profile() {
           type: artistResponse.data.type,
           numerOfListeners: artistResponse?.data.number_of_listeners,
           albums: artistResponse.data.albums?.map((album: AlbumInfo) => ({
+          albums: artistResponse.data.albums?.map((album: AlbumInfo) => ({
             title: album.title,
             cover: album.cover,
             id: album.id,
           })),
+          top_songs: artistResponse.data.top_songs?.map((song: SongInfo) => ({
+            title: song.title,
+            artist: song.artist,
+            cover: song.cover || "/slabiak2.jpg",
+            duration: song.duration,
+            plays: song.plays,
+            featured_artists: song.featured_artists || [],
+            isCover: song.isCover || false,
+            id: song.id,
+          })),
+          number_of_listeners: artistResponse.data.number_of_listeners,
         });
 
-        if (artistResponse.data.albums) {
+        if (artistResponse?.data?.albums) {
           const albumResponse = await axios.get(
             `http://127.0.0.1:8000/api/albums/${artistResponse?.data?.albums[0].id}/`
           );
@@ -161,13 +222,14 @@ export default function Profile() {
               cover: song.cover || "/slabiak2.jpg",
               duration: song.duration,
               plays: song.plays,
-              featured_artists: song.featured_artists || [],
+              featured_artists: song.featured_artists || [{ id: 0, username: "" }],
               id: song.id,
             })),
           });
         }
       } catch (err) {
         console.error("Error fetching data:", err);
+        setError("Wystąpił błąd podczas pobierania danych.");
       } finally {
         setLoading(false);
       }
@@ -185,16 +247,6 @@ export default function Profile() {
         </div>
         <div className="w-[40rem] h-[7rem] bg-gray-300 rounded-lg mt-4 animate-pulse"></div>
         <div className="w-[20rem] h-[1.5rem] bg-gray-300 rounded-lg mt-4 animate-pulse"></div>
-        <div className="w-full flex flex-row pt-10 items-center justify-start gap-x-3">
-          <div className="w-[5rem] h-[5rem] rounded-full bg-gray-300 animate-pulse"></div>
-          <div className="w-[4rem] h-[3rem] rounded-full bg-gray-300 animate-pulse"></div>
-          <div className="w-[7rem] h-[2rem] rounded-full bg-gray-300 animate-pulse"></div>
-          <div className="flex flex-row gap-x-1">
-            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
-            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
-            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
-          </div>
-        </div>
       </main>
     );
   }
@@ -206,6 +258,7 @@ export default function Profile() {
   console.log("Artist Info:", artistInfo);
 
   console.log("Album Info:", artistInfo.albums);
+
 
   return (
     <>
@@ -262,12 +315,8 @@ export default function Profile() {
             style={{ backgroundImage: `url(${artistInfo.cover})` }}
             className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-cover bg-top"
           >
-            <div className="flex flex-row pt-8 w-full justify-start items-center gap-x-3 md:pt-30 pt-65">
-              <VscVerifiedFilled
-                className={`w-[2rem] h-[2rem] ${
-                  width > 920 ? "block" : "hidden"
-                }`}
-              />
+            <div className="flex flex-row w-full justify-start items-center gap-x-3 md:pt-30 pt-8">
+              <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width > 920 ? "block" : "hidden"}`} />
               <h3 className={`text-md ${width > 920 ? "block" : "hidden"}`}>
                 Zweryfikowany wykonawca
               </h3>
@@ -276,21 +325,21 @@ export default function Profile() {
               {artistInfo.name}
             </h1>
             <p
-              className={`text-md font-medium ${
-                width > 920 ? "block" : "hidden"
-              }`}
+              className={`text-md font-medium ${width > 920 ? "block" : "hidden"
+                }`}
             >
               {artistInfo.numerOfListeners} słuchaczy w miesiącu
+              {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
           </div>
-          <div className="sticky top-0 flex flex-row gap-x-6 items-center justify-start bg-cyan-950 w-full px-4 py-4">
+          <div className="sticky pt-10 flex flex-row gap-x-6 items-center justify-start bg-cyan-950 w-full px-4 py-4">
             <button
               onClick={() => {
                 if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
                   if (
                     currentSongID &&
                     albumInfo.songs.some(
-                      (song) => song.id.toString() === currentSongID
+                      (song) => song.id.toString() === currentSongID.url
                     )
                   ) {
                     if (action === "Play") {
@@ -299,7 +348,7 @@ export default function Profile() {
                       setAction("Play");
                     }
                   } else {
-                    setCurrentSongID(albumInfo.songs[0].id.toString());
+                    setCurrentSongID(albumInfo.songs[0].id.toString(),true);
                     setAction("Play");
                   }
                 }
@@ -307,9 +356,9 @@ export default function Profile() {
               className=" hover:scale-105 active:scale-95 transition-all cursor-pointer md:size-[4rem] size-[3rem] bg-white rounded-full flex items-center justify-center"
             >
               {currentSongID &&
-              albumInfo.songs.some(
-                (song) => song.id.toString() === currentSongID
-              ) ? (
+                albumInfo.songs.some(
+                  (song) => song.id.toString() === currentSongID.url
+                ) ? (
                 action === "Play" ? (
                   <Pause
                     className="text-black md:size-[24px] size-[20px]"
@@ -329,22 +378,27 @@ export default function Profile() {
               )}
             </button>
             <Shuffle className=" text-gray-500 w-[2rem] h-[2rem] hover:brightness-150  hover:scale-105 cursor-pointer" />
-            <button className="border-1 text-gray-300 border-gray-500 rounded-xl text-sm font-medium py-1 px-4 hover:brightness-150  hover:scale-105 cursor-pointer">
-              Obserwuj
+            <button className="border-1 text-gray-300 border-gray-500 rounded-xl text-sm font-medium py-1 px-4 hover:brightness-150  hover:scale-105 cursor-pointer"
+              onClick={toggleFollow}
+            >
+              {/* Obserwuj */}
+              {following ? "Obserwujesz" : "Obserwuj"}
             </button>
-            <Ellipsis className="w-[2rem] h-[2rem] text-gray-500 hover:brightness-150  hover:scale-105 cursor-pointer" />
+            <MoreInfo />
+
           </div>
           <aside className="bg-gradient-to-t from-black to-cyan-950 flex flex-col w-full h-[20rem] gap-y-3 px-4">
             <h2 className="text-3xl font-semibold mt-6">Popularne</h2>
-            {albumInfo.songs.length > 0 ? (
-              albumInfo.songs.map((song: SongInfo, index: number) => (
+            {artistInfo.top_songs.length > 0 ? (
+              artistInfo.top_songs.map((song: SongInfo, index: number) => (
                 <SongPreview
+                  cover={song.cover}
                   key={index}
                   index={index}
                   title={song.title}
                   artist={artistInfo.name}
                   feats={song.featured_artists}
-                  isCover={false}
+                  isCover={true}
                   id={song.id}
                   plays={song.plays}
                   duration={song.duration}
