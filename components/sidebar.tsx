@@ -18,6 +18,22 @@ export default function Sidebar() {
       <div className=" w-full flex md:flex-col gap-y-3 justify-between">
         <button
           onClick={() => {
+            router.push("/profile");
+          }}
+          className={` ${pathname === "/profile" ? "text-white" : " text-neutral-500"
+            } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/10 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-2.5 md:justify-start`}
+        >
+          <div className=" size-[2.2rem] min-w-[2.2rem] bg-zinc-800 text-sm rounded-full flex items-center justify-center font-semibold">
+            <p>{firstLetter}{secondLetter}</p>
+          </div>
+          <p
+            className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
+          >
+            Profile
+          </p>
+        </button>
+        <button
+          onClick={() => {
             router.push("/");
           }}
           className={` ${pathname === "/" ? "text-white" : " text-neutral-500"
@@ -73,24 +89,7 @@ export default function Sidebar() {
             Your library
           </p>
         </button>
-        <button
-          onClick={() => {
-            router.push("/profile");
-          }}
-          className={` ${pathname === "/profile" ? "text-white" : " text-neutral-500"
-            } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/10 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-2.5 md:justify-start`}
-        >
-          <div className=" size-[2.2rem] min-w-[2.2rem] bg-zinc-800 text-sm rounded-full flex items-center justify-center font-semibold">
-            <p>{firstLetter}{secondLetter}</p>
-          </div>
-          <p
-            className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
-          >
-            Profile
-          </p>
-        </button>
       </div>
-
     </main>
 
   )
