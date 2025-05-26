@@ -42,6 +42,7 @@ interface ArtistInfo {
   type: string;
   albums: AlbumInfo[];
   numerOfListeners?: number;
+  numerOfListeners?: number;
   top_songs: SongInfo[];
   number_of_listeners: number;
 }
@@ -56,6 +57,7 @@ export default function Profile() {
     type: "",
     albums: [] as AlbumInfo[],
     numerOfListeners: 0,
+    numerOfListeners: 0,
     top_songs: [] as SongInfo[],
     number_of_listeners: 0,
   });
@@ -68,8 +70,6 @@ export default function Profile() {
   const action = useCurrentSongStore((state) => state.action);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const [width, setWidth] = useState(0);
-  const [following, setFollowing] = useState(false);
-  const accessToken = useTokenStore((state) => state.accessToken);
 
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo>({
     id: "",
@@ -95,6 +95,9 @@ export default function Profile() {
     };
   }, []);
 
+  {
+    /*   useEffect(() => {
+=======
   {
     /*   useEffect(() => {
 =======
@@ -219,7 +222,7 @@ export default function Profile() {
             albumDuration: albumResponse?.data.album_duration,
             theme: albumResponse?.data.theme,
             totalPlays: albumResponse?.data.total_plays,
-            songs: albumResponse?.data.songs?.map((song: SongInfo) => ({
+            songs: albumResponse?.data?.songs?.map((song: SongInfo) => ({
               title: song.title,
               artist: song.artist,
               cover: song.cover || "/slabiak2.jpg",
@@ -333,6 +336,7 @@ export default function Profile() {
                   width > 920 ? "block" : "hidden"
                 }`}
               />
+            </div>
             <div className="flex flex-row w-full justify-start items-center gap-x-3 md:pt-30 pt-8">
               <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width > 920 ? "block" : "hidden"}`} />
               <h3 className={`text-md ${width > 920 ? "block" : "hidden"}`}>
@@ -346,6 +350,7 @@ export default function Profile() {
               className={`text-md font-medium ${width > 920 ? "block" : "hidden"
                 }`}
             >
+              {artistInfo.numerOfListeners} słuchaczy w miesiącu
               {artistInfo.numerOfListeners} słuchaczy w miesiącu
               {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
@@ -397,10 +402,9 @@ export default function Profile() {
             </button>
             <Shuffle className=" text-gray-500 w-[2rem] h-[2rem] hover:brightness-150  hover:scale-105 cursor-pointer" />
             <button className="border-1 text-gray-300 border-gray-500 rounded-xl text-sm font-medium py-1 px-4 hover:brightness-150  hover:scale-105 cursor-pointer"
-              onClick={toggleFollow}
             >
               {/* Obserwuj */}
-              {following ? "Obserwujesz" : "Obserwuj"}
+              { "Obserwuj"}
             </button>
             <Ellipsis className="w-[2rem] h-[2rem] text-gray-500 hover:brightness-150  hover:scale-105 cursor-pointer" />
           </div>

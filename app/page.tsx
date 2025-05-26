@@ -2,12 +2,13 @@
 import ItemCover from "@/components/item-cover";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
-
 import Chip from "@/components/chip";
 import { AnimatePresence, motion } from "framer-motion";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import WelcomeBack from "@/components/welcomeBack";
+import { Artist } from "@/components/artist";
+
 
 interface Item {
   id: number;
@@ -32,6 +33,14 @@ interface mappedItems {
   songs: { id: number }[];
 }
 
+interface ArtistInfo {
+  id: string;
+  username: string;
+  image: string;
+  type: string;
+}
+
+
 export default function Home() {
   const [Items, setItems] = useState<Item[]>([]);
   const [backgroundTheme, setBackgroundTheme] = useState<string>("");
@@ -39,6 +48,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isScrolling, setIsScrolling] = useState(false);
   const mainRef = useRef<HTMLDivElement | null>(null);
+  const [artistInfo, setArtistInfo] = useState<ArtistInfo[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,7 +57,11 @@ export default function Home() {
         const res = await axios.get("http://127.0.0.1:8000/api/albums/").then((res) => res.data).catch((err) => {
           console.log(err);
         })
+        const resArtist = await axios.get("http://127.0.0.1:8000/api/artists/").then((res) => res.data).catch((err) => {
+          console.log(err);
+        })
         console.log("res", res);
+        console.log("resArtist", resArtist);
         const mappedItems = res?.map((item: mappedItems) => ({
           id: item.id,
           title: item.title,
@@ -58,9 +72,15 @@ export default function Home() {
           songs: item.songs,
           type: item.type || item.album_type
         }));
-        console.log(mappedItems);
+        const mappedArtists=resArtist?.map((item:ArtistInfo)=>({
+          id: item.id,
+          username: item.username,
+          image: item.image,
+          type: item.type,
+        }))
         setIsLoading(false);
         setItems(mappedItems);
+        setArtistInfo(mappedArtists);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -235,7 +255,6 @@ export default function Home() {
                     Items.filter((item) => (item.type === 'ep')).slice(0, 10).map((item) => (
                       <CarouselItem key={item.id} className="2xl:basis-1/7 xl:basis-1/5 md:basis-1/4 basis-1/3">
                         <ItemCover
-                          setHover={setBackgroundTheme}
                           title={item.title}
                           artist={item.artist}
                           artistID={item.artist}
@@ -250,13 +269,33 @@ export default function Home() {
                   }
                 </CarouselContent>
               </Carousel>
+               <div className="w-full flex items-center justify-between h-min mt-20">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold z-20 ">Artists</h1>
+                <button
+                  onClick={() => setFilter('Artists')}
+                  className="font-semibold text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                >
+                  See more
+                </button>
+              </div>
+              <div className="w-full flex flex-wrap items-center justify-between h-min mt-6">
+                {artistInfo.filter((item) => (item.type === 'artist')).slice(1,5).map((item)=>(
+                <Artist
+                  key={item.id}
+                  name={item.username}
+                  cover={item.image}
+                  id={Number(item.id)}
+                  songs={Items.filter((song) => song.artistID === item.id)}
+                />
+              ))}
+              </div>
             </motion.div>
           </motion.div>
         )}
         {filter !== 'All' && (
           <motion.div>
             {(() => {
-              const filterValue = filter as 'All' | 'Artists' | 'Albums' | 'Songs' | 'Ep';
+              const filterValue = filter as 'All' | 'Artist' | 'Albums' | 'Songs' | 'Ep';
               let typeFilter = filterValue.toLowerCase();
               if (typeFilter.endsWith('s')) {
                 typeFilter = typeFilter.slice(0, -1);
@@ -264,6 +303,21 @@ export default function Home() {
               const filteredItems = Items.filter(item =>
                 item.type === typeFilter
               );
+              if(typeFilter === 'artist') {
+                return(
+                  <div className="w-full flex flex-wrap flex-row items-center mt-6 gap-7 px-5 ">
+                {artistInfo.filter((item) => (item.type === 'artist')).map((item)=>(
+                <Artist
+                  key={item.id}
+                  name={item.username}
+                  cover={item.image}
+                  id={Number(item.id)}
+                  songs={Items.filter((song) => song.artistID === item.id)}
+                />
+              ))}
+              </div>
+                )
+              }
 
               if (filteredItems.length > 0) {
                 return (

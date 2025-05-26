@@ -10,7 +10,7 @@ import { LoaderCircle } from "lucide-react";
 
 
 
-const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
+export const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
   if (!isPlaying) return null;
   return (
     <div className=" flex space-x-1 group-hover:hidden items-center justify-center">
