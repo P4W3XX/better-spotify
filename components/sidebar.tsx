@@ -51,7 +51,7 @@ export default function Sidebar() {
                 } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/5 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-2.5 md:justify-start`}
             >
               <div className=" size-[2.2rem] min-w-[2.2rem] bg-zinc-800 text-sm rounded-full flex items-center justify-center font-semibold">
-                <p>PS</p>
+                <p>{firstLetter}{secondLetter}</p>
               </div>
               <p
                 className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
@@ -66,7 +66,7 @@ export default function Sidebar() {
                 <p>{firstLetter}{secondLetter}</p>
               </div>
               <div>
-                <p className=" font-semibold">PAWEXX</p>
+                <p className=" font-semibold">{currentUser.username ? currentUser.username : 'Username'}</p>
                 <p className=" text-sm font-lg text-white/60">Free</p>
               </div>
             </DropdownMenuGroup>
@@ -98,22 +98,6 @@ export default function Sidebar() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <button
-          onClick={() => {
-            router.push("/profile");
-          }}
-          className={` ${pathname === "/profile" ? "text-white" : " text-neutral-500"
-            } flex flex-col md:flex-row gap-x-2 items-center md:hover:bg-white/10 transition-colors cursor-pointer rounded-2xl md:w-full justify-center md:p-2.5 md:justify-start`}
-        >
-          <div className=" size-[2.2rem] min-w-[2.2rem] bg-zinc-800 text-sm rounded-full flex items-center justify-center font-semibold">
-            <p>{firstLetter}{secondLetter}</p>
-          </div>
-          <p
-            className={` text-[10px] lg:text-xl lg:block hidden font-medium md:font-semibold`}
-          >
-            Profile
-          </p>
-        </button>
         <button
           onClick={() => {
             router.push("/");
