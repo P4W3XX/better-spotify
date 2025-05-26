@@ -172,6 +172,39 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
               } else {
                 router.push(`/profile/${artist}`);
               }
+            }} className=" text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artistId ? artistName : artist}</span>
+          )}
+          {Object.values(isLoading).some((loading) => loading) ? (
+            <Skeleton className=" w-[50px] h-[10px] rounded-lg" />
+          ) : (
+            featsState && featsState.length > 0 && (
+              <span onClick={(e) => {
+                e.stopPropagation();
+                if (artistId && featsState && featsState.length > 0) {
+                  // Navigate to the first feat artist's profile (adjust as needed)
+                  router.push(`/profile/${feats && feats.length > 0 ? feats[0] : ''}`);
+                } else {
+                  router.push(`/profile/${artist}`);
+                }
+              }} className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                {" ,"}
+                {featsState.join(", ")}
+              </span>
+            )
+          )}
+            }} className=" text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span>
+          }
+          {feats && feats.length > 0 &&
+            <>
+              {','}
+              {feats.map((feat, index) => (
+                <span key={feat.id} onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/profile/${feat.id}`);
+                }} className=" text-white/50 hover:underline group-hover:text-white transition-colors text-xs">{feat.username}{index === feats.length - 1 ? '' : ', '}</span>
+              ))}
+            </>
+          }
             }} className=" text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span>
           }
           {feats && feats.length > 0 &&

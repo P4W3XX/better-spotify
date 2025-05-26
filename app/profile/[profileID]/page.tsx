@@ -42,6 +42,7 @@ interface ArtistInfo {
   type: string;
   albums: AlbumInfo[];
   numerOfListeners?: number;
+  numerOfListeners?: number;
   top_songs: SongInfo[];
   number_of_listeners: number;
 }
@@ -55,6 +56,7 @@ export default function Profile() {
     cover: "",
     type: "",
     albums: [] as AlbumInfo[],
+    numerOfListeners: 0,
     numerOfListeners: 0,
     top_songs: [] as SongInfo[],
     number_of_listeners: 0,
@@ -93,6 +95,9 @@ export default function Profile() {
     };
   }, []);
 
+  {
+    /*   useEffect(() => {
+=======
   {
     /*   useEffect(() => {
 =======
@@ -345,6 +350,7 @@ export default function Profile() {
               className={`text-md font-medium ${width > 920 ? "block" : "hidden"
                 }`}
             >
+              {artistInfo.numerOfListeners} słuchaczy w miesiącu
               {artistInfo.numerOfListeners} słuchaczy w miesiącu
               {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
