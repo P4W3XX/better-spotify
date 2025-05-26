@@ -11,6 +11,7 @@ from django.db.models.functions import Greatest
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from django.shortcuts import render
 
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
@@ -28,7 +29,28 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from collections import defaultdict
 import os
+
+from .supabase_client import supabase
 # Create your views here.
+
+def upload_image(file, filename):
+    file_data = file.read()
+    response = supabase.storage.from_('images').upload(filename, file_data)
+    return response
+
+def get_image_url(filename):
+    public_url = supabase.storage.from_('images').get_public_url(filename)
+    return public_url
+
+
+def testIMG(request):
+    if request.method == 'POST':
+        image_file = request.FILES['image']
+        filename = image_file.name
+        upload_image(image_file, filename)
+        image_url = get_image_url(filename)
+        return render(request, 'result.html', {'image_url': image_url})
+    return render(request, 'upload.html')
 
 BASE_URL = 'http://127.0.0.1:8000'
 

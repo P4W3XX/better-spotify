@@ -19,4 +19,5 @@ urlpatterns = [
     path('library/', views.LibraryAPIView.as_view(), name='library'),
     path('modify/library/', views.ModifyLibraryAPIView.as_view(), name='modify-library'),
     path('toggle-follow/', views.ToggleFollowAPIView.as_view(), name='toggle-follow'),
+    path('test/', views.testIMG, name='test-img'),
 ]
