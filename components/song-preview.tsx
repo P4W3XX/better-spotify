@@ -6,6 +6,7 @@ import { useCurrentSongStore } from "@/store/current-song";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
   if (!isPlaying) return null;
@@ -164,16 +165,34 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
           {isIndecent && (
             <div className=" size-4 min-w-[16px] flex items-center text-xs justify-center rounded-[2px] bg-white/30 font-medium mr-1">E</div>
           )}
-          {
-            <span onClick={(e) => {
-              e.stopPropagation();
-              if (artistId) {
-                router.push(`/profile/${artistId}`);
-              } else {
-                router.push(`/profile/${artist}`);
-              }
-            }} className=" text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span>
-          }
+
+          <span onClick={(e) => {
+            e.stopPropagation();
+            if (artistId) {
+              router.push(`/profile/${artistId}`);
+            } else {
+              router.push(`/profile/${artist}`);
+            }
+          }} className=" text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span>
+
+          {Object.values(isLoading).some((loading) => loading) ? (
+            <Skeleton className=" w-[50px] h-[10px] rounded-lg" />
+          ) : (
+            feats && feats.length > 0 && (
+              <span onClick={(e) => {
+                e.stopPropagation();
+                if (artistId && feats && feats.length > 0) {
+                  router.push(`/profile/${feats && feats.length > 0 ? feats[0] : ''}`);
+                } else {
+                  router.push(`/profile/${artist}`);
+                }
+              }} className="text-white/50 hover:underline group-hover:text-white transition-colors text-xs">
+                {" ,"}
+                {feats.join(", ")}
+              </span>
+            )
+          )}
+          <span className="text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span>
           {feats && feats.length > 0 &&
             <>
               {','}
@@ -205,7 +224,6 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
             <div className=" w-full md:block hidden font-medium text-white/50 transition-colors group-hover:text-white max-w-[150px] text-center">
               {duration.startsWith('00:') ? duration.substring(3) : duration}
             </div>
-
             <button>
               <Ellipsis
                 className=" text-white/50 group-hover:text-white transition-colors md:hidden"
@@ -213,7 +231,8 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
               />
             </button>
           </>
-        )}
+        )
+      }
     </div >
   );
 };

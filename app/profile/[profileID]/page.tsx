@@ -41,6 +41,7 @@ interface ArtistInfo {
   cover: string;
   type: string;
   albums: AlbumInfo[];
+  numerOfListeners?: number;
   top_songs: SongInfo[];
   number_of_listeners: number;
 }
@@ -54,6 +55,7 @@ export default function Profile() {
     cover: "",
     type: "",
     albums: [] as AlbumInfo[],
+    numerOfListeners: 0,
     top_songs: [] as SongInfo[],
     number_of_listeners: 0,
   });
@@ -93,6 +95,9 @@ export default function Profile() {
     };
   }, []);
 
+  {
+    /*   useEffect(() => {
+=======
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -154,7 +159,8 @@ export default function Profile() {
     return () => {
       box.removeEventListener("scroll", handleScroll);
     };
-  }, [handleRef]); */}
+  }, [handleRef]); */
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -179,6 +185,7 @@ export default function Profile() {
           name: artistResponse.data.username,
           cover: artistResponse.data.image || "/slabiak2.jpg",
           type: artistResponse.data.type,
+          numerOfListeners: artistResponse?.data.number_of_listeners,
           albums: artistResponse.data.albums?.map((album: AlbumInfo) => ({
             title: album.title,
             cover: album.cover,
@@ -236,13 +243,23 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <main className="mt-30 px-7">
+      <main className="mt-25 px-7">
         <div className="flex flex-row gap-x-2">
           <div className="w-[2rem] h-[2rem] bg-gray-300 rounded-full animate-pulse"></div>
           <div className="w-[20rem] h-[2rem] bg-gray-300 rounded-lg animate-pulse"></div>
         </div>
         <div className="w-[40rem] h-[7rem] bg-gray-300 rounded-lg mt-4 animate-pulse"></div>
         <div className="w-[20rem] h-[1.5rem] bg-gray-300 rounded-lg mt-4 animate-pulse"></div>
+        <div className="w-full flex flex-row pt-10 items-center justify-start gap-x-3">
+          <div className="w-[5rem] h-[5rem] rounded-full bg-gray-300 animate-pulse"></div>
+          <div className="w-[4rem] h-[3rem] rounded-full bg-gray-300 animate-pulse"></div>
+          <div className="w-[7rem] h-[2rem] rounded-full bg-gray-300 animate-pulse"></div>
+          <div className="flex flex-row gap-x-1">
+            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
+            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
+            <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-gray-300 animate-pulse"></div>
+          </div>
+        </div>
       </main>
     );
   }
@@ -308,8 +325,14 @@ export default function Profile() {
         >
           <div
             style={{ backgroundImage: `url(${artistInfo.cover})` }}
-            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-cover bg-center"
+            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-cover bg-top"
           >
+            <div className="flex flex-row pt-8 w-full justify-start items-center gap-x-3 md:pt-30">
+              <VscVerifiedFilled
+                className={`w-[2rem] h-[2rem] ${
+                  width > 920 ? "block" : "hidden"
+                }`}
+              />
             <div className="flex flex-row w-full justify-start items-center gap-x-3 md:pt-30 pt-8">
               <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width > 920 ? "block" : "hidden"}`} />
               <h3 className={`text-md ${width > 920 ? "block" : "hidden"}`}>
@@ -323,6 +346,7 @@ export default function Profile() {
               className={`text-md font-medium ${width > 920 ? "block" : "hidden"
                 }`}
             >
+              {artistInfo.numerOfListeners} słuchaczy w miesiącu
               {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
           </div>
@@ -403,7 +427,7 @@ export default function Profile() {
                 />
               ))
             ) : (
-              <div className=" flex items-center justify-center w-full h-full gap-x-3">
+              <div className="flex items-center justify-center w-full h-full gap-x-3">
                 <p className=" text-white/50 font-medium md:text-3xl text-2xl">
                   No songs available
                 </p>
@@ -413,7 +437,6 @@ export default function Profile() {
                 />
               </div>
             )}
-
           </aside>
         </main>
       )}
