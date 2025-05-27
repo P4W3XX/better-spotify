@@ -325,30 +325,23 @@ export default function Profile() {
         >
           <div
             style={{ backgroundImage: `url(${artistInfo.cover})` }}
-            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-cover bg-top"
+            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-fill bg-center"
           >
-            <div className="flex flex-row pt-8 w-full justify-start items-center gap-x-3 md:pt-30">
-              <VscVerifiedFilled
-                className={`w-[2rem] h-[2rem] ${
-                  width > 920 ? "block" : "hidden"
-                }`}
-              />
+            <div className="flex flex-row w-full justify-start items-center gap-x-3 md:pt-30">
             </div>
-            <div className="flex flex-row w-full justify-start items-center gap-x-3 md:pt-30 pt-8">
+            <div className="flex flex-row w-full justify-start items-center gap-x-3">
               <VscVerifiedFilled className={`w-[2rem] h-[2rem] ${width > 920 ? "block" : "hidden"}`} />
               <h3 className={`text-md ${width > 920 ? "block" : "hidden"}`}>
                 Zweryfikowany wykonawca
               </h3>
             </div>
-            <h1 className="md:text-8xl text-5xl font-bold ">
+                        <h1 className="md:text-8xl text-5xl font-bold ">
               {artistInfo.name}
             </h1>
             <p
               className={`text-md font-medium ${width > 920 ? "block" : "hidden"
                 }`}
             >
-              {artistInfo.numerOfListeners} słuchaczy w miesiącu
-              {artistInfo.numerOfListeners} słuchaczy w miesiącu
               {artistInfo.number_of_listeners} słuchaczy w miesiącu
             </p>
           </div>
