@@ -22,6 +22,11 @@ module.exports = async (): Promise<NextConfig> => {
           hostname: "better-spotify-vert.vercel.app",
           pathname: "**",
         },
+        {
+          protocol: "https" as const,
+          hostname: "taktridhdtyyutmghriy.supabase.co",
+          pathname: "**",
+        },
       ],
     },
   };
