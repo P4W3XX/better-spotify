@@ -179,7 +179,7 @@ export default function Sidebar() {
         <motion.div initial={false} animate={{
           opacity: isScrolling ? 1 : 0,
         }} className=" w-full h-5 top-0 bg-gradient-to-b pointer-events-none from-black absolute" />
-        <div ref={playlistRef} className=" overflow-auto scrollbar-hide flex flex-col gap-y-2 px-3">
+        <div ref={playlistRef} className=" overflow-auto scrollbar-hide flex flex-col lg:gap-y-1 gap-y-4 px-3">
           <FavoriteSongsPlaylist />
           {playlists && playlists.slice(0, -1).map((playlist) => (
             <Playlist key={playlist.id} title={playlist.library_obj.title} artistUsername={playlist.library_obj.artist_username} type={playlist.content_type} songs={[]} url={playlist.library_obj.image} id={playlist.library_obj.id} />

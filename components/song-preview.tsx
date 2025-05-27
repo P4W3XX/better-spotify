@@ -1,11 +1,13 @@
 "use client";
 
-import { CirclePlus, Ellipsis, LoaderCircle, Pause, Play } from "lucide-react";
+import { Ellipsis, LoaderCircle, Pause, Play, Star } from "lucide-react";
 import Image from "next/image";
 import { useCurrentSongStore } from "@/store/current-song";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { useTokenStore } from "@/store/token";
 
 const PlayAnimation = ({ isPlaying }: { isPlaying: boolean }) => {
   if (!isPlaying) return null;
@@ -63,9 +65,11 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
   const currentSongID = useCurrentSongStore((state) => state.currentSongID);
   const setAction = useCurrentSongStore((state) => state.setAction);
   const action = useCurrentSongStore((state) => state.action);
+  const [isFavorite, setIsFavorite] = useState(false);
   const isLoading = useCurrentSongStore((state) => state.isLoading);
   const router = useRouter();
   const [isHover, setIsHover] = useState(false);
+  const accesToken = useTokenStore((state) => state.accessToken);
 
 
   const handleSongAction = (e: React.MouseEvent<HTMLElement>) => {
@@ -75,6 +79,51 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
       setAction(action === "Play" ? "Pause" : "Play");
     } else {
       setAction("Play");
+    }
+  };
+
+  useEffect(() => {
+    const checkIfFavorite = async () => {
+      try {
+        if (!accesToken) return;
+        const response = await axios.get('http://127.0.0.1:8000/api/library/', {
+          headers: {
+            'Authorization': `Bearer ${accesToken}`,
+          }
+        });
+        const isFav = response.data.items.some((item: {
+          content_type: string;
+          library_obj: { id: number };
+        }) =>
+          item.content_type === "song" && item.library_obj.id.toString() === id?.toString()
+        );
+        setIsFavorite(isFav);
+        console.log("Is album favorite:", isFav);
+      } catch (error) {
+        console.error("Error checking if album is favorite:", error);
+      }
+    };
+    checkIfFavorite();
+  }, [id, accesToken]);
+
+  const handleFavorite = async () => {
+    try {
+      axios.post(`http://127.0.0.1:8000/api/modify/library/`, {
+        action: isFavorite ? "remove" : "add",
+        id: id,
+        object_type: "song",
+      }, {
+        headers: {
+          'Authorization': `Bearer ${accesToken}`,
+        },
+      }).then((response) => {
+        console.log("Album favorited:", response.data);
+        setIsFavorite(!isFavorite);
+      }).catch((error) => {
+        console.error("Error favoriting album:", error);
+      });
+    } catch (error) {
+      console.error("Error handling favorite:", error);
     }
   };
 
@@ -209,9 +258,12 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
             {String(plays).replace(/\B(?=(\d{3})+(?!\d))/g, " ")}
           </div>
         )}
-      <button className={` group-hover:opacity-100 md:block ${!isDuration && 'mr-3'} hidden opacity-0 transition-opacity w-max`}>
-        <CirclePlus
-          className=" text-white/50 group-hover:text-white transition-colors"
+      <button onClick={(e) => {
+        e.stopPropagation();
+        handleFavorite();
+      }} className={` group-hover:opacity-100 md:block ${!isDuration && 'mr-3'} hidden ${!isFavorite ? 'opacity-0':'opacity-100'} cursor-pointer transition-opacity w-max`}>
+        <Star
+          className={`  group-hover:text-white ${isFavorite ? 'fill-white' : 'text-white/50'} transition-colors`}
           size={20}
         />
       </button>

@@ -71,7 +71,7 @@ export default function Playlist({ title, url, type, id, songs, artistUsername }
     const setAction = useCurrentSongStore((state) => state.setAction);
     return (
         <main onClick={() => handleClick()} onMouseEnter={() => setIsHover(true)}
-            onMouseLeave={() => setIsHover(false)} className="flex gap-x-2 items-center justify-start p-2 transition-colors rounded-2xl hover:bg-white/3 h-full w-full">
+            onMouseLeave={() => setIsHover(false)} className="flex gap-x-2 items-center lg:justify-start justify-center lg:p-2 transition-colors rounded-2xl hover:bg-white/3 h-full w-full">
             <Image
                 src={url || '/slabiak2.jpg'}
                 alt={title || 'Playlist Cover'}
@@ -113,7 +113,7 @@ export default function Playlist({ title, url, type, id, songs, artistUsername }
                     )}
                 </button>
             )}
-            <div>
+            <div className=" lg:block hidden">
                 <h1 className="text-white font-bold">{title || 'Title'}</h1>
                 <p className="text-zinc-500 text-xs font-semibold">{artistUsername || 'Artist'} • {type && type?.charAt(0).toUpperCase() + type?.slice(1, type.length) || 'Type'}</p>
             </div>
