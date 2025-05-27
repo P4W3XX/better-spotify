@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from "react";
 import { VscVerifiedFilled } from "react-icons/vsc";
 import { Pause, Play, Shuffle } from "lucide-react";
 import { useCurrentSongStore } from "@/store/current-song";
-import { useTokenStore } from "@/store/token";
 
 interface AlbumInfo {
   title: string;
@@ -42,7 +41,6 @@ interface ArtistInfo {
   type: string;
   albums: AlbumInfo[];
   numerOfListeners?: number;
-  numerOfListeners?: number;
   top_songs: SongInfo[];
   number_of_listeners: number;
 }
@@ -56,7 +54,6 @@ export default function Profile() {
     cover: "",
     type: "",
     albums: [] as AlbumInfo[],
-    numerOfListeners: 0,
     numerOfListeners: 0,
     top_songs: [] as SongInfo[],
     number_of_listeners: 0,

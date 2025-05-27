@@ -37,6 +37,9 @@ DB_PASSWORD=your-db-password
 DB_HOST=your-db-host
 DB_PORT=your-db-port
 DB_NAME=your-db-name
+
+DB_URL='https://fake-project.supabase.co'
+DB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake_key_for_testing_only'
 ```
 
 `SECRET KEY`: To generate a secure SECRET_KEY for your Django project, run the following inside your activated virtual environment:
@@ -63,6 +66,9 @@ Now, get your Supabase credentials and update `.env` file
 `DB_PORT`	The port used for PostgreSQL connections
 
 `DB_NAME`	The name of your Supabase database
+
+`DB_URL`    The base URL of your Supabase project (e.g. https://your-project.supabase.co)
+`DB_KEY`    Your Supabase project's anon public API key used for client-side requests
 
 ## Enable Trigram Extension for Fuzzy Search
 To support fuzzy search (e.g., typo-tolerant queries using TrigramSimilarity), you need to enable the PostgreSQL pg_trgm extension in your Supabase database.

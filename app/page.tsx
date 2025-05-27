@@ -209,7 +209,7 @@ export default function Home() {
                           setHover={setBackgroundTheme}
                           title={item.title}
                           artist={item.artist}
-                          artistID={item.artist}
+                          artistID={item.artistID}
                           cover={item.cover}
                           theme={item.theme}
                           type={item.type}

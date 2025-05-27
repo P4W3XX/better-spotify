@@ -30,3 +30,4 @@ uritemplate
 whitenoise
 python-dotenv
 mutagen
+supabase
