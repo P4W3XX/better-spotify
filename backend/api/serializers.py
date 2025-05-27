@@ -11,6 +11,19 @@ from django.conf import settings
 from .utils import get_dominant_color, create_collage
 from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem, PlaybackHistory
 from django.contrib.contenttypes.models import ContentType
+from django.utils.text import slugify
+
+from .supabase_client import supabase
+
+
+def upload_image(file, filename):
+    file_data = file.read()
+    response = supabase.storage.from_('images').upload(filename, file_data)
+    return response
+
+def get_image_url(filename):
+    public_url = supabase.storage.from_('images').get_public_url(filename)
+    return public_url
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -18,20 +31,20 @@ class SongSerializer(serializers.ModelSerializer):
     artist = serializers.PrimaryKeyRelatedField(read_only=True, source='album.artist.id')
     artist_username = serializers.CharField(source='album.artist.username', read_only=True)
 
-    plays_test = serializers.SerializerMethodField()
+    plays = serializers.SerializerMethodField()
     class Meta:
         model = Song
         fields = [
             'id', 'album', 'artist', 'artist_username', 'title', 'duration', 
             'file', 'lyrics', 'track_number', 'plays', 'genre',
-            'is_indecent', 'featured_artists', 'plays_test'
+            'is_indecent', 'featured_artists'
         ]
         extra_kwargs = {
             'duration': {'read_only': True},
         }
 
     @extend_schema_field(serializers.IntegerField)
-    def get_plays_test(self, obj):
+    def get_plays(self, obj):
         songs = SongPlayback.objects.filter(song=obj).count()
         return songs
 
@@ -114,7 +127,7 @@ class SongSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         # if self.playlist:
-        representation['cover'] = BASE_URL + instance.album.image.url if instance.album.image else None
+        # representation['cover'] = BASE_URL + instance.album.image.url if instance.album.image else None
         featured_artists = instance.featured_artists.all()
         representation['featured_artists'] = []
         for artist in featured_artists:
@@ -122,6 +135,11 @@ class SongSerializer(serializers.ModelSerializer):
                 'id': artist.id,
                 'username': artist.username
             })
+
+
+        if instance.album.image:
+            filename = f"albums/{slugify(instance.album.title)}_{instance.album.id}{os.path.splitext(instance.album.image.name)[1]}"
+            representation['cover'] = get_image_url(filename)
 
 
         return representation
@@ -162,6 +180,13 @@ class AlbumSerializer(serializers.ModelSerializer):
     def get_songs(self, obj):
         return SongSerializer(obj.songs.order_by('track_number'), many=True, nested=True, context=self.context, required=False).data
     
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        if instance.image:
+            filename = f"albums/{slugify(instance.title)}_{instance.id}{os.path.splitext(instance.image.name)[1]}"
+            repr['image'] = get_image_url(filename)
+        
+        return repr
 
     @extend_schema_field(serializers.DurationField)
     def get_album_duration(self, obj):
@@ -172,7 +197,11 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.IntegerField)
     def get_total_plays(self, obj):
-        return sum(song.plays for song in obj.songs.all())
+        def get_plays(obj):
+            song_plays = SongPlayback.objects.filter(song=obj).count()
+            return song_plays
+        
+        return sum(get_plays(song) for song in obj.songs.all())
 
 
     def create(self, validated_data):
@@ -221,11 +250,14 @@ class AlbumSerializer(serializers.ModelSerializer):
         return instance
     
 
-    def get_artist_cover(self, obj):
-        if obj.artist.image:
-            return BASE_URL + obj.artist.image.url
+    def get_artist_cover(self, instance):
+        # if obj.artist.image:
+        #     return BASE_URL + obj.artist.image.url
+        # return None
+        if instance.artist.image:
+            filename = f"artists/{slugify(instance.artist.username)}_{instance.artist.id}{os.path.splitext(instance.artist.image.name)[1]}"
+            return  get_image_url(filename)
         return None
-
 
 
 
@@ -323,18 +355,17 @@ class ArtistSerializer(serializers.ModelSerializer):
         if instance.type != 'artist':# or self.context.get('many', False):
             representation.pop('albums', None)
 
-        if instance.image == '':
-            request = self.context.get('request')
-            if request:
-                representation['image'] = request.build_absolute_uri(static('default.jpg'))
-            else:
-                representation['image'] = static('default.jpg')
+        # if instance.image == '':
+        #     request = self.context.get('request')
+        #     if request:
+        #         representation['image'] = request.build_absolute_uri(static('default.jpg'))
+        #     else:
+        #         representation['image'] = static('default.jpg')
 
 
         if instance.type == 'listener':
             representation.pop('number_of_listeners')
             representation.pop('number_of_popularity')
-
 
         if request := self.context.get('request'):
             try:
@@ -357,6 +388,13 @@ class ArtistSerializer(serializers.ModelSerializer):
         
         if self.nested:
             representation.pop('albums', None)
+
+
+        if instance.image:
+            filename = f"artists/{slugify(instance.username)}_{instance.id}{os.path.splitext(instance.image.name)[1]}"
+            representation['image'] = get_image_url(filename)
+        
+        
         
         return representation
     
@@ -445,6 +483,10 @@ class PlaylistSerializer(serializers.ModelSerializer):
         if self.nested:
             representation.pop('songs', None)
 
+        if instance.image:
+            filename = f"playlists/{slugify(instance.name)}_{instance.id}{os.path.splitext(instance.image.name)[1]}"
+            representation['image'] = get_image_url(filename)
+
         return representation
     
 
@@ -478,6 +520,14 @@ class PlaylistSerializer(serializers.ModelSerializer):
             collage = create_collage(images, save_path, size=(800, 800))
 
             playlist.image = relative_path
+
+            if playlist.image:
+                file_data = playlist.image
+                filename = f"playlists/{slugify(playlist.name)}_{playlist.id}{os.path.splitext(file_data.name)[1]}"
+                try:
+                    upload_image(file_data, filename)
+                except Exception as e:
+                    raise serializers.ValidationError(f"Failed to upload image: {str(e)}")
             playlist.save()
 
         return playlist
@@ -519,6 +569,15 @@ class PlaylistSerializer(serializers.ModelSerializer):
             collage = create_collage(images, save_path, size=(800, 800))
 
             instance.image = relative_path
+            
+            if instance.image:
+                file_data = instance.image
+                filename = f"playlists/{slugify(instance.name)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+                try:
+                    upload_image(file_data, filename)
+                except Exception as e:
+                    raise serializers.ValidationError(f"Failed to upload image: {str(e)}")
+                
             instance.save()
 
         return instance

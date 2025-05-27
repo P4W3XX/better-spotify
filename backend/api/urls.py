@@ -15,8 +15,10 @@ urlpatterns = [
     path('playback/control/', views.PlaybackControlAPIView.as_view(), name='playback-control'),
     path('user-history/', views.UserPlaybackHistoryAPIView.as_view(), name='user-history'),
     path('top-songs/', views.TopSongsAPIView.as_view(), name='top-songs'),
+    path('top-songs/<str:genre>/', views.TopSongsAPIView.as_view(), name='top-songs'),
     path('modify/playlist/', views.ModifyPlaylistAPIView.as_view(), name='modify-playlist'),
     path('library/', views.LibraryAPIView.as_view(), name='library'),
     path('modify/library/', views.ModifyLibraryAPIView.as_view(), name='modify-library'),
     path('toggle-follow/', views.ToggleFollowAPIView.as_view(), name='toggle-follow'),
+    path('test/', views.testIMG, name='test-img'),
 ]

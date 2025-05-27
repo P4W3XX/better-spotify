@@ -2,7 +2,7 @@ from rest_framework import filters, viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 
 from django.db.models import Q, F
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,6 +11,7 @@ from django.db.models.functions import Greatest
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
+from django.shortcuts import render
 
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
@@ -25,10 +26,33 @@ from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer,
                           )
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.utils.text import slugify
+
 
 from collections import defaultdict
 import os
+from .supabase_client import supabase
+
 # Create your views here.
+
+def upload_image(file, filename):
+    file_data = file.read()
+    response = supabase.storage.from_('images').upload(filename, file_data)
+    return response
+
+def get_image_url(filename):
+    public_url = supabase.storage.from_('images').get_public_url(filename)
+    return public_url
+
+
+def testIMG(request):
+    if request.method == 'POST':
+        image_file = request.FILES['image']
+        filename = image_file.name
+        upload_image(image_file, filename)
+        image_url = get_image_url(filename)
+        return render(request, 'result.html', {'image_url': image_url})
+    return render(request, 'upload.html')
 
 BASE_URL = 'http://127.0.0.1:8000'
 
@@ -55,6 +79,23 @@ class ArtistViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context['many'] = self.action == 'list'
         return context
+        
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        instance = serializer.instance
+
+        if instance.image:
+            file_data = instance.image
+            filename = f"artists/{slugify(instance.username)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+            try:
+                upload_image(file_data, filename)
+            except Exception as e:
+                print(f"Upload failed: {e}")
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class AlbumViewSet(viewsets.ModelViewSet):
     queryset = Album.objects.prefetch_related('artist', 'songs')
@@ -68,6 +109,42 @@ class AlbumViewSet(viewsets.ModelViewSet):
     ]
     search_fields = ['title', 'artist__username', 'release_date']
     ordering_fields = ['title', 'artist__username', 'release_date']
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        instance = serializer.instance
+
+        
+        if instance.image:
+            file_data = instance.image
+            filename = f"albums/{slugify(instance.title)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+            # filename = f"albums/{instance.title}{instance.id}"
+            try:
+                upload_image(file_data, filename)
+            except Exception as e:
+                print(f"Upload failed: {e}")
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        instance = serializer.instance
+
+        if instance.image:
+            file_data = instance.image
+            filename = f"albums/{slugify(instance.title)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+            try:
+                upload_image(file_data, filename)
+            except Exception as e:
+                print(f"Upload failed: {e}")
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 class SongViewSet(viewsets.ModelViewSet):
     queryset = Song.objects.all()
@@ -317,37 +394,40 @@ class TopSongsAPIView(APIView):
             }
         }
     )
-    def get(self, request):
-        top_songs = list(get_top_songs_last_month())
+    def get(self, request, genre=None):
+        top_songs = list(get_top_songs_last_month(10, genre))
         result = defaultdict(list)
 
         for entry in top_songs:
-            genre = entry['genre_label']
-            result[genre].append({
+            genre_label = entry['genre_label']
+            result[genre_label].append({
                 'song': entry['song__id'],
                 'play_count': entry['play_count']
             })
 
         grouped_result = dict(result)
+        print('Grouped Result: ', grouped_result)
 
 
         data = []
-        for genre, value in grouped_result.items():
+        for genre_items, value in grouped_result.items():
             songs_data = []
             for song in value:
                 song_obj = SongSerializer(Song.objects.get(id=song['song']), context={'request': request}).data
                 song_obj.pop('lyrics')
                 song_obj.pop('genre')
 
-                song_obj.pop('plays')
-                #song_obj['play_count'] = song.pop('play_count')
+                # song_obj.pop('plays')
+
                 songs_data.append(song_obj)
-            data1 = {}
+
+            detail_data = {}
             
-            data1['genre'] = genre
-            data1['cover'] = BASE_URL + CustomUser.objects.get(id=songs_data[0]['artist']).get_image_url if songs_data[0]['artist'] else ""
-            data1['songs'] = songs_data
-            data.append(data1)
+            detail_data['genre'] = genre_items
+            detail_data['cover'] = BASE_URL + CustomUser.objects.get(id=songs_data[0]['artist']).get_image_url if songs_data[0]['artist'] else ""
+            if genre:
+                detail_data['songs'] = songs_data
+            data.append(detail_data)
 
         return Response(data)
     

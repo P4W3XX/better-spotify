@@ -29,16 +29,29 @@ def get_dominant_color(image_path, color_format='RGB'):
 
     return rgb_to_hex(most_common)
 
-def get_top_songs_last_month(limit=10):
+def get_top_songs_last_month(limit=10, genre=None):
+    genre_dict = {v: k for k, v in Song._meta.get_field('genre').choices}
+
     last_month = timezone.now() - timedelta(days=30)
     
-    songs = SongPlayback.objects.filter(
-        played_at__gte=last_month
-    ).values(
-        'song__id', 'song__title', 'song__genre'
-    ).annotate(
-        play_count=Count('id')
-    ).order_by('song__genre', '-play_count')[:limit]
+
+    if genre:
+        songs = SongPlayback.objects.filter(
+            played_at__gte=last_month,
+            song__genre=genre_dict[genre]
+        ).values(
+            'song__id', 'song__title', 'song__genre'
+        ).annotate(
+            play_count=Count('id')
+        ).order_by('song__genre', '-play_count')[:limit]
+    else:
+        songs = SongPlayback.objects.filter(
+            played_at__gte=last_month
+        ).values(
+            'song__id', 'song__title', 'song__genre'
+        ).annotate(
+            play_count=Count('id')
+        ).order_by('song__genre', '-play_count')[:limit]
 
     genre_dict = dict(Song._meta.get_field('genre').choices)
     results = []

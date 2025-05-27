@@ -90,7 +90,6 @@ class Song(models.Model):
     file = models.FileField(upload_to='songs/')
     lyrics = models.JSONField(blank=True, default=dict, null=False)
     track_number = models.PositiveIntegerField()
-    plays = models.PositiveIntegerField(default=0)
     featured_artists = models.ManyToManyField(CustomUser, related_name='featured_songs', blank=True)
     is_indecent = models.BooleanField(default=False)
     genre = models.CharField(max_length=50, choices=[
