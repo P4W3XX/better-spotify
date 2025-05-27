@@ -412,7 +412,7 @@ export default function Album() {
           content_type: string;
           library_obj: { id: number };
         }) => 
-          item.content_type === "album" && item.library_obj.id.toString() === albumID.toString()
+          item.content_type === "album" && item.library_obj.id.toString() === albumID?.toString()
         );
         setIsFavorite(isFav);
         console.log("Is album favorite:", isFav);
