@@ -170,14 +170,22 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
+        self.library = kwargs.pop('library', False)
+
         super().__init__(*args, **kwargs)
         if nested:
             self.fields.pop('artist')
             self.fields.pop('songs')
+
+        if self.library:
+            self.fields.pop('artist')
     
 
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
+        if self.library:
+            return obj.songs.order_by('track_number').values_list('id', flat=True)
+
         return SongSerializer(obj.songs.order_by('track_number'), many=True, nested=True, context=self.context, required=False).data
     
     def to_representation(self, instance):
@@ -625,7 +633,7 @@ class LibraryItemSerializer(serializers.ModelSerializer):
                 elif isinstance(library_object, Playlist):
                     return PlaylistSerializer(library_object, nested=True, context=self.context).data
                 elif isinstance(library_object, Album):
-                    return AlbumSerializer(library_object, nested=True, context=self.context).data
+                    return AlbumSerializer(library_object, library=True, context=self.context).data
                 elif isinstance(library_object, CustomUser):
                     return ArtistSerializer(library_object, nested=True, context=self.context).data
             except content_type.DoesNotExist:

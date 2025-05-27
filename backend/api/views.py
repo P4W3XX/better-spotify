@@ -437,7 +437,7 @@ class UserPlaylistViewSet(viewsets.ModelViewSet):
     serializer_class = PlaylistSerializer
     permission_classes = [IsAuthenticated,]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', ]
+    search_fields = ['name', 'id']
     ordering_fields = ['name', 'created_at']
 
 
