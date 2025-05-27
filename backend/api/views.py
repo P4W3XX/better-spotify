@@ -26,11 +26,13 @@ from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer,
                           )
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.utils.text import slugify
+
 
 from collections import defaultdict
 import os
-
 from .supabase_client import supabase
+
 # Create your views here.
 
 def upload_image(file, filename):
@@ -77,6 +79,23 @@ class ArtistViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         context['many'] = self.action == 'list'
         return context
+        
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        instance = serializer.instance
+
+        if instance.image:
+            file_data = instance.image
+            filename = f"artists/{slugify(instance.username)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+            try:
+                upload_image(file_data, filename)
+            except Exception as e:
+                print(f"Upload failed: {e}")
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class AlbumViewSet(viewsets.ModelViewSet):
     queryset = Album.objects.prefetch_related('artist', 'songs')
@@ -90,6 +109,42 @@ class AlbumViewSet(viewsets.ModelViewSet):
     ]
     search_fields = ['title', 'artist__username', 'release_date']
     ordering_fields = ['title', 'artist__username', 'release_date']
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        instance = serializer.instance
+
+        
+        if instance.image:
+            file_data = instance.image
+            filename = f"albums/{slugify(instance.title)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+            # filename = f"albums/{instance.title}{instance.id}"
+            try:
+                upload_image(file_data, filename)
+            except Exception as e:
+                print(f"Upload failed: {e}")
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        instance = serializer.instance
+
+        if instance.image:
+            file_data = instance.image
+            filename = f"albums/{slugify(instance.title)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+            try:
+                upload_image(file_data, filename)
+            except Exception as e:
+                print(f"Upload failed: {e}")
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 class SongViewSet(viewsets.ModelViewSet):
     queryset = Song.objects.all()

@@ -164,7 +164,7 @@ export default function SearchPage() {
                     }} transition={{
                         ease: "easeInOut",
                     }} className=" font-medium  hover:bg-zinc-800/80 z-[100] rounded-xl h-[3rem] cursor-pointer flex items-center justify-center" onClick={() => { setIsSearching(false); setSearch("") }}>
-                        Cancle
+                        Cancel
                     </motion.button>
                 )}
             </motion.div>
