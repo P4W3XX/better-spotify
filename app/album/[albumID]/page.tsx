@@ -411,7 +411,7 @@ export default function Album() {
         const isFav = response.data.items.some((item: {
           content_type: string;
           library_obj: { id: number };
-        }) => 
+        }) =>
           item.content_type === "album" && item.library_obj.id.toString() === albumID?.toString()
         );
         setIsFavorite(isFav);
@@ -421,7 +421,7 @@ export default function Album() {
       }
     };
     checkIfFavorite();
-  }, [albumID,accesToken]);
+  }, [albumID, accesToken]);
 
   const handleFavorite = async () => {
     try {
@@ -446,10 +446,6 @@ export default function Album() {
 
   return (
     <motion.main
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
       layoutId="album"
       style={{ backgroundColor: albumInfo.theme }}
       className={` relative w-full md:h-[calc(100svh-6.5rem)] h-[calc(100svh-4rem)] flex md:rounded-xl flex-col ${albumCover ? "overflow-hidden" : " overflow-auto"
@@ -465,116 +461,134 @@ export default function Album() {
       <TopBar handleRef={handleRef} setScrollY2={setScrollY} title={albumInfo.title} artist={albumInfo.artistName} cover={albumInfo.cover} theme={albumInfo.theme} />
       <div className=" md:p-7 px-4 pt-16 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
         <div className=" w-full h-full left-0 bg-gradient-to-t from-black/40 to-black/20 top-0 absolute" />
-        {albumInfo.cover ? (
-          <Image
-            src={albumInfo.cover}
-            alt="Cover"
-            width={500}
-            unoptimized
-            onClick={() => setAlbumCover(albumInfo.cover)}
-            height={500}
-            className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-auto max-w-[15rem] w-[98%]  shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-          />
-        ) : (
-          <Skeleton className="size-[15rem] aspect-square z-10" />
-        )}
-        <div className=" items-start z-10 w-full md:space-y-5 space-y-4 flex flex-col justify-end">
-          {albumInfo.type ? (
-            <p className=" md:block hidden font-medium">
-              {albumInfo.type.slice(0, 1).toUpperCase() +
-                albumInfo.type.slice(1) || ""}
-            </p>
+        <motion.div initial={{
+          y: -20,
+          opacity: 0,
+        }}
+          animate={{
+            y: 0,
+            opacity: 1,
+          }}
+          exit={{
+            y: -20,
+            opacity: 0,
+          }}
+          transition={{
+            duration: 0.3,
+            ease: "easeInOut",
+          }}
+          className="flex flex-col md:flex-row w-full items-center md:items-end space-y-4 md:space-y-0 md:space-x-8 z-10">
+          {albumInfo.cover ? (
+            <Image
+              src={albumInfo.cover}
+              alt="Cover"
+              width={500}
+              unoptimized
+              onClick={() => setAlbumCover(albumInfo.cover)}
+              height={500}
+              className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-auto max-w-[15rem] w-[98%]  shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+            />
           ) : (
-            <Skeleton className=" w-1/2 h-[20px]" />
+            <Skeleton className="size-[15rem] aspect-square z-10" />
           )}
-          {albumInfo.title ? (
-            <h1 className=" md:text-8xl text-4xl truncate w-full font-semibold">
-              {albumInfo.title || ""}
-            </h1>
-          ) : (
-            <Skeleton className=" w-1/2 md:h-[96px] h-[36px]" />
-          )}
-          <div className=" flex md:items-center md:flex-row flex-col text-sm font-medium space-y-2 md:space-y-0 md:space-x-2">
-            <div className=" flex items-center space-x-2">
-              {albumInfo.artistCover ? (
-                <Image
-                  src={albumInfo.artistCover}
-                  unoptimized
-                  alt="ArtistCover"
-                  width={25}
-                  height={25}
-                  className="rounded-full size-[1.3rem]"
-                />
-              ) : (
-                <Skeleton className="size-[1.3rem] aspect-square rounded-full" />
-              )}
-              {albumInfo.artistName.length > 0 ? (
-                <p
-                  onClick={() => router.push(`/profile/${albumInfo.artist}`)}
-                  className=" cursor-pointer truncate hover:underline transition-colors font-medium"
-                >
-                  {albumInfo.artistName || ""}
-                </p>
-              ) : (
-                <Skeleton className=" w-[80px] h-[20px]" />
-              )}
-            </div>
-            <div className=" flex md:space-x-2 items-center space-x-1 text-xs md:text-sm">
-              <p style={{
-                color: albumInfo.theme
-              }} className=" md:block hidden brightness-[5] font-semibold">
-                •
+          <div className=" items-start z-10 w-full md:space-y-5 space-y-4 flex flex-col justify-end">
+            {albumInfo.type ? (
+              <p className=" md:block hidden font-medium">
+                {albumInfo.type.slice(0, 1).toUpperCase() +
+                  albumInfo.type.slice(1) || ""}
               </p>
-              {albumInfo.releaseDate ? (
+            ) : (
+              <Skeleton className=" w-1/2 h-[20px]" />
+            )}
+            {albumInfo.title ? (
+              <h1 className=" md:text-8xl text-4xl truncate w-full font-semibold">
+                {albumInfo.title || ""}
+              </h1>
+            ) : (
+              <Skeleton className=" w-1/2 md:h-[96px] h-[36px]" />
+            )}
+            <div className=" flex md:items-center md:flex-row flex-col text-sm font-medium space-y-2 md:space-y-0 md:space-x-2">
+              <div className=" flex items-center space-x-2">
+                {albumInfo.artistCover ? (
+                  <Image
+                    src={albumInfo.artistCover}
+                    unoptimized
+                    alt="ArtistCover"
+                    width={25}
+                    height={25}
+                    className="rounded-full size-[1.3rem]"
+                  />
+                ) : (
+                  <Skeleton className="size-[1.3rem] aspect-square rounded-full" />
+                )}
+                {albumInfo.artistName.length > 0 ? (
+                  <p
+                    onClick={() => router.push(`/profile/${albumInfo.artist}`)}
+                    className=" cursor-pointer truncate hover:underline transition-colors font-medium"
+                  >
+                    {albumInfo.artistName || ""}
+                  </p>
+                ) : (
+                  <Skeleton className=" w-[80px] h-[20px]" />
+                )}
+              </div>
+              <div className=" flex md:space-x-2 items-center space-x-1 text-xs md:text-sm">
                 <p style={{
                   color: albumInfo.theme
-                }} className="brightness-[5] font-semibold">
-                  {albumInfo.releaseDate.split("-")[0] || ""}
+                }} className=" md:block hidden brightness-[5] font-semibold">
+                  •
                 </p>
-              ) : (
-                <Skeleton className=" w-[40px] h-[20px]" />
-              )}
-              <p style={{
-                color: albumInfo.theme
-              }} className=" md:block hidden brightness-[5] font-semibold">
-                •
-              </p>
-              {albumInfo.songs.length > 0 ? (
+                {albumInfo.releaseDate ? (
+                  <p style={{
+                    color: albumInfo.theme
+                  }} className="brightness-[5] font-semibold">
+                    {albumInfo.releaseDate.split("-")[0] || ""}
+                  </p>
+                ) : (
+                  <Skeleton className=" w-[40px] h-[20px]" />
+                )}
                 <p style={{
                   color: albumInfo.theme
-                }} className=" brightness-[5] truncate font-semibold">
-                  {albumInfo.songs.length} {albumInfo.songs.length > 1 ? "songs" : "song"}
+                }} className=" md:block hidden brightness-[5] font-semibold">
+                  •
                 </p>
-              ) : (
-                <Skeleton className=" w-[40px] h-[20px]" />
-              )}
-              <p style={{
-                color: albumInfo.theme
-              }} className=" md:block hidden brightness-[5] font-semibold">
-                •
-              </p>
-              {albumInfo.albumDuration ? (
+                {albumInfo.songs.length > 0 ? (
+                  <p style={{
+                    color: albumInfo.theme
+                  }} className=" brightness-[5] truncate font-semibold">
+                    {albumInfo.songs.length} {albumInfo.songs.length > 1 ? "songs" : "song"}
+                  </p>
+                ) : (
+                  <Skeleton className=" w-[40px] h-[20px]" />
+                )}
                 <p style={{
                   color: albumInfo.theme
-                }} className=" md:block hidden brightness-[5] truncate font-semibold">
-                  {formatSecondsToTime(formatTimeToSeconds(albumInfo.albumDuration))}
+                }} className=" md:block hidden brightness-[5] font-semibold">
+                  •
                 </p>
-              ) : (
-                <Skeleton className=" w-[40px] h-[20px]" />
-              )}
-              <p style={{
-                color: albumInfo.theme
-              }} className=" md:block hidden brightness-[5] font-semibold">
-                •
-              </p>
-              <p style={{
-                color: albumInfo.theme
-              }} className=" md:block hidden truncate brightness-[5] font-semibold">
-                {albumInfo.totalPlays.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")}
-              </p>
+                {albumInfo.albumDuration ? (
+                  <p style={{
+                    color: albumInfo.theme
+                  }} className=" md:block hidden brightness-[5] truncate font-semibold">
+                    {formatSecondsToTime(formatTimeToSeconds(albumInfo.albumDuration))}
+                  </p>
+                ) : (
+                  <Skeleton className=" w-[40px] h-[20px]" />
+                )}
+                <p style={{
+                  color: albumInfo.theme
+                }} className=" md:block hidden brightness-[5] font-semibold">
+                  •
+                </p>
+                <p style={{
+                  color: albumInfo.theme
+                }} className=" md:block hidden truncate brightness-[5] font-semibold">
+                  {albumInfo.totalPlays.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
       <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/40">
         <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
@@ -630,7 +644,7 @@ export default function Album() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button onClick={() => handleFavorite()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                  <Star className={` text-white md:size-[36px] size-[24px] ${isFavorite ? 'fill-white':'opacity-50'}`} />
+                  <Star className={` text-white md:size-[36px] size-[24px] ${isFavorite ? 'fill-white' : 'opacity-50'}`} />
                 </button>
               </TooltipTrigger>
               <TooltipContent

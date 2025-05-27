@@ -329,24 +329,24 @@ export default function Album() {
     useEffect(() => {
         const fetchData = async () => {
             if (!accessToken) {
-            console.warn("Access token is not available");
-            return;
+                console.warn("Access token is not available");
+                return;
             }
 
             try {
-            const response = await axios.get(
-                "http://127.0.0.1:8000/api/user-playlists/?search=Liked%20Songs",
-                {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                }
-            );
+                const response = await axios.get(
+                    "http://127.0.0.1:8000/api/user-playlists/?search=Liked%20Songs",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
 
-            const likedPlaylist = response.data?.[0];
-            setSongs(likedPlaylist?.songs || []);
+                const likedPlaylist = response.data?.[0];
+                setSongs(likedPlaylist?.songs || []);
             } catch (error) {
-            console.error("Failed to fetch playlist:", error);
+                console.error("Failed to fetch playlist:", error);
             }
         };
 
@@ -355,10 +355,6 @@ export default function Album() {
 
     return (
         <motion.main
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
             layoutId="album"
             style={{ backgroundColor: "#00B2FF" }}
             className={` relative w-full md:h-[calc(100svh-6.5rem)] h-[calc(100svh-4rem)] flex md:rounded-xl flex-col ${albumCover ? "overflow-hidden" : " overflow-auto"
@@ -374,23 +370,41 @@ export default function Album() {
             <TopBar handleRef={handleRef} setScrollY2={setScrollY} title={'Favorite Songs'} artist={'26'} cover={'/favoriteSongs.svg'} theme={"#00B2FF"} />
             <div className=" md:p-7 px-4 pt-16 md:pt-7 flex flex-col md:flex-row items-center md:items-end space-y-4 md:space-y-0 relative md:space-x-8 z-10">
                 <div className=" w-full h-full left-0 bg-gradient-to-t from-black/40 to-black/20 top-0 absolute" />
-                <Image
-                    src={'/favoriteSongs.svg'}
-                    alt="Cover"
-                    width={500}
-                    unoptimized
-                    onClick={() => setAlbumCover('/favoriteSongs.svg')}
-                    height={500}
-                    className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-auto max-w-[15rem] w-[98%]  shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
-                />
-                <div className=" items-start z-10 w-full md:space-y-5 space-y-4 flex flex-col justify-end">
-                    <p className=" md:block hidden font-medium">
-                        {'Playlist'}
-                    </p>
-                    <h1 className=" md:text-8xl text-4xl truncate w-full leading-[7.5rem] font-semibold">
-                        {"Favorite Songs"}
-                    </h1>
-                </div>
+                <motion.div initial={{
+                    y: -20,
+                    opacity: 0,
+                }}
+                    animate={{
+                        y: 0,
+                        opacity: 1,
+                    }}
+                    exit={{
+                        y: -20,
+                        opacity: 0,
+                    }}
+                    transition={{
+                        duration: 0.3,
+                        ease: "easeInOut",
+                    }}
+                    className="flex flex-col md:flex-row w-full items-center md:items-end space-y-4 md:space-y-0 md:space-x-8 z-10">
+                    <Image
+                        src={'/favoriteSongs.svg'}
+                        alt="Cover"
+                        width={500}
+                        unoptimized
+                        onClick={() => setAlbumCover('/favoriteSongs.svg')}
+                        height={500}
+                        className="rounded-lg hover:scale-105 active:scale-95 transition-all cursor-pointer z-10 md:size-[15rem] size-auto max-w-[15rem] w-[98%]  shadow-[0_0_20px_0_rgba(0,0,0,0.5)] shadow-black/60"
+                    />
+                    <div className=" items-start z-10 w-full md:space-y-5 space-y-4 flex flex-col justify-end">
+                        <p className=" md:block hidden font-medium">
+                            {'Playlist'}
+                        </p>
+                        <h1 className=" md:text-8xl text-4xl truncate w-full leading-[7.5rem] font-semibold">
+                            {"Favorite Songs"}
+                        </h1>
+                    </div>
+                </motion.div>
             </div>
             <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/40">
                 <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
