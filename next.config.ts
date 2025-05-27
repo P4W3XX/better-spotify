@@ -13,6 +13,11 @@ module.exports = async (): Promise<NextConfig> => {
           pathname: "**",
         },
         {
+          protocol: "https" as const,
+          hostname: "better-spotify.vercel.app",
+          pathname: "**",
+        },
+        {
           protocol: "http" as const,
           hostname: "localhost",
           pathname: "**",
@@ -20,6 +25,11 @@ module.exports = async (): Promise<NextConfig> => {
         {
           protocol: "https" as const,
           hostname: "better-spotify-vert.vercel.app",
+          pathname: "**",
+        },
+        {
+          protocol: "https" as const,
+          hostname: "taktridhdtyyutmghriy.supabase.co",
           pathname: "**",
         },
       ],

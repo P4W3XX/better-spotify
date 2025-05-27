@@ -10,12 +10,30 @@ import FavoriteSongsPlaylist from "./favoriteSongs";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useUserStore } from "@/store/user";
+import axios from "axios";
+import { useTokenStore } from "@/store/token";
+
+
+interface PlaylistProps {
+  id: string;
+  content_type: string;
+  library_obj: {
+    id: number;
+    artist_username: string;
+    title: string;
+    description: string;
+    image: string;
+  }
+}
+
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const playlistRef = useRef<HTMLDivElement>(null);
   const [isScrolling, setIsScrolling] = useState(false);
+  const [playlists, setPlaylists] = useState<PlaylistProps[]>([]);
+  const token = useTokenStore((state) => state.accessToken);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +53,26 @@ export default function Sidebar() {
     return () => {
       playlistRef?.current?.removeEventListener("scroll", handleScroll);
     };
+  }, []);
+
+
+  useEffect(() => {
+    const fetchPlaylists = async () => {
+      if (!token) {
+        return;
+      }
+      axios.get('http://127.0.0.1:8000/api/library/', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }).then((response) => {
+        console.log("Playlists fetched:", response.data);
+        setPlaylists(response.data.items as PlaylistProps[]);
+      }).catch((error) => {
+        console.error("Error fetching playlists:", error);
+      });
+    }
+    fetchPlaylists();
   }, []);
   const { currentUser } = useUserStore() as { currentUser: { username?: string } };
   const firstLetter = currentUser.username?.charAt(0).toUpperCase() || "X";
@@ -143,30 +181,9 @@ export default function Sidebar() {
         }} className=" w-full h-5 top-0 bg-gradient-to-b pointer-events-none from-black absolute" />
         <div ref={playlistRef} className=" overflow-auto scrollbar-hide flex flex-col gap-y-2 px-3">
           <FavoriteSongsPlaylist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
-          <Playlist />
+          {playlists && playlists.slice(0, -1).map((playlist) => (
+            <Playlist key={playlist.id} title={playlist.library_obj.title} artistUsername={playlist.library_obj.artist_username} type={playlist.content_type} songs={[]} url={playlist.library_obj.image} id={playlist.library_obj.id} />
+          ))}
         </div>
       </div>
     </main>

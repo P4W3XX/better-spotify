@@ -13,6 +13,7 @@ import {
   Plus,
   Share,
   Shuffle,
+  Star,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -54,6 +55,7 @@ import { useAlbumCoverStore } from "@/store/album-cover";
 import axios from "axios";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentSongStore } from "@/store/current-song";
+import { useTokenStore } from "@/store/token";
 
 const TopBar = ({
   handleRef,
@@ -321,7 +323,6 @@ export default function Album() {
   const { albumID } = useParams();
   const handleRef = useRef<HTMLDivElement>(null);
   const [scrollY, setScrollY] = useState(0);
-  const mobile = useMediaQuery("(max-width: 768px)");
   const router = useRouter();
   const setAlbumCover = useAlbumCoverStore((state) => state.setAlbumCover);
   const albumCover = useAlbumCoverStore((state) => state.albumCover);
@@ -331,6 +332,8 @@ export default function Album() {
   const isLoading = useCurrentSongStore((state) => state.isLoading);
   const action = useCurrentSongStore((state) => state.action);
   const setAction = useCurrentSongStore((state) => state.setAction);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const accesToken = useTokenStore((state) => state.accessToken);
   const [albumInfo, setAlbumInfo] = useState<AlbumInfo>({
     title: "",
     artist: "",
@@ -397,8 +400,49 @@ export default function Album() {
   }, []);
 
   useEffect(() => {
-    console.log("Mobile", mobile);
-  }, []);
+    const checkIfFavorite = async () => {
+      try {
+        if (!accesToken) return;
+        const response = await axios.get('http://127.0.0.1:8000/api/library/', {
+          headers: {
+            'Authorization': `Bearer ${accesToken}`,
+          }
+        });
+        const isFav = response.data.items.some((item: {
+          content_type: string;
+          library_obj: { id: number };
+        }) => 
+          item.content_type === "album" && item.library_obj.id.toString() === albumID.toString()
+        );
+        setIsFavorite(isFav);
+        console.log("Is album favorite:", isFav);
+      } catch (error) {
+        console.error("Error checking if album is favorite:", error);
+      }
+    };
+    checkIfFavorite();
+  }, [albumID,accesToken]);
+
+  const handleFavorite = async () => {
+    try {
+      axios.post(`http://127.0.0.1:8000/api/modify/library/`, {
+        action: isFavorite ? "remove" : "add",
+        id: albumID,
+        object_type: "album",
+      }, {
+        headers: {
+          'Authorization': `Bearer ${accesToken}`,
+        },
+      }).then((response) => {
+        console.log("Album favorited:", response.data);
+        setIsFavorite(!isFavorite);
+      }).catch((error) => {
+        console.error("Error favoriting album:", error);
+      });
+    } catch (error) {
+      console.error("Error handling favorite:", error);
+    }
+  };
 
   return (
     <motion.main
@@ -535,9 +579,9 @@ export default function Album() {
       <div className=" w-full flex md:justify-start justify-between flex-row-reverse md:flex-row items-center md:space-x-8 space-x-4 h-full md:p-7 pl-4 md:pb-7 md:max-h-[7rem] bg-gradient-to-t max-h-[4rem] from-black/60 to-black/40">
         <div className=" flex md:flex-row flex-row-reverse items-center md:gap-x-8 gap-x-4">
           {isLoading ? (
-          <div className="w-full flex items-center justify-center md:size-[4rem] size-[3rem] bg-white rounded-full">
-            <LoaderCircle className="text-black animate-spin stroke-3 stroke-black" size={25} />
-          </div>
+            <div className="w-full flex items-center justify-center md:size-[4rem] size-[3rem] bg-white rounded-full">
+              <LoaderCircle className="text-black animate-spin stroke-3 stroke-black" size={25} />
+            </div>
           ) : (
             <button onClick={() => {
               if (albumInfo.songs.length > 0 && albumInfo.songs[0]) {
@@ -549,7 +593,7 @@ export default function Album() {
                   }
                 }
                 else {
-                  setCurrentSongID(albumInfo.songs[0].id.toString(),true);
+                  setCurrentSongID(albumInfo.songs[0].id.toString(), true);
                   setAction("Play");
                 }
               }
@@ -585,15 +629,15 @@ export default function Album() {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
-                  <CirclePlus className=" text-white md:size-[36px] size-[24px] opacity-50" />
+                <button onClick={() => handleFavorite()} className=" hover:scale-105 active:scale-95 transition-all cursor-pointer rounded-full flex items-center justify-center">
+                  <Star className={` text-white md:size-[36px] size-[24px] ${isFavorite ? 'fill-white':'opacity-50'}`} />
                 </button>
               </TooltipTrigger>
               <TooltipContent
                 sideOffset={10}
                 className="font-medium bg-black/50 backdrop-blur-3xl text-white rounded-lg text-sm p-2 "
               >
-                Add to Library
+                {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
