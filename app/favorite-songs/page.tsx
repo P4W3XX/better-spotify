@@ -329,20 +329,28 @@ export default function Album() {
     useEffect(() => {
         const fetchData = async () => {
             if (!accessToken) {
-                console.log("Access token is not available");
-                return;
+            console.warn("Access token is not available");
+            return;
             }
 
-            const resp = await axios.get(
-                "http://127.0.0.1:8000/api/user-playlists/?search=Liked%20Songs", {
-                    headers: {
-                        "Authorization": `Bearer ${accessToken}`,
-                    },
+            try {
+            const response = await axios.get(
+                "http://127.0.0.1:8000/api/user-playlists/?search=Liked%20Songs",
+                {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
                 }
             );
-            setSongs(resp.data[0]?.songs || []);
-        }
-        fetchData()
+
+            const likedPlaylist = response.data?.[0];
+            setSongs(likedPlaylist?.songs || []);
+            } catch (error) {
+            console.error("Failed to fetch playlist:", error);
+            }
+        };
+
+        fetchData();
     }, [accessToken]);
 
     return (
