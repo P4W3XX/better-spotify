@@ -175,7 +175,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
             }
           }} className=" text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span>
 
-          {Object.values(isLoading).some((loading) => loading) ? (
+          {/* {Object.values(isLoading).some((loading) => loading) ? (
             <Skeleton className=" w-[50px] h-[10px] rounded-lg" />
           ) : (
             feats && feats.length > 0 && (
@@ -191,8 +191,8 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
                 {feats.join(", ")}
               </span>
             )
-          )}
-          <span className="text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span>
+          )} */}
+          {/* <span className="text-white/50 hover:underline group-hover:text-white font-medium transition-colors text-xs">{artist}</span> */}
           {feats && feats.length > 0 &&
             <>
               {','}
