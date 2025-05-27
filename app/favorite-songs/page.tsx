@@ -53,6 +53,8 @@ import { useRouter } from "next/navigation";
 import { useAlbumCoverStore } from "@/store/album-cover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCurrentSongStore } from "@/store/current-song";
+import axios from "axios";
+import { useTokenStore } from "@/store/token";
 
 const TopBar = ({
     handleRef,
@@ -99,7 +101,6 @@ const TopBar = ({
     }, [handleRef]);
 
     if (!isMounted) return null;
-
 
 
     return (
@@ -293,6 +294,7 @@ interface SongInfo {
     title: string;
     is_indecent: boolean;
     artist: number;
+    artist_username: string;
     cover: string;
     duration: string;
     plays: number;
@@ -315,13 +317,41 @@ export default function Album() {
     const isLoading = useCurrentSongStore((state) => state.isLoading);
     const action = useCurrentSongStore((state) => state.action);
     const setAction = useCurrentSongStore((state) => state.setAction);
-    const [songs, ] = useState<SongInfo[]>([]);
+    const [songs, setSongs] = useState<SongInfo[]>([]);
+    const accessToken = useTokenStore((state) => state.accessToken);
 
 
 
     useEffect(() => {
         console.log("Mobile", mobile);
     }, []);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!accessToken) {
+            console.warn("Access token is not available");
+            return;
+            }
+
+            try {
+            const response = await axios.get(
+                "http://127.0.0.1:8000/api/user-playlists/?search=Liked%20Songs",
+                {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                }
+            );
+
+            const likedPlaylist = response.data?.[0];
+            setSongs(likedPlaylist?.songs || []);
+            } catch (error) {
+            console.error("Failed to fetch playlist:", error);
+            }
+        };
+
+        fetchData();
+    }, [accessToken]);
 
     return (
         <motion.main
@@ -455,7 +485,7 @@ export default function Album() {
                         songs.map((song: SongInfo, index: number) => (
                             <SongPreview
                                 isIndecent={song.is_indecent}
-                                cover={''}
+                                cover={song.cover}
                                 key={index}
                                 index={index}
                                 title={song.title}
@@ -463,9 +493,9 @@ export default function Album() {
                                 artistId={song.artist}
                                 isDuration={true}
                                 isPlays={true}
-                                artist={song.artist.toString()}
+                                artist={song.artist_username}
                                 feats={song.featured_artists}
-                                isCover={false}
+                                isCover={true}
                                 id={song.id}
                                 plays={song.plays}
                                 duration={song.duration}

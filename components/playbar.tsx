@@ -1472,7 +1472,7 @@ export default function PlayBar() {
                         <span
                           key={index}
                           onClick={(e) => {
-                            router.push(`/artist/${feat.id}`);
+                            router.push(`/profile/${feat.id}`);
                             e.stopPropagation();
                           }}
                           className="text-white/50 hover:underline hover:text-white transition-colors text-xs"

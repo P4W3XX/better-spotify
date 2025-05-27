@@ -170,14 +170,22 @@ class AlbumSerializer(serializers.ModelSerializer):
 
     def __init__(self, *args, **kwargs):
         nested = kwargs.pop('nested', False)
+        self.library = kwargs.pop('library', False)
+
         super().__init__(*args, **kwargs)
         if nested:
             self.fields.pop('artist')
             self.fields.pop('songs')
+
+        if self.library:
+            self.fields.pop('artist')
     
 
     @extend_schema_field(serializers.ListField)
     def get_songs(self, obj):
+        if self.library:
+            return obj.songs.order_by('track_number').values_list('id', flat=True)
+
         return SongSerializer(obj.songs.order_by('track_number'), many=True, nested=True, context=self.context, required=False).data
     
     def to_representation(self, instance):
@@ -433,13 +441,14 @@ class UserPlaybackHistorySerializer(serializers.Serializer):
 
 class PlaylistSerializer(serializers.ModelSerializer):
     # songs = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=False)
-    songs = serializers.PrimaryKeyRelatedField(queryset=Song.objects.all(), many=True, write_only=True, required=False)
+    # songs = serializers.PrimaryKeyRelatedField(queryset=Song.objects.all(), many=True, write_only=True, required=False)
     theme = serializers.SerializerMethodField()
     playlist_duration = serializers.SerializerMethodField()
+    songs_length = serializers.IntegerField(source='songs.count', read_only=True)
 
     class Meta:
         model = Playlist
-        fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'playlist_duration', 'savings', 'songs',]
+        fields = ['id', 'user', 'name', 'description', 'image', 'is_public', 'has_image', 'theme', 'playlist_duration', 'savings', 'songs_length', 'songs',]
         extra_kwargs = {
             'savings': {'read_only': True},
         }
@@ -476,10 +485,28 @@ class PlaylistSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         
-        playlist_songs = PlaylistSong.objects.filter(playlist=instance).order_by('order')
-        songs = [playlist_song.song for playlist_song in playlist_songs]
+        playlist_songs = PlaylistSong.objects.filter(playlist=instance)
         
+        
+        
+        request = self.context.get('request')
+        songs = instance.songs.all()
+        
+        order = request.query_params.get('songs_order') if request else None
+        
+        if order in ['order', '-order']:
+            playlist_songs = playlist_songs.order_by(order)
+
+        songs = [playlist_song.song for playlist_song in playlist_songs]
+
+        if order in ['title', '-title']:
+            songs = songs.order_by(order)
+    
+
+        print("oor", order)
+
         representation['songs'] = SongSerializer(songs, many=True, nested=True, playlist=True).data
+
         if self.nested:
             representation.pop('songs', None)
 
@@ -606,7 +633,7 @@ class LibraryItemSerializer(serializers.ModelSerializer):
                 elif isinstance(library_object, Playlist):
                     return PlaylistSerializer(library_object, nested=True, context=self.context).data
                 elif isinstance(library_object, Album):
-                    return AlbumSerializer(library_object, nested=True, context=self.context).data
+                    return AlbumSerializer(library_object, library=True, context=self.context).data
                 elif isinstance(library_object, CustomUser):
                     return ArtistSerializer(library_object, nested=True, context=self.context).data
             except content_type.DoesNotExist:
