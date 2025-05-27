@@ -436,10 +436,30 @@ class UserPlaylistViewSet(viewsets.ModelViewSet):
     queryset = Playlist.objects.all()
     serializer_class = PlaylistSerializer
     permission_classes = [IsAuthenticated,]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'id']
+    ordering_fields = ['name', 'created_at']
+
 
     def get_queryset(self):
         user = self.request.user
+        # try:
+        #     songs_order = self.request.query_params['songs_order']
+            
+        #     order = ''
+        #     if songs_order == 'title':
+        #         order = 'songs__title'
+        #     elif songs_order == '-title':
+        #         order = '-songs__title'
+        #     elif songs_order == 'songs_order':
+        #         order = 'songs__order'
+        #     elif songs_order == '-songs_order':
+        #         order = '-songs__order'
+
+        #     return Playlist.objects.filter(user=user)
+        # except:
         return Playlist.objects.filter(user=user)
+        
     
     def create(self, request):
         serializer = PlaylistSerializer(data=request.data)

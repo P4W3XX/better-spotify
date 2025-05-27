@@ -24,9 +24,14 @@ module.exports = async (): Promise<NextConfig> => {
         },
         {
           protocol: "https" as const,
-          hostname: "taktridhdtyyutmghriy.supabase.co",
+          hostname: process.env.DB_HOST || "better-spotify-vert.vercel.app",
           pathname: "**",
         },
+        {
+          protocol: "https" as const,
+          hostname: "taktridhdtyyutmghriy.supabase.co",
+          pathname: "**",
+        }
       ],
     },
   };
