@@ -295,7 +295,7 @@ interface SongInfo {
     is_indecent: boolean;
     artist: number;
     artist_username: string;
-    cover: string;
+    image: string;
     duration: string;
     plays: number;
     featured_artists: [{ id: number, username: string }];
@@ -499,7 +499,7 @@ export default function Album() {
                         songs.map((song: SongInfo, index: number) => (
                             <SongPreview
                                 isIndecent={song.is_indecent}
-                                cover={song.cover}
+                                cover={song.image}
                                 key={index}
                                 index={index}
                                 title={song.title}

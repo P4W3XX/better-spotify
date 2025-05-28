@@ -179,8 +179,8 @@ export default function PlayBar() {
     }).then((response) => {
       console.log("Playback control response:", response.data);
       setCurrentSongID(response.data.data.song_id, false);
-    }).catch((error) => {
-      console.error("Error fetching playback control:", error);
+    }).catch(() => {
+      setCurrentSongID("", false);
     })
   }, []);
 
