@@ -651,6 +651,15 @@ class LibraryItemSerializer(serializers.ModelSerializer):
             except content_type.DoesNotExist:
                 return None
         return None
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        if instance.content_type.model_class() is CustomUser:
+            representation['library_obj'].update({'title': instance.content_object.username})
+        elif instance.content_type.model_class() is Playlist:
+            representation['library_obj'].update({'title': instance.content_object.name})
+        return representation
 
 
 
