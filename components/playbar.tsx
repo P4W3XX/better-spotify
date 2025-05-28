@@ -397,11 +397,13 @@ export default function PlayBar() {
           .get(`http://127.0.0.1:8000/api/songs/${currentSongID.url}`)
           .then(async (response) => {
             const { title, duration, album, file, lyrics, is_indecent } = response.data;
+            console.log("File Type:", typeof file);
             console.log("Fetched song details:", response.data);
             if (album) {
               await axios
                 .get(`http://127.0.0.1:8000/api/albums/${album}`)
                 .then((albumResponse) => {
+                  console.log("Fetched album details:", albumResponse.data);
                   setCurrentSongDetails({
                     title,
                     artistId: albumResponse.data.artist,

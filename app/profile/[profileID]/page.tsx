@@ -26,7 +26,7 @@ interface AlbumInfo {
 interface SongInfo {
   title: string;
   artist: string;
-  cover: string;
+  image: string;
   duration: string;
   plays: number;
   featured_artists: [{ id: number; username: string }];
@@ -194,7 +194,7 @@ export default function Profile() {
           top_songs: artistResponse.data.top_songs?.map((song: SongInfo) => ({
             title: song.title,
             artist: song.artist,
-            cover: song.cover || "/slabiak2.jpg",
+            image: song.image || "/slabiak2.jpg",
             duration: song.duration,
             plays: song.plays,
             featured_artists: song.featured_artists || [],
@@ -222,7 +222,7 @@ export default function Profile() {
             songs: albumResponse?.data?.songs?.map((song: SongInfo) => ({
               title: song.title,
               artist: song.artist,
-              cover: song.cover || "/slabiak2.jpg",
+              image: song.image || "/slabiak2.jpg",
               duration: song.duration,
               plays: song.plays,
               featured_artists: song.featured_artists || [{ id: 0, username: "" }],
@@ -403,7 +403,7 @@ export default function Profile() {
             {artistInfo.top_songs.length > 0 ? (
               artistInfo.top_songs.map((song: SongInfo, index: number) => (
                 <SongPreview
-                  cover={song.cover}
+                  cover={song.image}
                   key={index}
                   index={index}
                   title={song.title}
