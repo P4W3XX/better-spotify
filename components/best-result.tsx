@@ -86,7 +86,7 @@ export default function BestResult({ type, songs, title, artistId, username, cov
                                 unoptimized
                                 width={200}
                                 height={200}
-                                className=" size-[10rem] rounded-2xl"
+                                className="contain size-[10rem] rounded-2xl"
                             />
                         ) : (
                             <Image

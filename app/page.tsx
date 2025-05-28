@@ -278,8 +278,8 @@ export default function Home() {
                   See more
                 </button>
               </div>
-              <div className="w-full flex flex-wrap items-center justify-between h-min mt-6">
-                {artistInfo.filter((item) => (item.type === 'artist')).slice(1,5).map((item)=>(
+              <div className="w-full flex flex-wrap items-center gap-5 h-min mt-6">
+                {artistInfo.filter((item) => (item.type === 'artist')).slice(0,4).map((item)=>(
                 <Artist
                   key={item.id}
                   name={item.username}

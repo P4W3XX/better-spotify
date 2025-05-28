@@ -41,7 +41,7 @@ export const Artist = ({
           className="rounded-full w-[14rem] h-[14rem] pt-2 object-cover object-center"
         />
       </div>
-      <h1 className="font-serif text-xl text-start px-3">{name}</h1>
+      <h1 className="font-semibold text-xl text-start px-3">{name}</h1>
       <p className="px-3 text-[13px] font-medium text-zinc-400">Wykonawca</p>
       <button
         onClick={(e) => {
