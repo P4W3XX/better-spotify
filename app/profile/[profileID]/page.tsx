@@ -325,7 +325,7 @@ export default function Profile() {
         >
           <div
             style={{ backgroundImage: `url(${artistInfo.cover})` }}
-            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-fill bg-center"
+            className="flex flex-col pl-[1rem] pb-6 h-[20rem] justify-start gap-y-3 bg-no-repeat w-full bg-fill bg-top"
           >
             <div className="flex flex-row w-full justify-start items-center gap-x-3 md:pt-30">
             </div>

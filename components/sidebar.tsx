@@ -75,8 +75,8 @@ export default function Sidebar() {
     fetchPlaylists();
   }, []);
   const { currentUser } = useUserStore() as { currentUser: { username?: string } };
-  const firstLetter = currentUser.username?.charAt(0).toUpperCase() || "X";
-  const secondLetter = currentUser.username?.charAt(1).toUpperCase() || "d";
+  const firstLetter = currentUser.username?.charAt(0).toUpperCase() || "P";
+  const secondLetter = currentUser.username?.charAt(1).toUpperCase() || "Z";
 
   if (pathname === "/login" || pathname === '/register') return null;
   return (
