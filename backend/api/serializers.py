@@ -147,7 +147,7 @@ class SongSerializer(serializers.ModelSerializer):
 
         if instance.album.image:
             filename = f"albums/{slugify(instance.album.title)}_{instance.album.id}{os.path.splitext(instance.album.image.name)[1]}"
-            representation['cover'] = get_image_url(filename)
+            representation['image'] = get_image_url(filename)
 
         if instance.file:
             filename = f"audio/{slugify(instance.title)}_{instance.id}{os.path.splitext(instance.file.name)[1]}"
