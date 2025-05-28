@@ -70,6 +70,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
   const router = useRouter();
   const [isHover, setIsHover] = useState(false);
   const accesToken = useTokenStore((state) => state.accessToken);
+  const [favSongId, setFavSongId] = useState<string | null>(null);
 
 
   const handleSongAction = (e: React.MouseEvent<HTMLElement>) => {
@@ -91,6 +92,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
             'Authorization': `Bearer ${accesToken}`,
           }
         });
+        setFavSongId(response.data.items[0]?.id || null);
         const isFav = response.data.items.some((item: {
           content_type: string;
           library_obj: { id: number };
@@ -110,7 +112,7 @@ export const SongPreview = ({ index, title, artist, feats, plays, duration, isCo
     try {
       axios.post(`http://127.0.0.1:8000/api/modify/library/`, {
         action: isFavorite ? "remove" : "add",
-        id: id,
+        id: favSongId || id,
         object_type: "song",
       }, {
         headers: {
