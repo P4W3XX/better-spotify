@@ -6,6 +6,7 @@ from django.db.models import Count
 from .models import SongPlayback, Song
 from django.conf import settings
 import os
+from .supabase_client import supabase
 
 def rgb_to_hex(rgb):
     return '#{:02x}{:02x}{:02x}'.format(*rgb)
@@ -89,3 +90,25 @@ def create_collage(images, output_path, size=(800, 800)):
 
     collage.save(output_path)
     print(f"Collage saved to {output_path}")
+
+
+
+def upload_image(file, filename):
+    file_data = file.read()
+    response = supabase.storage.from_('images').upload(filename, file_data)
+    return response
+
+def get_image_url(filename):
+    public_url = supabase.storage.from_('images').get_public_url(filename)
+    return public_url
+
+
+
+def upload_audio(file, filename):
+    file_data = file.read()
+    response = supabase.storage.from_('audio').upload(filename, file_data)
+    return response
+
+def get_audio_url(filename):
+    public_url = supabase.storage.from_('audio').get_public_url(filename)
+    return public_url

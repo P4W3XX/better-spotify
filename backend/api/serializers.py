@@ -8,22 +8,11 @@ from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Count, Sum, F
 from django.conf import settings
-from .utils import get_dominant_color, create_collage
+from .utils import get_dominant_color, create_collage, get_image_url, upload_image, get_audio_url, upload_audio
 from .models import CustomUser, Album, Song, CurrentPlayback, SongPlayback, Playlist, PlaylistSong, Library, LibraryItem, PlaybackHistory
 from django.contrib.contenttypes.models import ContentType
 from django.utils.text import slugify
 
-from .supabase_client import supabase
-
-
-def upload_image(file, filename):
-    file_data = file.read()
-    response = supabase.storage.from_('images').upload(filename, file_data)
-    return response
-
-def get_image_url(filename):
-    public_url = supabase.storage.from_('images').get_public_url(filename)
-    return public_url
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -85,6 +74,15 @@ class SongSerializer(serializers.ModelSerializer):
         song.featured_artists.set(featured_artists)
         
         audio = MP3(song.file.path)
+
+        if song.file:
+            file_data = song.file
+            filename = f"audio/{slugify(song.title)}_{song.id}{os.path.splitext(file_data.name)[1]}"
+            try:
+                upload_audio(file_data, filename)
+            except Exception as e:
+                raise serializers.ValidationError(f"Failed to upload song: {str(e)}")
+            print('upload')
         
         song_duration = datetime.timedelta(seconds=round(audio.info.length))
         song.duration = song_duration
@@ -120,6 +118,16 @@ class SongSerializer(serializers.ModelSerializer):
                 song_duration = datetime.timedelta(seconds=round(audio.info.length))
                 instance.duration = song_duration
 
+        if instance.file:
+            file_data = instance.file
+            filename = f"audio/{slugify(instance.title)}_{instance.id}{os.path.splitext(file_data.name)[1]}"
+            try:
+                upload_audio(file_data, filename)
+            except Exception as e:
+                raise serializers.ValidationError(f"Failed to upload song: {str(e)}")
+            print('upload')
+
+
         instance.save()
         return instance
     
@@ -140,6 +148,10 @@ class SongSerializer(serializers.ModelSerializer):
         if instance.album.image:
             filename = f"albums/{slugify(instance.album.title)}_{instance.album.id}{os.path.splitext(instance.album.image.name)[1]}"
             representation['cover'] = get_image_url(filename)
+
+        if instance.file:
+            filename = f"audio/{slugify(instance.title)}_{instance.id}{os.path.splitext(instance.file.name)[1]}"
+            representation['file'] = get_audio_url(filename)
 
 
         return representation
@@ -503,7 +515,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
             songs = songs.order_by(order)
     
 
-        print("oor", order)
+        print("order", order)
 
         representation['songs'] = SongSerializer(songs, many=True, nested=True, playlist=True).data
 

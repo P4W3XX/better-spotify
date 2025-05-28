@@ -15,7 +15,7 @@ from django.shortcuts import render
 
 
 from .filters import ArtistFilter, AlbumFilter, SongFilter
-from .utils import get_top_songs_last_month, create_collage
+from .utils import get_top_songs_last_month, create_collage, get_image_url, upload_image
 from .models import CustomUser, Album, PlaylistSong, Song, CurrentPlayback, SongPlayback, Playlist, LibraryItem, Library, PlaybackHistory
 
 from .serializers import (ArtistSerializer, AlbumSerializer, SongSerializer, 
@@ -31,18 +31,11 @@ from django.utils.text import slugify
 
 from collections import defaultdict
 import os
-from .supabase_client import supabase
+
 
 # Create your views here.
 
-def upload_image(file, filename):
-    file_data = file.read()
-    response = supabase.storage.from_('images').upload(filename, file_data)
-    return response
 
-def get_image_url(filename):
-    public_url = supabase.storage.from_('images').get_public_url(filename)
-    return public_url
 
 
 def testIMG(request):
