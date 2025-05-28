@@ -398,6 +398,7 @@ export default function PlayBar() {
           .then(async (response) => {
             const { title, duration, album, file, lyrics, is_indecent } = response.data;
             console.log("File Type:", typeof file);
+            const cleanFile = typeof file === 'string' ? file.replace(/\?$/, '') : file;
             console.log("Fetched song details:", response.data);
             if (album) {
               await axios
@@ -412,7 +413,7 @@ export default function PlayBar() {
                     cover: albumResponse.data.image,
                     albumID: album,
                     theme: albumResponse.data.theme,
-                    url: file,
+                    url: cleanFile,
                     feats: response.data.featured_artists,
                     lyric: lyrics,
                     explicit: is_indecent,
