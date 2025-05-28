@@ -21,6 +21,8 @@ interface Item {
   theme: string;
 }
 
+
+
 interface mappedItems {
   id: number;
   title: string;
@@ -60,8 +62,6 @@ export default function Home() {
         const resArtist = await axios.get("http://127.0.0.1:8000/api/artists/").then((res) => res.data).catch((err) => {
           console.log(err);
         })
-        console.log("res", res);
-        console.log("resArtist", resArtist);
         const mappedItems = res?.map((item: mappedItems) => ({
           id: item.id,
           title: item.title,
